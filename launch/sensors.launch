@@ -23,6 +23,8 @@
     <arg name="radar_trigger_gpio" default="443" />
     <arg name="radar_trigger_gpio_name" default="PR.00" />
 
+    <arg name="lidar_on" default="false" />
+
     <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg radar_frame_id)_broadcaster" args="0 0 0 0 0 0 1 map $(arg radar_frame_id)" />
 
     <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen"/>
@@ -37,15 +39,26 @@
         <param name="frame_id" value="$(arg imu_frame_id)"/>
         <param name="poll_rate" value="$(arg imu_poll_rate)"/>
     </node>
-    <node pkg="nodelet" type="nodelet" name="radar" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg radar_on)">
-        <param name="path_cfg" value="$(arg radar_path_cfg)"/>
-        <param name="path_data" value="$(arg radar_path_data)"/>
-        <param name="frame_id" value="$(arg radar_frame_id)"/>
-        <param name="poll_rate" value="$(arg radar_poll_rate)"/>
-        <param name="radar_cfg" value="$(arg radar_cfg)"/>
-        <param name="trigger" type="string" value="$(arg radar_trigger)"/>
-        <param name="trigger_delay" type="string" value="$(arg radar_trigger_delay)"/>
-        <param name="trigger_gpio" type="string" value="$(arg radar_trigger_gpio)"/>
-        <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
-    </node>
+
+    <group if="$(arg radar_on)">
+        <node pkg="nodelet" type="nodelet" name="radar" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="screen">
+            <param name="path_cfg" value="$(arg radar_path_cfg)"/>
+            <param name="path_data" value="$(arg radar_path_data)"/>
+            <param name="frame_id" value="$(arg radar_frame_id)"/>
+            <param name="poll_rate" value="$(arg radar_poll_rate)"/>
+            <param name="radar_cfg" value="$(arg radar_cfg)"/>
+            <param name="trigger" type="string" value="$(arg radar_trigger)"/>
+            <param name="trigger_delay" type="string" value="$(arg radar_trigger_delay)"/>
+            <param name="trigger_gpio" type="string" value="$(arg radar_trigger_gpio)"/>
+            <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
+        </node>
+        <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.115 -0.002 -0.018 -0.09229596 0.09229596 -0.70105738 0.70105738 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+    </group>
+
+    <group if="$(arg lidar_on)">
+        <param name="user_config_path" type="string" value="$(find rio)/cfg/mid360.json"/>
+        <node name="livox_lidar_publisher2" pkg="livox_ros_driver2" type="livox_ros_driver2_node" output="screen" args=""/>
+        <node name="imu_to_lidar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.005 -0.001 0.101 0.0 1.0 0.0 0.0 '$(arg imu_frame_id)' livox_frame" />
+    </group>
+
 </launch>
