@@ -1,0 +1,10 @@
+<package>
+  <name>mmwave_sdk_catkin</name>
+  <version>0.0.0</version>
+  <description>Catkin wrapper for TI developer tools, e.g., MMWAVE SDK.</description>
+  <maintainer email="brik@ethz.ch">Rik Bähnemann</maintainer>
+
+  <license>See package</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
