@@ -1,0 +1,4 @@
+12c12
+< export MMWAVE_SDK_DEVICE=iwr68xx
+---
+> export MMWAVE_SDK_DEVICE=awr18xx

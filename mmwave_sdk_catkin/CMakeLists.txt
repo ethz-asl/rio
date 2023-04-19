@@ -19,7 +19,9 @@ ExternalProject_Add(mmwave_sdk
   DOWNLOAD_NO_EXTRACT TRUE
   UPDATE_COMMAND ""
   CONFIGURE_COMMAND chmod +x <DOWNLOADED_FILE>
-  BUILD_COMMAND <DOWNLOADED_FILE> --mode unattended --prefix <BINARY_DIR>
+  BUILD_COMMAND 
+    COMMAND <DOWNLOADED_FILE> --mode unattended --prefix <BINARY_DIR>
+    COMMAND patch mmwave_sdk_${MMWAVE_SDK_MAJOR}_${MMWAVE_SDK_MINOR}_${MMWAVE_SDK_PATCH}_${MMWAVE_SDK_PRE_RELEASE}-LTS/packages/scripts/unix/setenv.sh ${CMAKE_CURRENT_SOURCE_DIR}/patches/select_awr1843.patch
   INSTALL_COMMAND ""
 )
 
