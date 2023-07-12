@@ -1,8 +1,9 @@
 #include "rio/least_squares.h"
 #include <Eigen/SVD>
 
-bool least_squares(const Radar &measurement, Eigen::Vector3d *velocity)
+bool rio::leastSquares(const Radar &measurement, Eigen::Vector3d *velocity)
 {
+    if (measurement.cfar_detections.size() < 3) return false;
     // Get detection direction vector r and doppler velocity vd
     Eigen::MatrixXd r(measurement.cfar_detections.size(), 3);
     Eigen::VectorXd vd(measurement.cfar_detections.size());

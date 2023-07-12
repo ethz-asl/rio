@@ -1,7 +1,8 @@
 // A ROS node that publishes radar CFAR detections as PointCloud messages.
 // 1. Open radar sensor interface with mav_sensors.
 // 2. While loop to read radar data at predefined rate.
-// 3. Publish radar detections as PointCloud messages.
+// 3. RANSAC least squares fit to estimate linear velocity.
+// 4. Publish radar detections as PointCloud messages.
 
 #include <mav_sensors_core/sensor_config.h>
 #include <mav_sensors_drivers/radar/xwr18xx_mmw_demo.h>
@@ -10,6 +11,8 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <sensor_msgs/PointCloud.h>
+
+#include "rio/least_squares.h"
 
 int main(int argc, char **argv)
 {
@@ -36,6 +39,18 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         auto measurement = radar.read();
+        // RANSAC least squares fit to estimate linear velocity.
+        Eigen::Vector3d velocity;
+        if (rio::leastSquares(std::get<Radar>(measurement), &velocity))
+        {
+            LOG(I, "Velocity: " << velocity.transpose());
+        }
+        else
+        {
+            LOG(W, "Least squares failed.");
+        }
+
+        // Publish radar detections as PointCloud messages.
 
         sensor_msgs::PointCloud msg;
         msg.header.stamp = ros::Time(0, std::get<Radar>(measurement).unix_stamp_ns);
@@ -48,7 +63,7 @@ int main(int argc, char **argv)
         msg.channels[1].values.resize(std::get<Radar>(measurement).cfar_detections.size());
         msg.channels[2].name = "noise";
         msg.channels[2].values.resize(std::get<Radar>(measurement).cfar_detections.size());
-        for (int i = 0; i < std::get<Radar>(measurement).cfar_detections.size(); i++)
+        for (size_t i = 0; i < std::get<Radar>(measurement).cfar_detections.size(); i++)
         {
             msg.points[i].x = std::get<Radar>(measurement).cfar_detections[i].x;
             msg.points[i].y = std::get<Radar>(measurement).cfar_detections[i].y;

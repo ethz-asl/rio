@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <mav_sensors_drivers/sensor_types/Radar.h>
 
 namespace rio
@@ -13,6 +13,6 @@ namespace rio
      * @param velocity pointer to velocity estimate.
      * @return true if velocity estimate successful.
      */
-    bool least_squares(const Radar &measurement, Eigen::Vector3d* velocity);
+    bool leastSquares(const Radar &measurement, Eigen::Vector3d* velocity);
 
 } // namespace rio
