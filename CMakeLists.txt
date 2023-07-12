@@ -12,15 +12,21 @@ find_package(catkin REQUIRED COMPONENTS
                 sensor_msgs
                 roslib
             )
+find_package(Eigen3 REQUIRED)
 
-catkin_package()
+catkin_package( INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
+                LIBRARIES ${PROJECT_NAME}
+              )
+include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 
 ###########
 ## Build ##
 ###########
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
+
+add_library(${PROJECT_NAME}
+        src/least_squares.cpp
+        )
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 
 add_compile_definitions(MODE_ROSLOG)
 
