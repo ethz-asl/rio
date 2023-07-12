@@ -32,27 +32,33 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    int count=0;
+    int count = 0;
     while (ros::ok())
     {
-        /**
-         * This is a message object. You stuff it with data, and then publish it.
-         */
-        //std_msgs::String msg;
+        auto measurement = radar.read();
 
-        std::stringstream ss;
-        ss << "hello world " << count;
-        //msg.data = ss.str();
+        sensor_msgs::PointCloud msg;
+        msg.header.stamp = ros::Time(0, std::get<Radar>(measurement).unix_stamp_ns);
+        msg.header.frame_id = "awr1843aop";
+        msg.points.resize(std::get<Radar>(measurement).cfar_detections.size());
+        msg.channels.resize(3);
+        msg.channels[0].name = "velocity";
+        msg.channels[0].values.resize(std::get<Radar>(measurement).cfar_detections.size());
+        msg.channels[1].name = "snr";
+        msg.channels[1].values.resize(std::get<Radar>(measurement).cfar_detections.size());
+        msg.channels[2].name = "noise";
+        msg.channels[2].values.resize(std::get<Radar>(measurement).cfar_detections.size());
+        for (int i = 0; i < std::get<Radar>(measurement).cfar_detections.size(); i++)
+        {
+            msg.points[i].x = std::get<Radar>(measurement).cfar_detections[i].x;
+            msg.points[i].y = std::get<Radar>(measurement).cfar_detections[i].y;
+            msg.points[i].z = std::get<Radar>(measurement).cfar_detections[i].z;
+            msg.channels[0].values[i] = std::get<Radar>(measurement).cfar_detections[i].velocity;
+            msg.channels[1].values[i] = std::get<Radar>(measurement).cfar_detections[i].snr;
+            msg.channels[2].values[i] = std::get<Radar>(measurement).cfar_detections[i].noise;
+        }
 
-        ROS_INFO("loop");
-
-        /**
-         * The publish() function is how you send messages. The parameter
-         * is the message object. The type of this object must agree with the type
-         * given as a template parameter to the advertise<>() call, as was done
-         * in the constructor above.
-         */
-        //chatter_pub.publish(msg);
+        radar_pub.publish(msg);
 
         ros::spinOnce();
 
