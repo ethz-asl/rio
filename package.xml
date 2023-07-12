@@ -15,7 +15,9 @@
   <depend>roscpp</depend>
   <depend>lpp</depend>
   <depend>mav_sensors_drivers</depend>
+  <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>roslib</depend>
+  <depend>tf2_eigen</depend>
 
 </package>
