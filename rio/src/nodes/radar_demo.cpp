@@ -11,6 +11,8 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <sensor_msgs/PointCloud.h>
+#include <geometry_msgs/Vector3Stamped.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include "rio/least_squares.h"
 
@@ -18,6 +20,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "talker");
     ros::NodeHandle n;
+    ros::Publisher vel_pub = n.advertise<geometry_msgs::Vector3Stamped>("velocity", 1000);
     ros::Publisher radar_pub = n.advertise<sensor_msgs::PointCloud>("cfar_detections", 1000);
     ros::Rate loop_rate(10);
 
@@ -44,6 +47,13 @@ int main(int argc, char **argv)
         if (rio::leastSquares(std::get<Radar>(measurement), &velocity))
         {
             LOG(I, "Velocity: " << velocity.transpose());
+
+            // Publish least squares velocity estimate.
+            geometry_msgs::Vector3Stamped msg_velocity;
+            msg_velocity.header.stamp = ros::Time(0, std::get<Radar>(measurement).unix_stamp_ns);
+            msg_velocity.header.frame_id = "awr1843aop";
+            tf2::toMsg(velocity, msg_velocity.vector);
+            vel_pub.publish(msg_velocity);
         }
         else
         {
@@ -51,7 +61,6 @@ int main(int argc, char **argv)
         }
 
         // Publish radar detections as PointCloud messages.
-
         sensor_msgs::PointCloud msg;
         msg.header.stamp = ros::Time(0, std::get<Radar>(measurement).unix_stamp_ns);
         msg.header.frame_id = "awr1843aop";
@@ -72,7 +81,6 @@ int main(int argc, char **argv)
             msg.channels[1].values[i] = std::get<Radar>(measurement).cfar_detections[i].snr;
             msg.channels[2].values[i] = std::get<Radar>(measurement).cfar_detections[i].noise;
         }
-
         radar_pub.publish(msg);
 
         ros::spinOnce();
