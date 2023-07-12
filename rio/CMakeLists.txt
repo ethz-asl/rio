@@ -13,11 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
                 roslib
             )
 
-catkin_package(
-    INCLUDE_DIRS include
-    LIBRARIES rio
-    CATKIN_DEPENDS roscpp lpp mav_sensors_drivers sensor_msgs roslib
-)
+catkin_package()
 
 ###########
 ## Build ##
