@@ -46,23 +46,28 @@ int main(int argc, char **argv)
         Eigen::Vector3d velocity;
         if (rio::leastSquares(std::get<Radar>(measurement), &velocity))
         {
-            LOG(I, "Velocity: " << velocity.transpose());
+            LOG(D, "Velocity: " << velocity.transpose());
 
             // Publish least squares velocity estimate.
             geometry_msgs::Vector3Stamped msg_velocity;
-            msg_velocity.header.stamp = ros::Time(0, std::get<Radar>(measurement).unix_stamp_ns);
+            // Convert nanoseconds to seconds and remaining nanoseconds.
+            uint64_t sec = std::get<Radar>(measurement).unix_stamp_ns * 1e-9;
+            uint64_t nsec = std::get<Radar>(measurement).unix_stamp_ns - sec * 1e9;            
+            msg_velocity.header.stamp = ros::Time(sec, nsec);
             msg_velocity.header.frame_id = "awr1843aop";
             tf2::toMsg(velocity, msg_velocity.vector);
             vel_pub.publish(msg_velocity);
         }
         else
         {
-            LOG(W, "Least squares failed.");
+            LOG(D, "Least squares failed.");
         }
 
         // Publish radar detections as PointCloud messages.
         sensor_msgs::PointCloud msg;
-        msg.header.stamp = ros::Time(0, std::get<Radar>(measurement).unix_stamp_ns);
+        uint64_t sec = std::get<Radar>(measurement).unix_stamp_ns * 1e-9;
+        uint64_t nsec = std::get<Radar>(measurement).unix_stamp_ns - sec * 1e9; 
+        msg.header.stamp = ros::Time(sec, nsec);
         msg.header.frame_id = "awr1843aop";
         msg.points.resize(std::get<Radar>(measurement).cfar_detections.size());
         msg.channels.resize(3);
