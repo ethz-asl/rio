@@ -15,6 +15,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 
 #include "rio/least_squares.h"
+#include "rio/common.h"
 
 int main(int argc, char **argv)
 {
@@ -38,7 +39,6 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    int count = 0;
     while (ros::ok())
     {
         auto measurement = radar.read();
@@ -51,9 +51,7 @@ int main(int argc, char **argv)
             // Publish least squares velocity estimate.
             geometry_msgs::Vector3Stamped msg_velocity;
             // Convert nanoseconds to seconds and remaining nanoseconds.
-            uint64_t sec = std::get<Radar>(measurement).unix_stamp_ns * 1e-9;
-            uint64_t nsec = std::get<Radar>(measurement).unix_stamp_ns - sec * 1e9;            
-            msg_velocity.header.stamp = ros::Time(sec, nsec);
+            msg_velocity.header.stamp = rio::toRosTime(std::get<Radar>(measurement).unix_stamp_ns);
             msg_velocity.header.frame_id = "awr1843aop";
             tf2::toMsg(velocity, msg_velocity.vector);
             vel_pub.publish(msg_velocity);
@@ -65,9 +63,7 @@ int main(int argc, char **argv)
 
         // Publish radar detections as PointCloud messages.
         sensor_msgs::PointCloud msg;
-        uint64_t sec = std::get<Radar>(measurement).unix_stamp_ns * 1e-9;
-        uint64_t nsec = std::get<Radar>(measurement).unix_stamp_ns - sec * 1e9; 
-        msg.header.stamp = ros::Time(sec, nsec);
+        msg.header.stamp = rio::toRosTime(std::get<Radar>(measurement).unix_stamp_ns);
         msg.header.frame_id = "awr1843aop";
         msg.points.resize(std::get<Radar>(measurement).cfar_detections.size());
         msg.channels.resize(3);
@@ -91,8 +87,8 @@ int main(int argc, char **argv)
         ros::spinOnce();
 
         loop_rate.sleep();
-        ++count;
     }
 
+    radar.close();
     return 0;
 }
