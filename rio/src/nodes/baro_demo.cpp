@@ -36,22 +36,22 @@ int main(int argc, char **argv)
     {
         auto measurement = bmp390.read();
 
-        if (std::get<0>(measurement).has_value() && std::get<1>(measurement).has_value())
+        if (std::get<0>(measurement).has_value() && std::get<2>(measurement).has_value())
         {
             // Publish pressure measurements.
             sensor_msgs::FluidPressure msg;
-            msg.header.stamp = rio::toRosTime(std::get<0>(measurement).value());
+            msg.header.stamp = rio::toRosTime(std::get<2>(measurement).value());
             msg.header.frame_id = "bmp390";
-            msg.fluid_pressure = std::get<1>(measurement).value();
+            msg.fluid_pressure = std::get<0>(measurement).value();
             baro_pub.publish(msg);
         }
-        if (std::get<0>(measurement).has_value() && std::get<2>(measurement).has_value())
+        if (std::get<1>(measurement).has_value() && std::get<2>(measurement).has_value())
         {
             // Publish temperature measurements.
             sensor_msgs::Temperature msg;
-            msg.header.stamp = rio::toRosTime(std::get<0>(measurement).value());
+            msg.header.stamp = rio::toRosTime(std::get<2>(measurement).value());
             msg.header.frame_id = "bmp390";
-            msg.temperature = std::get<2>(measurement).value();
+            msg.temperature = std::get<1>(measurement).value();
             temp_pub.publish(msg);
         }
 
