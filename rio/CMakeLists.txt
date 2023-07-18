@@ -32,6 +32,9 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 add_executable(baro_demo src/nodes/baro_demo.cpp)
 target_link_libraries(baro_demo ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+add_executable(imu_demo src/nodes/imu_demo.cpp)
+target_link_libraries(imu_demo ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 add_executable(radar_demo src/nodes/radar_demo.cpp)
 target_link_libraries(radar_demo ${PROJECT_NAME} ${catkin_LIBRARIES})
 

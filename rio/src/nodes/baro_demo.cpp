@@ -15,7 +15,7 @@
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "talker");
+    ros::init(argc, argv, "baro_demo");
     ros::NodeHandle n;
     ros::Publisher baro_pub = n.advertise<sensor_msgs::FluidPressure>("pressure", 1000);
     ros::Publisher temp_pub = n.advertise<sensor_msgs::Temperature>("temperature", 1000);
