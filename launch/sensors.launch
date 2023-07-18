@@ -3,4 +3,5 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="awr1843aop_broadcaster" args="0 0 0 0 0 0 1 map awr1843aop" />
 
     <node name="baro_demo" pkg="rio" type="baro_demo" output="screen" />
+    <node name="imu_demo" pkg="rio" type="imu_demo" output="screen" />
 </launch>
