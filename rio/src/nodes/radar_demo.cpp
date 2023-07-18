@@ -19,7 +19,7 @@
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "talker");
+    ros::init(argc, argv, "radar_demo");
     ros::NodeHandle n;
     ros::Publisher vel_pub = n.advertise<geometry_msgs::Vector3Stamped>("velocity", 1000);
     ros::Publisher radar_pub = n.advertise<sensor_msgs::PointCloud>("cfar_detections", 1000);
