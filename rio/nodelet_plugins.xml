@@ -1,0 +1,7 @@
+<library path="lib/librio_nodelet">
+  <class type="rio::BaroNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      A timer based nodelet that publishes barometer data.
+    </description>
+  </class>
+</library>
