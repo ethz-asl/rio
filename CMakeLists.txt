@@ -43,15 +43,6 @@ add_library(${PROJECT_NAME}_nodelet
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 
-# add_executable(baro_demo src/nodes/baro_demo.cpp)
-# target_link_libraries(baro_demo ${PROJECT_NAME})
-
-# add_executable(imu_demo src/nodes/imu_demo.cpp)
-# target_link_libraries(imu_demo ${PROJECT_NAME})
-
-# add_executable(radar_demo src/nodes/radar_demo.cpp)
-# target_link_libraries(radar_demo ${PROJECT_NAME})
-
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
