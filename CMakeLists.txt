@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
                 lpp 
                 mav_sensors_drivers
                 sensor_msgs
+                std_msgs
                 roslib
             )
 find_package(Eigen3 REQUIRED)
@@ -26,6 +27,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_compile_definitions(MODE_ROSLOG)
 add_library(${PROJECT_NAME}
         src/least_squares.cpp
+        src/ros/base_sensor.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 

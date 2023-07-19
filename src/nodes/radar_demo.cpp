@@ -84,8 +84,6 @@ int main(int argc, char **argv)
         }
         radar_pub.publish(msg);
 
-        ros::spinOnce();
-
         loop_rate.sleep();
     }
 
