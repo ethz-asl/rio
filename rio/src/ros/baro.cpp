@@ -21,6 +21,8 @@ bool Baro::openSensor() {
   if (!nh_private_.getParam("path", path)) {
     LOG(F, "Failed to read barometer path.");
     return false;
+  } else {
+    LOG(I, "Opening barometer on path: %s", path.c_str());
   }
 
   SensorConfig cfg;
@@ -40,6 +42,7 @@ void Baro::readSensor() {
 
   if (std::get<0>(measurement).has_value() && std::get<2>(measurement).has_value()) {
     // Publish pressure measurements.
+    LOG_FIRST(I, 1, "Publishing first pressure measurement.");
     sensor_msgs::FluidPressure msg;
     msg.header.stamp = rio::toRosTime(std::get<2>(measurement).value());
     msg.header.frame_id = frame_id_;
@@ -48,6 +51,7 @@ void Baro::readSensor() {
   }
   if (std::get<1>(measurement).has_value() && std::get<2>(measurement).has_value()) {
     // Publish temperature measurements.
+    LOG_FIRST(I, 1, "Publishing first temperature measurement.");
     sensor_msgs::Temperature msg;
     msg.header.stamp = rio::toRosTime(std::get<2>(measurement).value());
     msg.header.frame_id = frame_id_;
