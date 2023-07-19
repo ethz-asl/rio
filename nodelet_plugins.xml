@@ -10,4 +10,10 @@
       A timer based nodelet that publishes IMU data.
     </description>
   </class>
+  
+  <class type="rio::RadarNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      A timer based nodelet that publishes Radar data.
+    </description>
+  </class>
 </library>

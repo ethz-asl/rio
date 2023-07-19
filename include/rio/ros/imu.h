@@ -11,7 +11,7 @@ class Imu : public BaseSensor {
   void readSensor() override;
   bool openSensor() override;
 
-  Bmi088<Spi> imu_;
+  mav_sensors::Bmi088<mav_sensors::Spi> imu_;
   ros::Publisher imu_pub_;
 
  public:

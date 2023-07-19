@@ -32,12 +32,14 @@ add_library(${PROJECT_NAME}
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
         src/ros/imu.cpp
+        src/ros/radar.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 
 add_library(${PROJECT_NAME}_nodelet
         src/ros/baro_nodelet.cpp
         src/ros/imu_nodelet.cpp
+        src/ros/radar_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 
@@ -47,8 +49,8 @@ target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 # add_executable(imu_demo src/nodes/imu_demo.cpp)
 # target_link_libraries(imu_demo ${PROJECT_NAME})
 
-add_executable(radar_demo src/nodes/radar_demo.cpp)
-target_link_libraries(radar_demo ${PROJECT_NAME})
+# add_executable(radar_demo src/nodes/radar_demo.cpp)
+# target_link_libraries(radar_demo ${PROJECT_NAME})
 
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

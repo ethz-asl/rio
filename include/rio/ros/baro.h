@@ -11,7 +11,7 @@ class Baro : public BaseSensor {
   void readSensor() override;
   bool openSensor() override;
 
-  BMP390<Spi> baro_;
+  mav_sensors::BMP390<mav_sensors::Spi> baro_;
   ros::Publisher baro_pub_;
   ros::Publisher temp_pub_;
 
