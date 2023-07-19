@@ -11,9 +11,12 @@
     <arg name="radar_path_cfg" default="/dev/ttyUSB0" />
     <arg name="radar_path_data" default="/dev/ttyUSB1" />
     <arg name="radar_frame_id" default="awr1843aop" />
-    <arg name="radar_poll_rate" default="10.0" />
+    <arg name="radar_poll_rate" default="8.0" />
     <arg name="radar_cfg" default="$(find mav_sensors_demo)/cfg/radar/xwr18xx_AOP_profile_best_velocity_resolution.cfg" />
     <arg name="radar_trigger" default="true" />
+    <arg name="radar_trigger_delay" default="500" />
+    <arg name="radar_trigger_gpio" default="443" />
+    <arg name="radar_trigger_gpio_name" default="PR.00" />
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg radar_frame_id)_broadcaster" args="0 0 0 0 0 0 1 map $(arg radar_frame_id)" />
 
@@ -35,6 +38,9 @@
         <param name="frame_id" value="$(arg radar_frame_id)"/>
         <param name="poll_rate" value="$(arg radar_poll_rate)"/>
         <param name="radar_cfg" value="$(arg radar_cfg)"/>
-        <param name="trigger" value="$(arg radar_trigger)"/>
+        <param name="trigger" type="string" value="$(arg radar_trigger)"/>
+        <param name="trigger_delay" type="string" value="$(arg radar_trigger_delay)"/>
+        <param name="trigger_gpio" type="string" value="$(arg radar_trigger_gpio)"/>
+        <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
     </node>
 </launch>
