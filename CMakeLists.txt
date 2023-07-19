@@ -37,9 +37,9 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 
 add_library(${PROJECT_NAME}_nodelet
-        src/ros/baro_nodelet.cpp
-        src/ros/imu_nodelet.cpp
-        src/ros/radar_nodelet.cpp
+        src/ros/nodelets/baro_nodelet.cpp
+        src/ros/nodelets/imu_nodelet.cpp
+        src/ros/nodelets/radar_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 
