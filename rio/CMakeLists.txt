@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
                 sensor_msgs
                 std_msgs
                 roslib
+                nodelet
             )
 find_package(Eigen3 REQUIRED)
 
@@ -29,6 +30,7 @@ add_library(${PROJECT_NAME}
         src/least_squares.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
+        src/ros/baro_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 

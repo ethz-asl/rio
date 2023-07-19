@@ -20,5 +20,10 @@
   <depend>std_msgs</depend>
   <depend>roslib</depend>
   <depend>tf2_eigen</depend>
+  <depend>nodelet</depend>
+
+  <export>
+    <nodelet plugin="${prefix}/nodelet_plugin.xml" />
+  </export>
 
 </package>
