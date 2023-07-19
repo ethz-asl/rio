@@ -25,7 +25,7 @@ bool Baro::openSensor() {
     LOG(I, "Opening barometer on path: " << path.c_str());
   }
 
-  SensorConfig cfg;
+  mav_sensors::SensorConfig cfg;
   cfg.set("path", path);
   baro_.setConfig(cfg);
   if (!baro_.open()) {

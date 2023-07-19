@@ -19,7 +19,7 @@ class BaseSensor {
   ros::NodeHandle nh_private_;
   virtual void readSensor() = 0;
   virtual bool openSensor() = 0;
-  SensorConfig sensor_config_;
+  mav_sensors::SensorConfig sensor_config_;
 
   std::string frame_id_;
 
