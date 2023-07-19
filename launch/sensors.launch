@@ -1,4 +1,8 @@
 <launch>
+    <arg name="baro_path" default="/dev/spidev2.0" />
+    <arg name="baro_frame_id" default="bmp390" />
+    <arg name="baro_poll_rate" default="100.0" />
+
     <node name="radar_demo" pkg="rio" type="radar_demo" output="screen" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="awr1843aop_broadcaster" args="0 0 0 0 0 0 1 map awr1843aop" />
 
@@ -6,5 +10,9 @@
     <node name="imu_demo" pkg="rio" type="imu_demo" output="screen" />
 
     <node pkg="nodelet" type="nodelet" name="rio_nodelet_manager" args="manager" cwd="node" output="screen"/>
-    <node pkg="nodelet" type="nodelet" name="baro_nodelet" args="load rio::BaroNodelet rio_nodelet_manager" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="baro_nodelet" args="load rio::BaroNodelet rio_nodelet_manager" output="screen">
+		<param name="path" value="$(arg baro_path)"/>
+        <param name="frame_id" value="$(arg baro_frame_id)"/>
+        <param name="poll_rate" value="$(arg baro_poll_rate)"/>
+    </node>
 </launch>
