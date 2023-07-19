@@ -1,7 +1,7 @@
 
+#include <log++.h>
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
-#include <log++.h>
 
 #include "rio/ros/baro.h"
 

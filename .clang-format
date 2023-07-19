@@ -1,7 +1,7 @@
 ---
 Language: Cpp
 BasedOnStyle: Google
-ColumnLimit: 18000
+ColumnLimit: 80
 IncludeBlocks: Regroup
 IncludeCategories:
   # The the main header for a source file is automatically assigned priority 0

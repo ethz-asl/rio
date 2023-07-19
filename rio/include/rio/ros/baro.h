@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mav_sensors_drivers/barometer/bmp390.h>
+#include <ros/ros.h>
 
 #include "rio/ros/base_sensor.h"
 
