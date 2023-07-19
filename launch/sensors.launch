@@ -2,6 +2,9 @@
     <node name="radar_demo" pkg="rio" type="radar_demo" output="screen" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="awr1843aop_broadcaster" args="0 0 0 0 0 0 1 map awr1843aop" />
 
-    <node name="baro_demo" pkg="rio" type="baro_demo" output="screen" />
+    <!--node name="baro_demo" pkg="rio" type="baro_demo" output="screen" /-->
     <node name="imu_demo" pkg="rio" type="imu_demo" output="screen" />
+
+    <node pkg="nodelet" type="nodelet" name="rio_nodelet_manager" args="manager" cwd="node" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="baro_nodelet" args="load rio::BaroNodelet rio_nodelet_manager" output="screen"/>
 </launch>

@@ -23,7 +23,7 @@
   <depend>nodelet</depend>
 
   <export>
-    <nodelet plugin="${prefix}/nodelet_plugin.xml" />
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 
 </package>
