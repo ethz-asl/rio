@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 
 catkin_package( INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
-                LIBRARIES ${PROJECT_NAME}
+                LIBRARIES ${PROJECT_NAME} ${PROJECT_NAME}_nodelet
               )
 include_directories(include ${catkin_INCLUDE_DIRS})
 
@@ -27,25 +27,28 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_compile_definitions(MODE_ROSLOG)
 add_library(${PROJECT_NAME}
+        src/common.cpp
         src/least_squares.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
+        src/ros/imu.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 
 add_library(${PROJECT_NAME}_nodelet
         src/ros/baro_nodelet.cpp
+        src/ros/imu_nodelet.cpp
         )
-target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 
-add_executable(baro_demo src/nodes/baro_demo.cpp)
-target_link_libraries(baro_demo ${PROJECT_NAME} ${catkin_LIBRARIES})
+# add_executable(baro_demo src/nodes/baro_demo.cpp)
+# target_link_libraries(baro_demo ${PROJECT_NAME})
 
-add_executable(imu_demo src/nodes/imu_demo.cpp)
-target_link_libraries(imu_demo ${PROJECT_NAME} ${catkin_LIBRARIES})
+# add_executable(imu_demo src/nodes/imu_demo.cpp)
+# target_link_libraries(imu_demo ${PROJECT_NAME})
 
 add_executable(radar_demo src/nodes/radar_demo.cpp)
-target_link_libraries(radar_demo ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(radar_demo ${PROJECT_NAME})
 
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
