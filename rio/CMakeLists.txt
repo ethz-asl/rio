@@ -28,6 +28,7 @@ add_compile_definitions(MODE_ROSLOG)
 add_library(${PROJECT_NAME}
         src/least_squares.cpp
         src/ros/base_sensor.cpp
+        src/ros/baro.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
 
