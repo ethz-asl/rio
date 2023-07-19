@@ -10,6 +10,7 @@ class BaroNodelet : public nodelet::Nodelet {
   virtual void onInit() {
     try {
       baro_ = std::make_shared<Baro>(getPrivateNodeHandle());
+      baro_->init();
     } catch (std::runtime_error e) {
       ROS_ERROR("%s", e.what());
     }

@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include <ros/ros.h>
 #include <mav_sensors_core/sensor_config.h>
+#include <ros/ros.h>
 
 // This class interfaces mav_sensors to poll sensor data.
 // It is configured at a fixed timer rate.
@@ -11,6 +11,9 @@
 // This can be used by the downstream sensor fusion to initialize a new state.
 namespace rio {
 class BaseSensor {
+ public:
+  bool init();
+
  protected:
   BaseSensor(const ros::NodeHandle& nh_private);
   ros::NodeHandle nh_private_;
@@ -21,7 +24,6 @@ class BaseSensor {
   std::string frame_id_;
 
  private:
-  bool init();
   ros::Timer timer_;
   ros::Publisher trigger_pub_;
 
