@@ -24,12 +24,12 @@ bool BaseSensor::init() {
   }
 
   // Initialize timer.
-  double rate;
-  if (!nh_private_.getParam("rate", rate)) {
+  double poll_rate;
+  if (!nh_private_.getParam("poll_rate", poll_rate)) {
     LOG(F, "Failed to read rate.");
     return false;
   }
-  timer_ = nh_private_.createTimer(ros::Duration(1.0 / rate), &BaseSensor::timerCallback, this);
+  timer_ = nh_private_.createTimer(ros::Duration(1.0 / poll_rate), &BaseSensor::timerCallback, this);
 
   return true;
 }

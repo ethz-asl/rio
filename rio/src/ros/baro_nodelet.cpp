@@ -1,6 +1,7 @@
 
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
+#include <log++.h>
 
 #include "rio/ros/baro.h"
 
@@ -12,7 +13,7 @@ class BaroNodelet : public nodelet::Nodelet {
       baro_ = std::make_shared<Baro>(getPrivateNodeHandle());
       baro_->init();
     } catch (std::runtime_error e) {
-      ROS_ERROR("%s", e.what());
+      LOG(E, "%s", e.what());
     }
   }
 

@@ -22,7 +22,7 @@ bool Baro::openSensor() {
     LOG(F, "Failed to read barometer path.");
     return false;
   } else {
-    LOG(I, "Opening barometer on path: %s", path.c_str());
+    LOG(I, "Opening barometer on path: " << path.c_str());
   }
 
   SensorConfig cfg;
