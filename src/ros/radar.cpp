@@ -97,7 +97,7 @@ void Radar::readSensor() {
   sensor_msgs::PointCloud msg;
   msg.header.stamp =
       rio::toRosTime(std::get<ms::Radar>(measurement).unix_stamp_ns);
-  msg.header.frame_id = "awr1843aop";
+  msg.header.frame_id = frame_id_;
   msg.points.resize(std::get<ms::Radar>(measurement).cfar_detections.size());
   msg.channels.resize(3);
   msg.channels[0].name = "velocity";
