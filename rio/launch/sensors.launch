@@ -1,13 +1,18 @@
 <launch>
+    <arg name="nodelet_manager_name" default="rio_nodelet_manager" />
+
+    <arg name="baro_on" default="true" />
     <arg name="baro_path" default="/dev/spidev2.0" />
     <arg name="baro_frame_id" default="bmp390" />
-    <arg name="baro_poll_rate" default="50.0" />
+    <arg name="baro_poll_rate" default="60.0" />
 
+    <arg name="imu_on" default="true" />
     <arg name="imu_path_acc" default="/dev/spidev0.0" />
     <arg name="imu_path_gyro" default="/dev/spidev0.1" />
     <arg name="imu_frame_id" default="bmi088" />
-    <arg name="imu_poll_rate" default="400.0" />
+    <arg name="imu_poll_rate" default="500.0" />
 
+    <arg name="radar_on" default="true" />
     <arg name="radar_path_cfg" default="/dev/ttyUSB0" />
     <arg name="radar_path_data" default="/dev/ttyUSB1" />
     <arg name="radar_frame_id" default="awr1843aop" />
@@ -20,19 +25,19 @@
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg radar_frame_id)_broadcaster" args="0 0 0 0 0 0 1 map $(arg radar_frame_id)" />
 
-    <node pkg="nodelet" type="nodelet" name="rio_nodelet_manager" args="manager" cwd="node" output="screen"/>
-    <node pkg="nodelet" type="nodelet" name="baro_nodelet" args="load rio::BaroNodelet rio_nodelet_manager" output="screen">
+    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="baro_nodelet" args="load rio::BaroNodelet rio_nodelet_manager" output="screen" if="$(arg baro_on)">
 		<param name="path" value="$(arg baro_path)"/>
         <param name="frame_id" value="$(arg baro_frame_id)"/>
         <param name="poll_rate" value="$(arg baro_poll_rate)"/>
     </node>
-    <node pkg="nodelet" type="nodelet" name="imu_nodelet" args="load rio::ImuNodelet rio_nodelet_manager" output="screen">
+    <node pkg="nodelet" type="nodelet" name="imu_nodelet" args="load rio::ImuNodelet rio_nodelet_manager" output="screen" if="$(arg imu_on)">
         <param name="path_acc" value="$(arg imu_path_acc)"/>
         <param name="path_gyro" value="$(arg imu_path_gyro)"/>
         <param name="frame_id" value="$(arg imu_frame_id)"/>
         <param name="poll_rate" value="$(arg imu_poll_rate)"/>
     </node>
-    <node pkg="nodelet" type="nodelet" name="radar_nodelet" args="load rio::RadarNodelet rio_nodelet_manager" output="screen">
+    <node pkg="nodelet" type="nodelet" name="radar_nodelet" args="load rio::RadarNodelet rio_nodelet_manager" output="screen" if="$(arg radar_on)">
         <param name="path_cfg" value="$(arg radar_path_cfg)"/>
         <param name="path_data" value="$(arg radar_path_data)"/>
         <param name="frame_id" value="$(arg radar_frame_id)"/>
