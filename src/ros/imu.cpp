@@ -13,7 +13,7 @@ Imu::Imu(const ros::NodeHandle& nh_private) : BaseSensor(nh_private) {}
 Imu::~Imu() { imu_.close(); }
 
 bool Imu::openSensor() {
-  imu_pub_ = nh_private_.advertise<sensor_msgs::Imu>("imu_raw", 1);
+  imu_pub_ = nh_private_.advertise<sensor_msgs::Imu>("data_raw", 1);
 
   std::string path_acc;
   if (!nh_private_.getParam("path_acc", path_acc)) {

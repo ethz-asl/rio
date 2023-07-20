@@ -26,18 +26,18 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg radar_frame_id)_broadcaster" args="0 0 0 0 0 0 1 map $(arg radar_frame_id)" />
 
     <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen"/>
-    <node pkg="nodelet" type="nodelet" name="baro_nodelet" args="load rio::BaroNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg baro_on)">
+    <node pkg="nodelet" type="nodelet" name="baro" args="load rio::BaroNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg baro_on)">
 		<param name="path" value="$(arg baro_path)"/>
         <param name="frame_id" value="$(arg baro_frame_id)"/>
         <param name="poll_rate" value="$(arg baro_poll_rate)"/>
     </node>
-    <node pkg="nodelet" type="nodelet" name="imu_nodelet" args="load rio::ImuNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg imu_on)">
+    <node pkg="nodelet" type="nodelet" name="imu" args="load rio::ImuNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg imu_on)">
         <param name="path_acc" value="$(arg imu_path_acc)"/>
         <param name="path_gyro" value="$(arg imu_path_gyro)"/>
         <param name="frame_id" value="$(arg imu_frame_id)"/>
         <param name="poll_rate" value="$(arg imu_poll_rate)"/>
     </node>
-    <node pkg="nodelet" type="nodelet" name="radar_nodelet" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg radar_on)">
+    <node pkg="nodelet" type="nodelet" name="radar" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg radar_on)">
         <param name="path_cfg" value="$(arg radar_path_cfg)"/>
         <param name="path_data" value="$(arg radar_path_data)"/>
         <param name="frame_id" value="$(arg radar_frame_id)"/>
