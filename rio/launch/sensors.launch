@@ -1,4 +1,5 @@
 <launch>
+    <arg name="nodelet_manager_on" default="true" />
     <arg name="nodelet_manager_name" default="rio_nodelet_manager" />
 
     <arg name="baro_on" default="true" />
@@ -25,7 +26,7 @@
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg radar_frame_id)_broadcaster" args="0 0 0 0 0 0 1 map $(arg radar_frame_id)" />
 
-    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen" if="$(arg nodelet_manager_on)"/>
     <node pkg="nodelet" type="nodelet" name="baro" args="load rio::BaroNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg baro_on)">
 		<param name="path" value="$(arg baro_path)"/>
         <param name="frame_id" value="$(arg baro_frame_id)"/>
