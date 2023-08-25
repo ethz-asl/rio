@@ -60,6 +60,7 @@
         <param name="user_config_path" type="string" value="$(find rio)/cfg/mid360.json"/>
         <node name="livox_lidar_publisher2" pkg="livox_ros_driver2" type="livox_ros_driver2_node" output="screen" args=""/>
         <node name="imu_to_lidar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.005 -0.001 0.101 0.0 1.0 0.0 0.0 '$(arg imu_frame_id)' livox_frame" />
+        <node name="imu_to_prism_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.038 -0.001 0.170 0.0 0.0 0.0 1.0 '$(arg imu_frame_id)' livox_frame" />
     </group>
 
 </launch>
