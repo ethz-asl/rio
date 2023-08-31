@@ -29,6 +29,7 @@ add_compile_definitions(MODE_ROSLOG)
 add_library(${PROJECT_NAME}
         src/common.cpp
         src/least_squares.cpp
+        src/gtsam/doppler_factor.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
         src/ros/imu.cpp

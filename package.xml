@@ -21,6 +21,7 @@
   <depend>roslib</depend>
   <depend>tf2_eigen</depend>
   <depend>nodelet</depend>
+  <depend>gtsam</depend>
 
   <export>
     <nodelet plugin="${prefix}/nodelet_plugins.xml" />
