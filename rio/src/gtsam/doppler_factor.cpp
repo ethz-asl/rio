@@ -19,7 +19,19 @@ gtsam::Vector DopplerFactor::evaluateError(
     const gtsam::imuBias::ConstantBias& bias,
     boost::optional<gtsam::Matrix&> H_T, boost::optional<gtsam::Matrix&> H_v,
     boost::optional<gtsam::Matrix&> H_b) const {
-  return gtsam::Vector1{};
+  // e(T, v, b) = [R_BR^-1 (R_IB^-1 * I_v_IB + (B_omega_IB - bias_omega) x
+  // B_r_BR)]^T * R_r_RT_measured / ||R_r_RT_measured|| - doppler_measured
+  gtsam::Vector1 e;
+  if (H_T) H_T->resize(3, 6);
+  if (H_v) H_v->resize(3, 3);
+  if (H_b) H_b->resize(3, 6);
+
+  if (H_T || H_v || H_b) {
+      // e = 
+    I_T_I_B.rotation().unrotate(gtsam::Point3(I_v_IB), &H_T->leftCols<3>(), H_v) ;
+  }
+
+  return e;
 }
 
 void DopplerFactor::print(const std::string& text,
