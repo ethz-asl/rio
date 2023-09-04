@@ -23,7 +23,7 @@ TEST(DopplerFactor, Jacobian) {
 
   Vector3 R_r_RT_measured{10.0, 1.0, 1.0};
   double doppler_measured{1.0};
-  Vector3 B_omega_IB_measured{0.0, 0.0, 1.0};
+  Vector3 B_omega_IB_measured{0.3, 0.4, 1.0};
   Pose3 B_T_BR({-0.09229596, 0.70105738, 0.70105738, -0.09229596},
                {0.115, -0.002, -0.018});
 
