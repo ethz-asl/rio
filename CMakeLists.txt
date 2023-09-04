@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
                 nodelet
             )
 find_package(Eigen3 REQUIRED)
+find_package(GTSAM REQUIRED)
 
 catkin_package( INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
                 LIBRARIES ${PROJECT_NAME} ${PROJECT_NAME}_nodelet
@@ -35,7 +36,7 @@ add_library(${PROJECT_NAME}
         src/ros/imu.cpp
         src/ros/radar.cpp
         )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} gtsam Eigen3::Eigen)
 
 add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/baro_nodelet.cpp
@@ -43,6 +44,24 @@ add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/radar_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
+
+#########
+# TESTS #
+#########
+if (CATKIN_ENABLE_TESTING)
+        find_package(rostest REQUIRED)
+        find_package(GTest REQUIRED)
+        include_directories(${GTEST_INCLUDE_DIRS})
+
+        catkin_add_gtest(test_doppler_factor
+        test/doppler_factor-test.cpp
+        )
+        target_link_libraries(test_doppler_factor ${PROJECT_NAME})
+endif()
+
+###########
+# INSTALL #
+###########
 
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

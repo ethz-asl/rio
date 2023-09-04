@@ -3,6 +3,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -27,7 +28,7 @@ class DopplerFactor
       boost::optional<gtsam::Matrix&> H_v = boost::none,
       boost::optional<gtsam::Matrix&> H_b = boost::none) const override;
 
-  void print(const std::string& s,
+  void print(const std::string& s = "",
              const gtsam::KeyFormatter& key_formatter =
                  gtsam::DefaultKeyFormatter) const override;
 
