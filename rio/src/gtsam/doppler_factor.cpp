@@ -27,8 +27,8 @@ gtsam::Vector DopplerFactor::evaluateError(
   // ||R_r_RT_measured||
   // - doppler_measured
 
-  auto radar_proj_body = B_T_BR_.rotation().rotate(R_r_RT_measured_);
-  auto radar_proj_body_leverarm =
+  gtsam::Vector3 radar_proj_body = B_T_BR_.rotation().rotate(R_r_RT_measured_);
+  gtsam::Vector3 radar_proj_body_leverarm =
       radar_proj_body.transpose() *
       gtsam::skewSymmetric(B_T_BR_.translation().x(), B_T_BR_.translation().y(),
                            B_T_BR_.translation().z())
@@ -38,9 +38,9 @@ gtsam::Vector DopplerFactor::evaluateError(
   H_R_IB_raw.resize(3, 3);
   H_I_v_IB_raw.resize(3, 3);
   H_b_raw.resize(3, 6);
-  auto e_v = radar_proj_body.dot(
+  double e_v = radar_proj_body.dot(
       I_T_IB.rotation().unrotate(I_v_IB, &H_R_IB_raw, &H_I_v_IB_raw));
-  auto e_omega = radar_proj_body_leverarm.dot(
+  double e_omega = radar_proj_body_leverarm.dot(
       bias.correctGyroscope(B_omega_IB_measured_, &H_b_raw, boost::none));
 
   if (H_T) {
@@ -56,8 +56,7 @@ gtsam::Vector DopplerFactor::evaluateError(
 
   if (H_b) {
     H_b->resize(1, 6);
-    H_b->setZero();
-    H_b->rightCols<3>() = radar_proj_body_leverarm.transpose() * H_b_raw;
+    *H_b = radar_proj_body_leverarm.transpose() * H_b_raw;
   }
 
   return gtsam::Vector1(e_v + e_omega - doppler_measured_);
