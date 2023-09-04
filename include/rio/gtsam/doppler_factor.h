@@ -10,18 +10,18 @@
 namespace rio {
 // Radar doppler velocity and direction factor.
 class DopplerFactor
-    : public gtsam::NoiseModelFactor3<gtsam::Pose3, gtsam::Vector,
+    : public gtsam::NoiseModelFactor3<gtsam::Pose3, gtsam::Vector3,
                                       gtsam::imuBias::ConstantBias> {
  public:
   DopplerFactor(gtsam::Key I_T_I_B_key, gtsam::Key I_v_IB_key,
-                gtsam::Key bias_key, const gtsam::Vector& R_r_RT_measured,
+                gtsam::Key bias_key, const gtsam::Vector3& R_r_RT_measured,
                 const double doppler_measured,
-                const gtsam::Vector& B_omega_IB_measured,
+                const gtsam::Vector3& B_omega_IB_measured,
                 const gtsam::Pose3& B_T_BR,
                 const gtsam::noiseModel::Base::shared_ptr& noise_model);
 
   gtsam::Vector evaluateError(
-      const gtsam::Pose3& I_T_I_B, const gtsam::Vector& I_v_IB,
+      const gtsam::Pose3& I_T_IB, const gtsam::Vector3& I_v_IB,
       const gtsam::imuBias::ConstantBias& bias,
       boost::optional<gtsam::Matrix&> H_T = boost::none,
       boost::optional<gtsam::Matrix&> H_v = boost::none,
@@ -39,15 +39,15 @@ class DopplerFactor
               double tolerance) const override;
 
  protected:
-  typedef gtsam::NoiseModelFactor3<gtsam::Pose3, gtsam::Vector,
+  typedef gtsam::NoiseModelFactor3<gtsam::Pose3, gtsam::Vector3,
                                    gtsam::imuBias::ConstantBias>
       Base;
   typedef DopplerFactor This;
 
  private:
-  gtsam::Vector R_r_RT_measured_;
+  gtsam::Vector3 R_r_RT_measured_;
   double doppler_measured_;
-  gtsam::Vector B_omega_IB_measured_;
+  gtsam::Vector3 B_omega_IB_measured_;
   gtsam::Pose3 B_T_BR_;
 };
 
