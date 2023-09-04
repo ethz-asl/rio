@@ -8,11 +8,13 @@ DopplerFactor::DopplerFactor(
     gtsam::Key I_T_I_B_key, gtsam::Key I_v_IB_key, gtsam::Key bias_key,
     const gtsam::Vector3& R_r_RT_measured, const double doppler_measured,
     const gtsam::Vector3& B_omega_IB_measured, const gtsam::Pose3& B_T_BR,
-    const gtsam::noiseModel::Base::shared_ptr& noise_model)
+    const gtsam::noiseModel::Base::shared_ptr& noise_model,
+    const double min_distance)
     : R_r_RT_measured_(R_r_RT_measured.normalized()),
       doppler_measured_(doppler_measured),
       B_omega_IB_measured_(B_omega_IB_measured),
-      B_T_BR_(B_T_BR) {}
+      B_T_BR_(B_T_BR),
+      min_distance_(min_distance) {}
 
 gtsam::Vector DopplerFactor::evaluateError(
     const gtsam::Pose3& I_T_IB, const gtsam::Vector3& I_v_IB,
@@ -27,7 +29,28 @@ gtsam::Vector DopplerFactor::evaluateError(
   // ||R_r_RT_measured||
   // - doppler_measured
 
-  gtsam::Vector3 radar_proj_body = B_T_BR_.rotation().rotate(R_r_RT_measured_);
+  if (H_T) {
+    H_T->resize(1, 6);
+    H_T->setZero();
+  }
+  if (H_v) {
+    H_v->resize(1, 3);
+    H_v->setZero();
+  }
+  if (H_b) {
+    H_b->resize(1, 6);
+    H_b->setZero();
+  }
+
+  double distance = R_r_RT_measured_.norm();
+  if (distance < min_distance_) {
+    LOG(E, "DopplerFactor: Radar point is too close to radar. Distance: "
+               << distance << "m");
+    return gtsam::Vector1(0.0);
+  }
+
+  gtsam::Vector3 radar_proj_body =
+      B_T_BR_.rotation().rotate(R_r_RT_measured_ / distance);
   gtsam::Vector3 radar_proj_body_leverarm =
       radar_proj_body.transpose() *
       gtsam::skewSymmetric(B_T_BR_.translation().x(), B_T_BR_.translation().y(),
@@ -43,21 +66,11 @@ gtsam::Vector DopplerFactor::evaluateError(
   double e_omega = radar_proj_body_leverarm.dot(
       bias.correctGyroscope(B_omega_IB_measured_, &H_b_raw, boost::none));
 
-  if (H_T) {
-    H_T->resize(1, 6);
-    H_T->setZero();
-    H_T->leftCols<3>() = radar_proj_body.transpose() * H_R_IB_raw;
-  }
+  if (H_T) H_T->leftCols<3>() = radar_proj_body.transpose() * H_R_IB_raw;
 
-  if (H_v) {
-    H_v->resize(1, 3);
-    *H_v = radar_proj_body.transpose() * H_I_v_IB_raw;
-  }
+  if (H_v) *H_v = radar_proj_body.transpose() * H_I_v_IB_raw;
 
-  if (H_b) {
-    H_b->resize(1, 6);
-    *H_b = radar_proj_body_leverarm.transpose() * H_b_raw;
-  }
+  if (H_b) *H_b = radar_proj_body_leverarm.transpose() * H_b_raw;
 
   return gtsam::Vector1(e_v + e_omega - doppler_measured_);
 }

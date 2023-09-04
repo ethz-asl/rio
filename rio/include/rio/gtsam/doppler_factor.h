@@ -19,7 +19,8 @@ class DopplerFactor
                 const double doppler_measured,
                 const gtsam::Vector3& B_omega_IB_measured,
                 const gtsam::Pose3& B_T_BR,
-                const gtsam::noiseModel::Base::shared_ptr& noise_model);
+                const gtsam::noiseModel::Base::shared_ptr& noise_model,
+                const double min_distance = 0.1);
 
   gtsam::Vector evaluateError(
       const gtsam::Pose3& I_T_IB, const gtsam::Vector3& I_v_IB,
@@ -50,6 +51,7 @@ class DopplerFactor
   double doppler_measured_;
   gtsam::Vector3 B_omega_IB_measured_;
   gtsam::Pose3 B_T_BR_;
+  double min_distance_;
 };
 
 // Radar doppler velocity and direction factor. Additionally estimates the
