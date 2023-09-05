@@ -44,11 +44,18 @@ class Rio {
   ros::Publisher odom_optimized_pub_;
 
   struct State {
-    gtsam::Point3 I_p_IB{gtsam::Z_3x1};
-    gtsam::Rot3 q_IB{};
-    gtsam::Vector3 I_v_IB{gtsam::Z_3x1};
-    gtsam::imuBias::ConstantBias b{gtsam::Z_3x1, gtsam::Z_3x1};
+    std::optional<gtsam::Point3> I_p_IB;
+    std::optional<gtsam::Rot3> q_IB;
+    std::optional<gtsam::Vector3> I_v_IB;
+    std::optional<gtsam::Vector3> b_a;
+    std::optional<gtsam::Vector3> b_g;
+
+    bool isComplete() const;
   };
-  std::optional<State> initial_state_;
+
+  // Set unknown initial states to zero.
+  State initial_state_{.I_p_IB = {gtsam::Z_3x1},
+                       .I_v_IB = {gtsam::Z_3x1},
+                       .b_a = {gtsam::Z_3x1}};
 };
 }  // namespace rio
