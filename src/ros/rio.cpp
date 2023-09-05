@@ -58,3 +58,12 @@ bool Rio::State::isComplete() const {
   return I_p_IB.has_value() && q_IB.has_value() && I_v_IB.has_value() &&
          b_a.has_value() && b_g.has_value();
 }
+
+bool Rio::State::reset() {
+  I_p_IB.reset();
+  q_IB.reset();
+  I_v_IB.reset();
+  b_a.reset();
+  b_g.reset();
+  return true;
+}

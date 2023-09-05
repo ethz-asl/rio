@@ -4,6 +4,7 @@
 #include <mutex>
 #include <optional>
 #include <thread>
+#include <deque>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
@@ -51,6 +52,7 @@ class Rio {
     std::optional<gtsam::Vector3> b_g;
 
     bool isComplete() const;
+    bool reset();
   };
 
   // Set unknown initial states to zero.
