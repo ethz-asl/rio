@@ -12,6 +12,7 @@
     <arg name="imu_path_gyro" default="/dev/spidev0.1" />
     <arg name="imu_frame_id" default="bmi088" />
     <arg name="imu_poll_rate" default="500.0" />
+    <arg name="imu_bias_samples" default="2000" />
 
     <arg name="radar_on" default="true" />
     <arg name="radar_path_cfg" default="/dev/ttyUSB0" />
@@ -44,6 +45,7 @@
         <param name="path_gyro" value="$(arg imu_path_gyro)"/>
         <param name="frame_id" value="$(arg imu_frame_id)"/>
         <param name="poll_rate" value="$(arg imu_poll_rate)"/>
+        <param name="bias_samples" value="$(arg imu_bias_samples)"/>
     </node>
 
     <group if="$(arg radar_on)">
