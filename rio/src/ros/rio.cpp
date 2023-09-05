@@ -43,11 +43,7 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
-  if (!initial_state_.has_value()) {
-    initial_state_ = State{.q_IB = Rot3(q_IB)};
-  } else {
-    initial_state_->q_IB = Rot3(q_IB);
-  }
+  initial_state_.q_IB = Rot3(q_IB);
 }
 
 void Rio::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
@@ -56,4 +52,9 @@ void Rio::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
 
 void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
   LOG_FIRST(I, 1, "Received first CFAR detections.");
+}
+
+bool Rio::State::isComplete() const {
+  return I_p_IB.has_value() && q_IB.has_value() && I_v_IB.has_value() &&
+         b_a.has_value() && b_g.has_value();
 }
