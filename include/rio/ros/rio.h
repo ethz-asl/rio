@@ -1,10 +1,10 @@
 #pragma once
 
 #include <atomic>
+#include <deque>
 #include <mutex>
 #include <optional>
 #include <thread>
-#include <deque>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
@@ -58,6 +58,7 @@ class Rio {
   // Set unknown initial states to zero.
   State initial_state_{.I_p_IB = {gtsam::Z_3x1},
                        .I_v_IB = {gtsam::Z_3x1},
-                       .b_a = {gtsam::Z_3x1}};
+                       .b_a = {gtsam::Z_3x1},
+                       .b_g = {gtsam::Z_3x1}};
 };
 }  // namespace rio

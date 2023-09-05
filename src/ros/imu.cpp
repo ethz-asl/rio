@@ -17,7 +17,8 @@ Imu::~Imu() { imu_.close(); }
 
 bool Imu::openSensor() {
   imu_pub_ = nh_private_.advertise<sensor_msgs::Imu>("data_raw", 1);
-  bias_pub_ = nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias", 1);
+  bias_pub_ =
+      nh_private_.advertise<geometry_msgs::Vector3Stamped>("gyro_offset", 1);
 
   calibrate_srv_ =
       nh_private_.advertiseService("calibrate", &Imu::calibrate, this);
