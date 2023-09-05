@@ -16,4 +16,10 @@
       A timer based nodelet that publishes Radar data.
     </description>
   </class>
+  
+  <class type="rio::RioNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      A callback drigen nodelet that fuses IMU and radar data.
+    </description>
+  </class>
 </library>
