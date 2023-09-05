@@ -5,12 +5,14 @@
 #include <optional>
 #include <thread>
 
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/navigation/ImuBias.h>
 #include <ros/ros.h>
-
-#include <std_msgs/Header.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Header.h>
 
 // This class implements a callback driven sensor fusion.
 // IMU raw callback: preintegrate IMU measurements and publish the result.
@@ -42,11 +44,11 @@ class Rio {
   ros::Publisher odom_optimized_pub_;
 
   struct State {
-    gtsam::Rot3 R_IB;
-    gtsam::Vector3 I_v_IB;
-    gtsam::Point3 I_r_IB;
-    gtsam::Vector3 bias_gyro;
-    gtsam::Vector3 bias_accel;
+    gtsam::Point3 I_p_IB{gtsam::Z_3x1};
+    gtsam::Rot3 q_IB{};
+    gtsam::Vector3 I_v_IB{gtsam::Z_3x1};
+    gtsam::imuBias::ConstantBias b{gtsam::Z_3x1, gtsam::Z_3x1};
   };
+  std::optional<State> initial_state_;
 };
 }  // namespace rio

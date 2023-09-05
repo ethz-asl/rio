@@ -2,6 +2,7 @@
 
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 using namespace rio;
 using namespace gtsam;
@@ -40,6 +41,13 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
 
 void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
+  Eigen::Quaterniond q_IB;
+  tf2::fromMsg(msg->orientation, q_IB);
+  if (!initial_state_.has_value()) {
+    initial_state_ = State{.q_IB = Rot3(q_IB)};
+  } else {
+    initial_state_->q_IB = Rot3(q_IB);
+  }
 }
 
 void Rio::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
