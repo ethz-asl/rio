@@ -24,6 +24,11 @@
     <arg name="radar_trigger_gpio" default="443" />
     <arg name="radar_trigger_gpio_name" default="PR.00" />
 
+    <arg name="rio_on" default="true" />
+    <arg name="rio_queue_size" default="1" />
+
+    <arg name="imu_filter_on" default="true" />
+
     <arg name="lidar_on" default="false" />
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg radar_frame_id)_broadcaster" args="0 0 0 0 0 0 1 map $(arg radar_frame_id)" />
@@ -54,6 +59,19 @@
             <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
         </node>
         <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.115 -0.002 -0.018 0.70105738  0.70105738 -0.09229596 -0.09229596 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+    </group>
+
+    <group if="$(arg rio_on)">
+        <node pkg="nodelet" type="nodelet" name="rio" args="load rio::RioNodelet $(arg nodelet_manager_name)" output="screen">
+            <param name="queue_size" value="$(arg rio_queue_size)"/>
+        </node>
+    </group>
+
+    <group if="$(arg imu_filter_on)">
+        <node pkg="nodelet" type="nodelet" name="ImuFilterNodelet" args="load imu_filter_madgwick/ImuFilterNodelet $(arg nodelet_manager_name)" output="screen">
+            <param name="publish_tf" value="false"/>
+            <param name="use_mag" value="false"/>
+        </node>
     </group>
 
     <group if="$(arg lidar_on)">

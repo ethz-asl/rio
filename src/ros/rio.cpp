@@ -19,12 +19,12 @@ bool Rio::init() {
   }
 
   imu_raw_sub_ =
-      nh_.subscribe("imu_raw", queue_size, &Rio::imuRawCallback, this);
+      nh_.subscribe("imu/data_raw", queue_size, &Rio::imuRawCallback, this);
   imu_filter_sub_ =
-      nh_.subscribe("imu_filter", queue_size, &Rio::imuFilterCallback, this);
-  radar_trigger_sub_ = nh_.subscribe("radar_trigger", queue_size,
+      nh_.subscribe("imu/data", queue_size, &Rio::imuFilterCallback, this);
+  radar_trigger_sub_ = nh_.subscribe("radar/trigger", queue_size,
                                      &Rio::radarTriggerCallback, this);
-  radar_cfar_sub_ = nh_.subscribe("cfar_detections", queue_size,
+  radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
                                   &Rio::cfarDetectionsCallback, this);
 
   odom_integrated_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
