@@ -65,6 +65,7 @@
 
     <group if="$(arg rio_on)">
         <node pkg="nodelet" type="nodelet" name="rio" args="load rio::RioNodelet $(arg nodelet_manager_name)" output="screen">
+			<rosparam file="$(find rio)/cfg/rio.yaml" />
             <param name="queue_size" value="$(arg rio_queue_size)"/>
         </node>
     </group>
