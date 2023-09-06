@@ -42,8 +42,8 @@ bool Rio::init() {
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
          bias_omega_int_sigma = 0.0, acc_sigma = 0.0, integration_sigma = 0.0,
          gyro_sigma = 0.0;
-  // TODO: Possibly expose "use2ndOrderCoriolis", "omegaCoriolis",
-  // "body_P_sensor" and "n_gravity" as parameters. But only really makes sense
+  // TODO: Possibly expose "use2ndOrderCoriolis", "omegaCoriolis", "n_gravity" or
+  // "body_P_sensor" as parameters. But only really makes sense
   // if we have a earth-centered coordinate frame or not a IMU centered frame.
   if (!loadParam<double>(nh_private_, "imu/bias_acc_sigma", &bias_acc_sigma))
     return false;

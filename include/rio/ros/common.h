@@ -8,8 +8,7 @@ namespace rio {
 template <typename T>
 bool loadParam(const ros::NodeHandle& nh, const std::string& name, T* value) {
   if (!nh.getParam(name, *value)) {
-    LOG(F,
-        "Failed to read " << nh.getNamespace() << "/" << name.c_str() << ".");
+    LOG(F, "Failed to read " << nh.resolveName(name).c_str() << ".");
     return false;
   }
   return true;
