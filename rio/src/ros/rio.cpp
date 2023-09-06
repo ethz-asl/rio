@@ -42,9 +42,9 @@ bool Rio::init() {
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
          bias_omega_int_sigma = 0.0, acc_sigma = 0.0, integration_sigma = 0.0,
          gyro_sigma = 0.0;
-  // TODO: Possibly expose "use2ndOrderCoriolis", "omegaCoriolis", "n_gravity" or
-  // "body_P_sensor" as parameters. But only really makes sense
-  // if we have a earth-centered coordinate frame or not a IMU centered frame.
+  // TODO: Possibly expose "use2ndOrderCoriolis", "omegaCoriolis", "n_gravity"
+  // or "body_P_sensor" as parameters. But only really makes sense if we have a
+  // earth-centered coordinate frame or not a IMU centered frame.
   if (!loadParam<double>(nh_private_, "imu/bias_acc_sigma", &bias_acc_sigma))
     return false;
   if (!loadParam<double>(nh_private_, "imu/bias_omega_sigma",
@@ -82,9 +82,10 @@ bool Rio::init() {
   if (!loadParam<std::optional<Vector3>>(nh_private_, "imu/initial_bias_gyro",
                                          &initial_state_.b_g))
     return false;
+  imu_params_->print("IMU parameters:");
   integrator_ = PreintegratedCombinedMeasurements(
       imu_params_, {initial_state_.b_a.value(), initial_state_.b_g.value()});
-  integrator_.print("Initial preintegration parameters: ");
+  integrator_.print("Initial preintegration parameters:");
 
   return true;
 }

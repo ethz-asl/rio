@@ -32,10 +32,9 @@ template <>
 bool loadParam<std::optional<gtsam::Vector3>>(
     const ros::NodeHandle& nh, const std::string& name,
     std::optional<gtsam::Vector3>* value) {
-  std::optional<gtsam::Vector3> tmp = *value;
-  tmp = {};
-  if (!loadParam<gtsam::Vector3>(nh, name, &tmp.value())) return false;
-  *value = tmp;
+  gtsam::Vector3 vec;
+  if (!loadParam<gtsam::Vector3>(nh, name, &vec)) return false;
+  *value = vec;
   return true;
 }
 
