@@ -1,0 +1,12 @@
+imu:
+    bias_acc_sigma: 1e-4
+    bias_omega_sigma: 1e-5
+    bias_acc_int_sigma: 1e-6
+    bias_omega_int_sigma: 1e-6
+
+    acc_sigma: 1e-1
+    gyro_sigma: 1e-2
+    integration_sigma: 1e-6
+
+    initial_bias_acc: [0.0, 0.0, 0.0]
+    initial_bias_gyro: [0.0, 0.0, 0.0]
