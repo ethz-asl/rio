@@ -46,8 +46,8 @@ class Rio {
   void radarTriggerCallback(const std_msgs::HeaderConstPtr& msg);
   void cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg);
 
-  ros::Publisher odom_integrated_pub_;
-  ros::Publisher odom_optimized_pub_;
+  ros::Publisher odom_navigation_pub_;
+  ros::Publisher odom_optimizer_pub_;
 
   struct State {
     std::optional<ros::Time> stamp;
@@ -65,11 +65,14 @@ class Rio {
     geometry_msgs::TransformStamped getTransform() const;
     geometry_msgs::Vector3Stamped getBiasAcc() const;
     geometry_msgs::Vector3Stamped getBiasGyro() const;
+    gtsam::NavState getNavState() const;
+    gtsam::imuBias::ConstantBias getBias() const;
   };
 
   // Set unknown initial states to zero.
   State initial_state_{.I_p_IB = {gtsam::Z_3x1}, .I_v_IB = {gtsam::Z_3x1}};
-  State state_{};  // Current state.
+  State optimized_state_{};
+  State navigation_state_{};
 
   gtsam::PreintegratedCombinedMeasurements integrator_;
 };

@@ -33,10 +33,10 @@ bool Rio::init() {
                                   &Rio::cfarDetectionsCallback, this);
 
   // Publishers
-  odom_integrated_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
-      "odometry_integrated", queue_size);
-  odom_optimized_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
-      "odometry_optimized", queue_size);
+  odom_navigation_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
+      "odometry_navigation", queue_size);
+  odom_optimizer_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
+      "odometry_optimizer", queue_size);
 
   // IMU integration
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
@@ -101,25 +101,35 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   if (!initial_state_.isComplete()) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (!state_.isComplete()) {
+  } else if (!optimized_state_.isComplete()) {
     LOG(I, "Initializing state.");
-    state_ = initial_state_;
+    optimized_state_ = initial_state_;
+    navigation_state_ = initial_state_;
     return;
   }
   // Integration.
   Vector3 lin_acc, ang_vel;
   tf2::fromMsg(msg->linear_acceleration, lin_acc);
   tf2::fromMsg(msg->angular_velocity, ang_vel);
-  auto dt = (msg->header.stamp - state_.stamp.value()).toSec();
+  auto dt = (msg->header.stamp - navigation_state_.stamp.value()).toSec();
   if (dt < 0) {
     LOG(W, "Negative dt, skipping IMU integration.");
     return;
   }
   integrator_.integrateMeasurement(lin_acc, ang_vel, dt);
   // Publish.
-  auto nav_state = integrator_.predict(
-      {state_.q_IB.value(), state_.I_p_IB.value(), state_.I_v_IB.value()},
-      {state_.b_a.value(), state_.b_g.value()});
+  auto prediction = integrator_.predict(optimized_state_.getNavState(),
+                                        optimized_state_.getBias());
+  navigation_state_ =
+      Rio::State({.stamp = msg->header.stamp,
+                  .odom_frame_id = optimized_state_.odom_frame_id,
+                  .body_frame_id = optimized_state_.body_frame_id,
+                  .I_p_IB = prediction.pose().translation(),
+                  .q_IB = prediction.pose().rotation(),
+                  .I_v_IB = prediction.velocity(),
+                  .b_a = optimized_state_.b_a,
+                  .b_g = optimized_state_.b_g});
+  odom_navigation_pub_.publish(navigation_state_.getOdometry());
 }
 
 void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
@@ -207,4 +217,20 @@ geometry_msgs::Vector3Stamped Rio::State::getBiasGyro() const {
   bias_gyro.header.frame_id = body_frame_id.value();
   tf2::toMsg(b_g.value(), bias_gyro.vector);
   return bias_gyro;
+}
+
+NavState Rio::State::getNavState() const {
+  if (!isComplete()) {
+    LOG(W, "State not complete, returning empty NavState.");
+    return NavState();
+  }
+  return NavState(q_IB.value(), I_p_IB.value(), I_v_IB.value());
+}
+
+imuBias::ConstantBias Rio::State::getBias() const {
+  if (!isComplete()) {
+    LOG(W, "State not complete, returning empty bias.");
+    return imuBias::ConstantBias();
+  }
+  return imuBias::ConstantBias(b_a.value(), b_g.value());
 }
