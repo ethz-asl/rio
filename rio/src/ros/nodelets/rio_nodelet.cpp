@@ -11,14 +11,14 @@ namespace rio {
 class RioNodelet : public nodelet::Nodelet {
   virtual void onInit() {
     try {
-      rio_ = std::make_shared<Rio>(getNodeHandle(), getPrivateNodeHandle());
-      rio_->init();
+      rio_ = std::make_unique<Rio>(getNodeHandle(), getPrivateNodeHandle());
+      if (!rio_->init()) rio_.release();
     } catch (std::runtime_error e) {
       LOG(E, "%s", e.what());
     }
   }
 
-  std::shared_ptr<Rio> rio_;
+  std::unique_ptr<Rio> rio_;
 };
 }  // namespace rio
 
