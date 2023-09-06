@@ -9,6 +9,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
@@ -57,8 +58,8 @@ class Rio {
 
   // Set unknown initial states to zero.
   State initial_state_{.I_p_IB = {gtsam::Z_3x1},
-                       .I_v_IB = {gtsam::Z_3x1},
-                       .b_a = {gtsam::Z_3x1},
-                       .b_g = {gtsam::Z_3x1}};
+                       .I_v_IB = {gtsam::Z_3x1}};
+
+  gtsam::PreintegratedCombinedMeasurements integrator_;
 };
 }  // namespace rio
