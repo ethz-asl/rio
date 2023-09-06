@@ -27,6 +27,7 @@
 
     <arg name="rio_on" default="true" />
     <arg name="rio_queue_size" default="1" />
+    <arg name="rio_odom_frame_id" default="odom" />
 
     <arg name="imu_filter_on" default="true" />
 
@@ -67,6 +68,7 @@
         <node pkg="nodelet" type="nodelet" name="rio" args="load rio::RioNodelet $(arg nodelet_manager_name)" output="screen">
 			<rosparam file="$(find rio)/cfg/rio.yaml" />
             <param name="queue_size" value="$(arg rio_queue_size)"/>
+            <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
         </node>
     </group>
 

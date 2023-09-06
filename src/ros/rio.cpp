@@ -87,11 +87,39 @@ bool Rio::init() {
       imu_params_, {initial_state_.b_a.value(), initial_state_.b_g.value()});
   integrator_.print("Initial preintegration parameters:");
 
+  // Initial state.
+  initial_state_.odom_frame_id = "odom";
+  loadParam<std::string>(nh_private_, "odom_frame_id",
+                         &initial_state_.odom_frame_id.value());
+
   return true;
 }
 
 void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
+  // Initialization.
+  if (!initial_state_.isComplete()) {
+    LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
+    return;
+  } else if (!state_.isComplete()) {
+    LOG(I, "Initializing state.");
+    state_ = initial_state_;
+    return;
+  }
+  // Integration.
+  Vector3 lin_acc, ang_vel;
+  tf2::fromMsg(msg->linear_acceleration, lin_acc);
+  tf2::fromMsg(msg->angular_velocity, ang_vel);
+  auto dt = (msg->header.stamp - state_.stamp.value()).toSec();
+  if (dt < 0) {
+    LOG(W, "Negative dt, skipping IMU integration.");
+    return;
+  }
+  integrator_.integrateMeasurement(lin_acc, ang_vel, dt);
+  // Publish.
+  auto nav_state = integrator_.predict(
+      {state_.q_IB.value(), state_.I_p_IB.value(), state_.I_v_IB.value()},
+      {state_.b_a.value(), state_.b_g.value()});
 }
 
 void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
@@ -99,6 +127,8 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
   initial_state_.q_IB = Rot3(q_IB);
+  initial_state_.stamp = msg->header.stamp;
+  initial_state_.body_frame_id = msg->header.frame_id;
 }
 
 void Rio::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
@@ -110,8 +140,9 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
 }
 
 bool Rio::State::isComplete() const {
-  return I_p_IB.has_value() && q_IB.has_value() && I_v_IB.has_value() &&
-         b_a.has_value() && b_g.has_value();
+  return stamp.has_value() && odom_frame_id.has_value() &&
+         body_frame_id.has_value() && I_p_IB.has_value() && q_IB.has_value() &&
+         I_v_IB.has_value() && b_a.has_value() && b_g.has_value();
 }
 
 bool Rio::State::reset() {
@@ -121,4 +152,59 @@ bool Rio::State::reset() {
   b_a.reset();
   b_g.reset();
   return true;
+}
+
+nav_msgs::Odometry Rio::State::getOdometry() const {
+  nav_msgs::Odometry odom;
+  if (!isComplete()) {
+    LOG(W, "State not complete, returning empty odometry.");
+    return odom;
+  }
+  odom.header.stamp = stamp.value();
+  odom.header.frame_id = odom_frame_id.value();
+  odom.child_frame_id = body_frame_id.value();
+  odom.pose.pose.orientation = tf2::toMsg(q_IB.value().toQuaternion());
+  odom.pose.pose.position = tf2::toMsg(I_p_IB.value());
+  tf2::toMsg(q_IB.value().unrotate(I_v_IB.value()), odom.twist.twist.linear);
+
+  return odom;
+}
+
+geometry_msgs::TransformStamped Rio::State::getTransform() const {
+  geometry_msgs::TransformStamped transform;
+  if (!isComplete()) {
+    LOG(W, "State not complete, returning empty transform.");
+    return transform;
+  }
+
+  transform.header.stamp = stamp.value();
+  transform.header.frame_id = odom_frame_id.value();
+  transform.child_frame_id = body_frame_id.value();
+  transform.transform.rotation = tf2::toMsg(q_IB.value().toQuaternion());
+  tf2::toMsg(I_p_IB.value(), transform.transform.translation);
+  return transform;
+}
+
+geometry_msgs::Vector3Stamped Rio::State::getBiasAcc() const {
+  geometry_msgs::Vector3Stamped bias_acc;
+  if (!isComplete()) {
+    LOG(W, "State not complete, returning empty bias acc.");
+    return bias_acc;
+  }
+  bias_acc.header.stamp = stamp.value();
+  bias_acc.header.frame_id = body_frame_id.value();
+  tf2::toMsg(b_a.value(), bias_acc.vector);
+  return bias_acc;
+}
+
+geometry_msgs::Vector3Stamped Rio::State::getBiasGyro() const {
+  geometry_msgs::Vector3Stamped bias_gyro;
+  if (!isComplete()) {
+    LOG(W, "State not complete, returning empty bias gyro.");
+    return bias_gyro;
+  }
+  bias_gyro.header.stamp = stamp.value();
+  bias_gyro.header.frame_id = body_frame_id.value();
+  tf2::toMsg(b_g.value(), bias_gyro.vector);
+  return bias_gyro;
 }
