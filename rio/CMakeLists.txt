@@ -35,6 +35,7 @@ add_library(${PROJECT_NAME}
         src/ros/baro.cpp
         src/ros/imu.cpp
         src/ros/radar.cpp
+        src/ros/rio.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} gtsam Eigen3::Eigen)
 
@@ -42,6 +43,7 @@ add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/baro_nodelet.cpp
         src/ros/nodelets/imu_nodelet.cpp
         src/ros/nodelets/radar_nodelet.cpp
+        src/ros/nodelets/rio_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 

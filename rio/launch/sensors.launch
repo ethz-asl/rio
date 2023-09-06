@@ -12,6 +12,7 @@
     <arg name="imu_path_gyro" default="/dev/spidev0.1" />
     <arg name="imu_frame_id" default="bmi088" />
     <arg name="imu_poll_rate" default="500.0" />
+    <arg name="imu_bias_samples" default="2000" />
 
     <arg name="radar_on" default="true" />
     <arg name="radar_path_cfg" default="/dev/ttyUSB0" />
@@ -23,6 +24,11 @@
     <arg name="radar_trigger_delay" default="500" />
     <arg name="radar_trigger_gpio" default="443" />
     <arg name="radar_trigger_gpio_name" default="PR.00" />
+
+    <arg name="rio_on" default="true" />
+    <arg name="rio_queue_size" default="1" />
+
+    <arg name="imu_filter_on" default="true" />
 
     <arg name="lidar_on" default="false" />
 
@@ -39,6 +45,7 @@
         <param name="path_gyro" value="$(arg imu_path_gyro)"/>
         <param name="frame_id" value="$(arg imu_frame_id)"/>
         <param name="poll_rate" value="$(arg imu_poll_rate)"/>
+        <param name="bias_samples" value="$(arg imu_bias_samples)"/>
     </node>
 
     <group if="$(arg radar_on)">
@@ -54,6 +61,19 @@
             <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
         </node>
         <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.115 -0.002 -0.018 0.70105738  0.70105738 -0.09229596 -0.09229596 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+    </group>
+
+    <group if="$(arg rio_on)">
+        <node pkg="nodelet" type="nodelet" name="rio" args="load rio::RioNodelet $(arg nodelet_manager_name)" output="screen">
+            <param name="queue_size" value="$(arg rio_queue_size)"/>
+        </node>
+    </group>
+
+    <group if="$(arg imu_filter_on)">
+        <node pkg="nodelet" type="nodelet" name="ImuFilterNodelet" args="load imu_filter_madgwick/ImuFilterNodelet $(arg nodelet_manager_name)" output="screen">
+            <param name="publish_tf" value="false"/>
+            <param name="use_mag" value="false"/>
+        </node>
     </group>
 
     <group if="$(arg lidar_on)">

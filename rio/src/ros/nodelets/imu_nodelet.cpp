@@ -1,3 +1,4 @@
+#include <memory>
 
 #include <log++.h>
 #include <nodelet/nodelet.h>
