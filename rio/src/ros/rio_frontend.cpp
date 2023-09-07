@@ -100,9 +100,9 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   if (!initial_state_.hasFullState()) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (!optimized_state_.hasFullState()) {
-    LOG(I, "Initializing state.");
-    optimized_state_ = initial_state_;
+  } else if (!states_.has_value()) {
+    LOG(I, "Initializing states with initial state.");
+    states_ = {initial_state_};
     navigation_state_ = initial_state_;
     return;
   }
@@ -117,17 +117,18 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
   integrator_.integrateMeasurement(lin_acc, ang_vel, dt);
   // Publish.
-  auto prediction = integrator_.predict(optimized_state_.getNavState(),
-                                        optimized_state_.getBias());
-  navigation_state_ = State({.stamp = msg->header.stamp,
-                             .odom_frame_id = optimized_state_.odom_frame_id,
-                             .body_frame_id = optimized_state_.body_frame_id,
-                             .I_p_IB = prediction.pose().translation(),
-                             .R_IB = prediction.pose().rotation(),
-                             .I_v_IB = prediction.velocity(),
-                             .b_a = optimized_state_.b_a,
-                             .b_g = optimized_state_.b_g,
-                             .B_omega_IB = ang_vel});
+  auto prediction = integrator_.predict(states_.value().back().getNavState(),
+                                        states_.value().back().getBias());
+  navigation_state_ =
+      State({.stamp = msg->header.stamp,
+             .odom_frame_id = states_.value().back().odom_frame_id,
+             .body_frame_id = states_.value().back().body_frame_id,
+             .I_p_IB = prediction.pose().translation(),
+             .R_IB = prediction.pose().rotation(),
+             .I_v_IB = prediction.velocity(),
+             .b_a = states_.value().back().b_a,
+             .b_g = states_.value().back().b_g,
+             .imu = msg});
   odom_navigation_pub_.publish(navigation_state_.getOdometry());
 }
 

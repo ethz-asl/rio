@@ -1,3 +1,7 @@
+#pragma once
+
+#include <vector>
+
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <gtsam/base/Vector.h>
@@ -6,9 +10,13 @@
 #include <gtsam/navigation/NavState.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/time.h>
+#include <sensor_msgs/Imu.h>
+
 
 namespace rio {
 struct State {
+  typedef std::vector<State> Vector;
+
   std::optional<ros::Time> stamp;
   std::optional<std::string> odom_frame_id;
   std::optional<std::string> body_frame_id;
@@ -21,7 +29,7 @@ struct State {
   std::optional<gtsam::Vector3> b_g;
 
   // Measurements.
-  std::optional<gtsam::Vector3> B_omega_IB;
+  std::optional<sensor_msgs::ImuConstPtr> imu;
 
   bool hasFullState() const;
   nav_msgs::Odometry getOdometry() const;

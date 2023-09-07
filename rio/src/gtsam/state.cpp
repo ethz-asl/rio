@@ -37,10 +37,10 @@ nav_msgs::Odometry State::getOdometry() const {
     tf2::toMsg(R_IB.value().unrotate(I_v_IB.value()), odom.twist.twist.linear);
   else
     LOG(W, "getOdometry: I_v_IB not set");
-  if (B_omega_IB.has_value())
-    tf2::toMsg(B_omega_IB.value(), odom.twist.twist.angular);
+  if (imu.has_value())
+    odom.twist.twist.angular = imu.value()->angular_velocity;
   else
-    LOG(W, "getOdometry: B_omega_IB not set");
+    LOG(W, "getOdometry: IMU not set");
 
   return odom;
 }
