@@ -1,10 +1,6 @@
 #pragma once
 
-#include <atomic>
-#include <deque>
-#include <mutex>
 #include <optional>
-#include <thread>
 
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -45,13 +41,10 @@ class RioFrontend {
 
   // Set unknown initial states to zero.
   State initial_state_{.I_p_IB = {gtsam::Z_3x1}, .I_v_IB = {gtsam::Z_3x1}};
-  State optimized_state_{};
   State navigation_state_{};
+  std::optional<State::Vector> states_;
 
   // IMU preintegration.
   gtsam::PreintegratedCombinedMeasurements integrator_;
-
-  // Graph optimization.
-  gtsam::NonlinearFactorGraph graph_;
 };
 }  // namespace rio
