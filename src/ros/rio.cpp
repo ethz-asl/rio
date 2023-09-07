@@ -97,7 +97,7 @@ bool Rio::init() {
 
 void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
-  // Initialization.
+  // Initialize.
   if (!initial_state_.isComplete()) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
@@ -107,7 +107,7 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     navigation_state_ = initial_state_;
     return;
   }
-  // Integration.
+  // Integrate.
   Vector3 lin_acc, ang_vel;
   tf2::fromMsg(msg->linear_acceleration, lin_acc);
   tf2::fromMsg(msg->angular_velocity, ang_vel);
