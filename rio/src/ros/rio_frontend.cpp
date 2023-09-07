@@ -97,10 +97,10 @@ bool RioFrontend::init() {
 void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
-  if (!initial_state_.isComplete()) {
+  if (!initial_state_.hasFullState()) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (!optimized_state_.isComplete()) {
+  } else if (!optimized_state_.hasFullState()) {
     LOG(I, "Initializing state.");
     optimized_state_ = initial_state_;
     navigation_state_ = initial_state_;
@@ -126,7 +126,8 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
                              .R_IB = prediction.pose().rotation(),
                              .I_v_IB = prediction.velocity(),
                              .b_a = optimized_state_.b_a,
-                             .b_g = optimized_state_.b_g});
+                             .b_g = optimized_state_.b_g,
+                             .B_omega_IB = ang_vel});
   odom_navigation_pub_.publish(navigation_state_.getOdometry());
 }
 
