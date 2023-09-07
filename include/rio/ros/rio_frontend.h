@@ -28,10 +28,9 @@
 // radar measurement callback: add radar measurement to the current key, start
 // optimization thread.
 namespace rio {
-class Rio {
+class RioFrontend {
  public:
-  Rio(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  ~Rio();
+  RioFrontend(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   bool init();
 
  private:
