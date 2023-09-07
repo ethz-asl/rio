@@ -1,4 +1,4 @@
-#include "rio/ros/rio.h"
+#include "rio/ros/rio_frontend.h"
 
 #include <cmath>
 
@@ -12,25 +12,24 @@
 using namespace rio;
 using namespace gtsam;
 
-Rio::Rio(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
+RioFrontend::RioFrontend(const ros::NodeHandle& nh,
+                         const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private) {}
 
-Rio::~Rio() {}
-
-bool Rio::init() {
+bool RioFrontend::init() {
   // ROS communication.
   int queue_size = 1;
   if (!loadParam<int>(nh_private_, "queue_size", &queue_size)) return false;
 
   // Subscribers.
-  imu_raw_sub_ =
-      nh_.subscribe("imu/data_raw", queue_size, &Rio::imuRawCallback, this);
-  imu_filter_sub_ =
-      nh_.subscribe("imu/data", queue_size, &Rio::imuFilterCallback, this);
+  imu_raw_sub_ = nh_.subscribe("imu/data_raw", queue_size,
+                               &RioFrontend::imuRawCallback, this);
+  imu_filter_sub_ = nh_.subscribe("imu/data", queue_size,
+                                  &RioFrontend::imuFilterCallback, this);
   radar_trigger_sub_ = nh_.subscribe("radar/trigger", queue_size,
-                                     &Rio::radarTriggerCallback, this);
+                                     &RioFrontend::radarTriggerCallback, this);
   radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
-                                  &Rio::cfarDetectionsCallback, this);
+                                  &RioFrontend::cfarDetectionsCallback, this);
 
   // Publishers
   odom_navigation_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
@@ -95,7 +94,7 @@ bool Rio::init() {
   return true;
 }
 
-void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
+void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
   if (!initial_state_.isComplete()) {
@@ -121,18 +120,18 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   auto prediction = integrator_.predict(optimized_state_.getNavState(),
                                         optimized_state_.getBias());
   navigation_state_ =
-      Rio::State({.stamp = msg->header.stamp,
-                  .odom_frame_id = optimized_state_.odom_frame_id,
-                  .body_frame_id = optimized_state_.body_frame_id,
-                  .I_p_IB = prediction.pose().translation(),
-                  .q_IB = prediction.pose().rotation(),
-                  .I_v_IB = prediction.velocity(),
-                  .b_a = optimized_state_.b_a,
-                  .b_g = optimized_state_.b_g});
+      RioFrontend::State({.stamp = msg->header.stamp,
+                          .odom_frame_id = optimized_state_.odom_frame_id,
+                          .body_frame_id = optimized_state_.body_frame_id,
+                          .I_p_IB = prediction.pose().translation(),
+                          .q_IB = prediction.pose().rotation(),
+                          .I_v_IB = prediction.velocity(),
+                          .b_a = optimized_state_.b_a,
+                          .b_g = optimized_state_.b_g});
   odom_navigation_pub_.publish(navigation_state_.getOdometry());
 }
 
-void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
+void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
@@ -141,21 +140,21 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   initial_state_.body_frame_id = msg->header.frame_id;
 }
 
-void Rio::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
+void RioFrontend::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first radar trigger message.");
 }
 
-void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
+void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
   LOG_FIRST(I, 1, "Received first CFAR detections.");
 }
 
-bool Rio::State::isComplete() const {
+bool RioFrontend::State::isComplete() const {
   return stamp.has_value() && odom_frame_id.has_value() &&
          body_frame_id.has_value() && I_p_IB.has_value() && q_IB.has_value() &&
          I_v_IB.has_value() && b_a.has_value() && b_g.has_value();
 }
 
-bool Rio::State::reset() {
+bool RioFrontend::State::reset() {
   I_p_IB.reset();
   q_IB.reset();
   I_v_IB.reset();
@@ -164,7 +163,7 @@ bool Rio::State::reset() {
   return true;
 }
 
-nav_msgs::Odometry Rio::State::getOdometry() const {
+nav_msgs::Odometry RioFrontend::State::getOdometry() const {
   nav_msgs::Odometry odom;
   if (!isComplete()) {
     LOG(W, "State not complete, returning empty odometry.");
@@ -180,7 +179,7 @@ nav_msgs::Odometry Rio::State::getOdometry() const {
   return odom;
 }
 
-geometry_msgs::TransformStamped Rio::State::getTransform() const {
+geometry_msgs::TransformStamped RioFrontend::State::getTransform() const {
   geometry_msgs::TransformStamped transform;
   if (!isComplete()) {
     LOG(W, "State not complete, returning empty transform.");
@@ -195,7 +194,7 @@ geometry_msgs::TransformStamped Rio::State::getTransform() const {
   return transform;
 }
 
-geometry_msgs::Vector3Stamped Rio::State::getBiasAcc() const {
+geometry_msgs::Vector3Stamped RioFrontend::State::getBiasAcc() const {
   geometry_msgs::Vector3Stamped bias_acc;
   if (!isComplete()) {
     LOG(W, "State not complete, returning empty bias acc.");
@@ -207,7 +206,7 @@ geometry_msgs::Vector3Stamped Rio::State::getBiasAcc() const {
   return bias_acc;
 }
 
-geometry_msgs::Vector3Stamped Rio::State::getBiasGyro() const {
+geometry_msgs::Vector3Stamped RioFrontend::State::getBiasGyro() const {
   geometry_msgs::Vector3Stamped bias_gyro;
   if (!isComplete()) {
     LOG(W, "State not complete, returning empty bias gyro.");
@@ -219,7 +218,7 @@ geometry_msgs::Vector3Stamped Rio::State::getBiasGyro() const {
   return bias_gyro;
 }
 
-NavState Rio::State::getNavState() const {
+NavState RioFrontend::State::getNavState() const {
   if (!isComplete()) {
     LOG(W, "State not complete, returning empty NavState.");
     return NavState();
@@ -227,7 +226,7 @@ NavState Rio::State::getNavState() const {
   return NavState(q_IB.value(), I_p_IB.value(), I_v_IB.value());
 }
 
-imuBias::ConstantBias Rio::State::getBias() const {
+imuBias::ConstantBias RioFrontend::State::getBias() const {
   if (!isComplete()) {
     LOG(W, "State not complete, returning empty bias.");
     return imuBias::ConstantBias();
