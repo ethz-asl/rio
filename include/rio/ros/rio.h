@@ -14,6 +14,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
@@ -74,6 +75,10 @@ class Rio {
   State optimized_state_{};
   State navigation_state_{};
 
+  // IMU preintegration.
   gtsam::PreintegratedCombinedMeasurements integrator_;
+
+  // Graph optimization.
+  gtsam::NonlinearFactorGraph graph_;
 };
 }  // namespace rio
