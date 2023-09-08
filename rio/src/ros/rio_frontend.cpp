@@ -63,82 +63,68 @@ bool RioFrontend::init() {
   if (!loadParam<double>(nh_private_, "imu/gyro_sigma", &gyro_sigma))
     return false;
 
-  auto imu_params_ = PreintegratedCombinedMeasurements::Params::MakeSharedU();
-  imu_params_->biasAccCovariance = I_3x3 * std::pow(bias_acc_sigma, 2);
-  imu_params_->biasOmegaCovariance = I_3x3 * std::pow(bias_omega_sigma, 2);
-  imu_params_->biasAccOmegaInt.block<3, 3>(0, 0) =
+  auto imu_params = PreintegratedCombinedMeasurements::Params::MakeSharedU();
+  imu_params->biasAccCovariance = I_3x3 * std::pow(bias_acc_sigma, 2);
+  imu_params->biasOmegaCovariance = I_3x3 * std::pow(bias_omega_sigma, 2);
+  imu_params->biasAccOmegaInt.block<3, 3>(0, 0) =
       I_3x3 * std::pow(bias_acc_int_sigma, 2);
-  imu_params_->biasAccOmegaInt.block<3, 3>(3, 3) =
+  imu_params->biasAccOmegaInt.block<3, 3>(3, 3) =
       I_3x3 * std::pow(bias_omega_int_sigma, 2);
 
-  imu_params_->accelerometerCovariance = I_3x3 * std::pow(acc_sigma, 2);
-  imu_params_->integrationCovariance = I_3x3 * std::pow(integration_sigma, 2);
-  imu_params_->gyroscopeCovariance = I_3x3 * std::pow(gyro_sigma, 2);
+  imu_params->accelerometerCovariance = I_3x3 * std::pow(acc_sigma, 2);
+  imu_params->integrationCovariance = I_3x3 * std::pow(integration_sigma, 2);
+  imu_params->gyroscopeCovariance = I_3x3 * std::pow(gyro_sigma, 2);
 
-  if (!loadParam<std::optional<Vector3>>(nh_private_, "imu/initial_bias_acc",
-                                         &initial_state_.b_a))
+  Vector3 b_a, b_g;
+  if (!loadParam<Vector3>(nh_private_, "imu/initial_bias_acc", &b_a))
     return false;
-  if (!loadParam<std::optional<Vector3>>(nh_private_, "imu/initial_bias_gyro",
-                                         &initial_state_.b_g))
+  if (!loadParam<Vector3>(nh_private_, "imu/initial_bias_gyro", &b_g))
     return false;
-  imu_params_->print("IMU parameters:");
-  integrator_ = PreintegratedCombinedMeasurements(
-      imu_params_, {initial_state_.b_a.value(), initial_state_.b_g.value()});
-  integrator_.print("Initial preintegration parameters:");
+  imu_params->print("IMU parameters:");
+  PreintegratedCombinedMeasurements integrator{imu_params, {b_a, b_g}};
+  integrator.print("Initial preintegration parameters:");
 
   // Initial state.
-  initial_state_.odom_frame_id = "odom";
-  loadParam<std::string>(nh_private_, "odom_frame_id",
-                         &initial_state_.odom_frame_id.value());
+  std::string odom_frame_id = initial_state_.getOdomFrameId();
+  loadParam<std::string>(nh_private_, "odom_frame_id", &odom_frame_id);
 
+  initial_state_ =
+      State(odom_frame_id, initial_state_.getI_p_IB(), initial_state_.getR_IB(),
+            initial_state_.getI_v_IB(), initial_state_.getImu(), integrator);
   return true;
 }
 
 void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
-  if (!initial_state_.hasFullState()) {
+  if (initial_state_.getImu() == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (!states_.has_value()) {
+  } else if (!propagation_.has_value()) {
     LOG(I, "Initializing states with initial state.");
-    states_ = {initial_state_};
-    navigation_state_ = initial_state_;
+    propagation_ = Propagation(initial_state_);
     return;
   }
   // Integrate.
-  Vector3 lin_acc, ang_vel;
-  tf2::fromMsg(msg->linear_acceleration, lin_acc);
-  tf2::fromMsg(msg->angular_velocity, ang_vel);
-  auto dt = (msg->header.stamp - navigation_state_.stamp.value()).toSec();
-  if (dt < 0) {
-    LOG(W, "Negative dt, skipping IMU integration.");
+  if (!propagation_.value().addImuMeasurement(msg)) {
+    LOG(W, "Failed to add IMU measurement, skipping IMU integration.");
     return;
   }
-  integrator_.integrateMeasurement(lin_acc, ang_vel, dt);
   // Publish.
-  auto prediction = integrator_.predict(states_.value().back().getNavState(),
-                                        states_.value().back().getBias());
-  navigation_state_ =
-      State({.stamp = msg->header.stamp,
-             .odom_frame_id = states_.value().back().odom_frame_id,
-             .body_frame_id = states_.value().back().body_frame_id,
-             .I_p_IB = prediction.pose().translation(),
-             .R_IB = prediction.pose().rotation(),
-             .I_v_IB = prediction.velocity(),
-             .b_a = states_.value().back().b_a,
-             .b_g = states_.value().back().b_g,
-             .imu = msg});
-  odom_navigation_pub_.publish(navigation_state_.getOdometry());
+  odom_navigation_pub_.publish(
+      propagation_.value().getLatestState().getOdometry());
 }
 
 void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
-  initial_state_.R_IB = Rot3(q_IB);
-  initial_state_.stamp = msg->header.stamp;
-  initial_state_.body_frame_id = msg->header.frame_id;
+  initial_state_ = {initial_state_.getOdomFrameId(),
+                    initial_state_.getI_p_IB(),
+                    Rot3(q_IB),
+                    initial_state_.getI_v_IB(),
+                    msg,
+                    initial_state_.getIntegrator()};
 }
 
 void RioFrontend::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {

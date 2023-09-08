@@ -31,6 +31,7 @@ add_library(${PROJECT_NAME}
         src/common.cpp
         src/least_squares.cpp
         src/gtsam/doppler_factor.cpp
+        src/gtsam/propagation.cpp
         src/gtsam/state.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
