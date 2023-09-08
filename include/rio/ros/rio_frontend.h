@@ -2,13 +2,12 @@
 
 #include <optional>
 
-#include <gtsam/navigation/CombinedImuFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
 
+#include "rio/gtsam/propagation.h"
 #include "rio/gtsam/state.h"
 
 // This class implements a callback driven sensor fusion.
@@ -39,12 +38,9 @@ class RioFrontend {
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
 
-  // Set unknown initial states to zero.
-  State initial_state_{.I_p_IB = {gtsam::Z_3x1}, .I_v_IB = {gtsam::Z_3x1}};
-  State navigation_state_{};
-  std::optional<State::Vector> states_;
-
-  // IMU preintegration.
-  gtsam::PreintegratedCombinedMeasurements integrator_;
+  State initial_state_{
+      "odom",       gtsam::Z_3x1, gtsam::Rot3(),
+      gtsam::Z_3x1, nullptr,      gtsam::PreintegratedCombinedMeasurements()};
+  std::optional<Propagation> propagation_;
 };
 }  // namespace rio
