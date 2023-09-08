@@ -85,19 +85,19 @@ bool RioFrontend::init() {
   integrator.print("Initial preintegration parameters:");
 
   // Initial state.
-  std::string odom_frame_id = initial_state_.getOdomFrameId();
+  std::string odom_frame_id = initial_state_->odom_frame_id;
   loadParam<std::string>(nh_private_, "odom_frame_id", &odom_frame_id);
 
-  initial_state_ =
-      State(odom_frame_id, initial_state_.getI_p_IB(), initial_state_.getR_IB(),
-            initial_state_.getI_v_IB(), initial_state_.getImu(), integrator);
+  initial_state_ = std::make_shared<State>(
+      odom_frame_id, initial_state_->I_p_IB, initial_state_->R_IB,
+      initial_state_->I_v_IB, initial_state_->imu, integrator);
   return true;
 }
 
 void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
-  if (initial_state_.getImu() == nullptr) {
+  if (initial_state_->imu == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
   } else if (!propagation_.has_value()) {
@@ -112,19 +112,16 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
   // Publish.
   odom_navigation_pub_.publish(
-      propagation_.value().getLatestState().getOdometry());
+      propagation_.value().getLatestState()->getOdometry());
 }
 
 void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
-  initial_state_ = {initial_state_.getOdomFrameId(),
-                    initial_state_.getI_p_IB(),
-                    Rot3(q_IB),
-                    initial_state_.getI_v_IB(),
-                    msg,
-                    initial_state_.getIntegrator()};
+  initial_state_ = std::make_shared<State>(
+      initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
+      initial_state_->I_v_IB, msg, initial_state_->integrator);
 }
 
 void RioFrontend::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
