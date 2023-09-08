@@ -38,9 +38,9 @@ class RioFrontend {
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
 
-  State initial_state_{
-      "odom",       gtsam::Z_3x1, gtsam::Rot3(),
-      gtsam::Z_3x1, nullptr,      gtsam::PreintegratedCombinedMeasurements()};
+  State::ConstPtr initial_state_{std::make_shared<State>(
+      "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
+      gtsam::PreintegratedCombinedMeasurements())};
   std::optional<Propagation> propagation_;
 };
 }  // namespace rio

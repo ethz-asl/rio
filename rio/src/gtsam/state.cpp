@@ -10,51 +10,49 @@ State::State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
              const gtsam::Rot3& R_IB, const gtsam::Vector3& I_v_IB,
              const sensor_msgs::ImuConstPtr& imu,
              const gtsam::PreintegratedCombinedMeasurements& integrator)
-    : odom_frame_id_(odom_frame_id),
-      I_p_IB_(I_p_IB),
-      R_IB_(R_IB),
-      I_v_IB_(I_v_IB),
-      imu_(imu),
-      integrator_(integrator) {}
+    : odom_frame_id(odom_frame_id),
+      I_p_IB(I_p_IB),
+      R_IB(R_IB),
+      I_v_IB(I_v_IB),
+      imu(imu),
+      integrator(integrator) {}
 
 nav_msgs::Odometry State::getOdometry() const {
   nav_msgs::Odometry odom;
-  odom.header.stamp = imu_->header.stamp;
-  odom.header.frame_id = odom_frame_id_;
-  odom.child_frame_id = imu_->header.frame_id;
-  odom.pose.pose.orientation = tf2::toMsg(R_IB_.toQuaternion());
-  odom.pose.pose.position = tf2::toMsg(I_p_IB_);
-  tf2::toMsg(R_IB_.unrotate(I_v_IB_), odom.twist.twist.linear);
-  odom.twist.twist.angular = imu_->angular_velocity;
+  odom.header.stamp = imu->header.stamp;
+  odom.header.frame_id = odom_frame_id;
+  odom.child_frame_id = imu->header.frame_id;
+  odom.pose.pose.orientation = tf2::toMsg(R_IB.toQuaternion());
+  odom.pose.pose.position = tf2::toMsg(I_p_IB);
+  tf2::toMsg(R_IB.unrotate(I_v_IB), odom.twist.twist.linear);
+  odom.twist.twist.angular = imu->angular_velocity;
   return odom;
 }
 
 geometry_msgs::TransformStamped State::getTransform() const {
   geometry_msgs::TransformStamped transform;
-  transform.header.stamp = imu_->header.stamp;
-  transform.header.frame_id = odom_frame_id_;
-  transform.child_frame_id = imu_->header.frame_id;
-  transform.transform.rotation = tf2::toMsg(R_IB_.toQuaternion());
-  tf2::toMsg(I_p_IB_, transform.transform.translation);
+  transform.header.stamp = imu->header.stamp;
+  transform.header.frame_id = odom_frame_id;
+  transform.child_frame_id = imu->header.frame_id;
+  transform.transform.rotation = tf2::toMsg(R_IB.toQuaternion());
+  tf2::toMsg(I_p_IB, transform.transform.translation);
   return transform;
 }
 
 geometry_msgs::Vector3Stamped State::getBiasAcc() const {
   geometry_msgs::Vector3Stamped bias_acc;
-  bias_acc.header.stamp = imu_->header.stamp;
-  bias_acc.header.frame_id = imu_->header.frame_id;
-  tf2::toMsg(integrator_.biasHat().accelerometer(), bias_acc.vector);
+  bias_acc.header.stamp = imu->header.stamp;
+  bias_acc.header.frame_id = imu->header.frame_id;
+  tf2::toMsg(integrator.biasHat().accelerometer(), bias_acc.vector);
   return bias_acc;
 }
 
 geometry_msgs::Vector3Stamped State::getBiasGyro() const {
   geometry_msgs::Vector3Stamped bias_gyro;
-  bias_gyro.header.stamp = imu_->header.stamp;
-  bias_gyro.header.frame_id = imu_->header.frame_id;
-  tf2::toMsg(integrator_.biasHat().gyroscope(), bias_gyro.vector);
+  bias_gyro.header.stamp = imu->header.stamp;
+  bias_gyro.header.frame_id = imu->header.frame_id;
+  tf2::toMsg(integrator.biasHat().gyroscope(), bias_gyro.vector);
   return bias_gyro;
 }
 
-NavState State::getNavState() const {
-  return NavState(R_IB_, I_p_IB_, I_v_IB_);
-}
+NavState State::getNavState() const { return NavState(R_IB, I_p_IB, I_v_IB); }
