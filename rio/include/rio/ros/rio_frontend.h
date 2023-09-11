@@ -42,5 +42,7 @@ class RioFrontend {
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
       gtsam::PreintegratedCombinedMeasurements())};
   std::deque<Propagation> propagation_;
+
+  bool splitPropagation(const ros::Time& t);
 };
 }  // namespace rio

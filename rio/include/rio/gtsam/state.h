@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <gtsam/base/Vector.h>
@@ -9,19 +11,23 @@
 #include <gtsam/navigation/NavState.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
-#include <memory>
 
 namespace rio {
 
 struct State {
   typedef std::shared_ptr<State> Ptr;
   typedef std::shared_ptr<const State> ConstPtr;
-  
+
   State() = delete;
   State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
         const gtsam::Rot3& R_IB, const gtsam::Vector3& I_v_IB,
         const sensor_msgs::ImuConstPtr& imu,
         const gtsam::PreintegratedCombinedMeasurements& integrator);
+
+  bool operator==(const State& other) const;
+  inline bool operator!=(const State& other) const { return !(*this == other); }
+
+  void print(const std::string& s = "") const;
 
   std::string odom_frame_id;
   gtsam::Point3 I_p_IB;
