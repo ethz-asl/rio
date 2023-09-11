@@ -91,6 +91,12 @@ bool RioFrontend::init() {
   initial_state_ = std::make_shared<State>(
       odom_frame_id, initial_state_->I_p_IB, initial_state_->R_IB,
       initial_state_->I_v_IB, initial_state_->imu, integrator);
+
+  double max_dead_reckoning_duration = max_dead_reckoning_duration_.toSec();
+  if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
+                         &max_dead_reckoning_duration))
+    return false;
+  max_dead_reckoning_duration_ = ros::Duration(max_dead_reckoning_duration);
   return true;
 }
 
@@ -142,6 +148,8 @@ void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
                << propagation_.back().getLatestState()->imu->header.stamp);
     return;
   }
+
+  popOldPropagations();
 }
 
 bool RioFrontend::splitPropagation(const ros::Time& t) {
@@ -157,4 +165,13 @@ bool RioFrontend::splitPropagation(const ros::Time& t) {
   }
 
   return success;
+}
+
+void RioFrontend::popOldPropagations() {
+  auto now = ros::Time::now();
+  while (propagation_.size() > 1 &&
+         (now - propagation_.front().getLatestState()->imu->header.stamp) >
+             max_dead_reckoning_duration_) {
+    propagation_.pop_front();
+  }
 }
