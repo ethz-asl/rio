@@ -40,6 +40,10 @@ bool Propagation::addImuMeasurement(const sensor_msgs::ImuConstPtr& msg) {
     LOG(W, "Negative dt, skipping IMU integration.");
     return false;
   }
+  if (dt == 0) {
+    LOG(W, "Zero dt, skipping IMU integration.");
+    return false;
+  }
   Vector3 lin_acc, ang_vel;
   tf2::fromMsg(msg->linear_acceleration, lin_acc);
   tf2::fromMsg(msg->angular_velocity, ang_vel);
@@ -95,20 +99,31 @@ bool Propagation::split(const ros::Time& t, Propagation* propagation_to_t,
 
   *propagation_to_t =
       Propagation(std::vector<State::ConstPtr>(states_.begin(), state_1));
-  propagation_to_t->addImuMeasurement(imu);
+  if (t > (*state_0)->imu->header.stamp)
+    propagation_to_t->addImuMeasurement(imu);
+  else
+    LOG(W, "Split before or exactly at measurement time. t_split: "
+               << t << " t_0: " << (*state_0)->imu->header.stamp);
 
   // Regenerate propagation from t.
-  State initial_state = {propagation_to_t->getLatestState()->odom_frame_id,
-                         propagation_to_t->getLatestState()->I_p_IB,
-                         propagation_to_t->getLatestState()->R_IB,
-                         propagation_to_t->getLatestState()->I_v_IB,
-                         propagation_to_t->getLatestState()->imu,
-                         propagation_to_t->getLatestState()->integrator};
-  initial_state.integrator.resetIntegrationAndSetBias(
-      propagation_to_t->getLatestState()->integrator.biasHat());
-  *propagation_from_t = Propagation(initial_state);
-  for (auto it = state_1; it != states_.end(); ++it) {
-    propagation_from_t->addImuMeasurement((*it)->imu);
+  if (t < (*state_1)->imu->header.stamp) {
+    State initial_state = {propagation_to_t->getLatestState()->odom_frame_id,
+                           propagation_to_t->getLatestState()->I_p_IB,
+                           propagation_to_t->getLatestState()->R_IB,
+                           propagation_to_t->getLatestState()->I_v_IB,
+                           propagation_to_t->getLatestState()->imu,
+                           propagation_to_t->getLatestState()->integrator};
+    initial_state.integrator.resetIntegrationAndSetBias(
+        propagation_to_t->getLatestState()->integrator.biasHat());
+    *propagation_from_t = Propagation(initial_state);
+    for (auto it = state_1; it != states_.end(); ++it) {
+      propagation_from_t->addImuMeasurement((*it)->imu);
+    }
+  } else {
+    *propagation_from_t =
+        Propagation(std::vector<State::ConstPtr>(state_1, states_.end()));
+    LOG(W, "Split after or exactly at measurement time. t_split: "
+               << t << " t_1: " << (*state_1)->imu->header.stamp);
   }
 
   return true;
