@@ -1,6 +1,6 @@
 #pragma once
 
-#include <optional>
+#include <deque>
 
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
@@ -41,6 +41,6 @@ class RioFrontend {
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
       gtsam::PreintegratedCombinedMeasurements())};
-  std::optional<Propagation> propagation_;
+  std::deque<Propagation> propagation_;
 };
 }  // namespace rio
