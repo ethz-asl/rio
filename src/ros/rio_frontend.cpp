@@ -137,6 +137,9 @@ void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
 
   if (!splitPropagation(msg.header.stamp)) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
+    LOG(W, "Split time: " << msg.header.stamp);
+    LOG(W, "Last IMU time: "
+               << propagation_.back().getLatestState()->imu->header.stamp);
     return;
   }
 }
