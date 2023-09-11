@@ -135,13 +135,14 @@ void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
     return;
   }
 
-      LOG(I, "Inserting detection at t " << msg.header.stamp << ".");
+  LOG(I, "Inserting detection at t " << msg.header.stamp << ".");
   bool split_success = false;
   for (auto it = propagation_.begin(); it != propagation_.end(); ++it) {
-    Propagation propagation_from_t;
-    split_success = it->split(msg.header.stamp, &propagation_from_t);
+    Propagation propagation_to_t, propagation_from_t;
+    split_success =
+        it->split(msg.header.stamp, &propagation_to_t, &propagation_from_t);
     if (split_success) {
-      propagation_.insert(std::next(it), propagation_from_t);
+      //propagation_.insert(std::next(it), propagation_from_t);
       break;
     }
   }

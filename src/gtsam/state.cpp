@@ -56,3 +56,21 @@ geometry_msgs::Vector3Stamped State::getBiasGyro() const {
 }
 
 NavState State::getNavState() const { return NavState(R_IB, I_p_IB, I_v_IB); }
+
+bool State::operator==(const State& other) const {
+  return odom_frame_id == other.odom_frame_id &&
+         gtsam::equal_with_abs_tol(I_p_IB, other.I_p_IB) &&
+         R_IB.equals(other.R_IB) &&
+         gtsam::equal_with_abs_tol(I_v_IB, other.I_v_IB) && imu == other.imu &&
+         integrator.equals(other.integrator);
+}
+
+void State::print(const std::string& s) const {
+  LOG(INFO) << s << "  state:";
+  LOG(INFO) << s << "  odom_frame_id: " << odom_frame_id;
+  LOG(INFO) << s << "  I_p_IB: " << I_p_IB.transpose();
+  LOG(INFO) << s << "  R_IB:\n" << R_IB;
+  LOG(INFO) << s << "  I_v_IB: " << I_v_IB.transpose();
+  LOG(INFO) << s << "  imu: " << *imu;
+  integrator.print();
+}
