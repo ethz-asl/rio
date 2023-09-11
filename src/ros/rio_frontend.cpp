@@ -100,19 +100,19 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   if (initial_state_->imu == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (!propagation_.has_value()) {
+  } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
-    propagation_ = Propagation(initial_state_);
+    propagation_.emplace_back(initial_state_);
     return;
   }
   // Integrate.
-  if (!propagation_.value().addImuMeasurement(msg)) {
+  if (!propagation_.back().addImuMeasurement(msg)) {
     LOG(W, "Failed to add IMU measurement, skipping IMU integration.");
     return;
   }
   // Publish.
   odom_navigation_pub_.publish(
-      propagation_.value().getLatestState()->getOdometry());
+      propagation_.back().getLatestState()->getOdometry());
 }
 
 void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
@@ -130,4 +130,23 @@ void RioFrontend::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
 
 void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
   LOG_FIRST(I, 1, "Received first CFAR detections.");
+  if (propagation_.empty()) {
+    LOG(W, "No propagation, skipping CFAR detections.");
+    return;
+  }
+
+      LOG(I, "Inserting detection at t " << msg.header.stamp << ".");
+  bool split_success = false;
+  for (auto it = propagation_.begin(); it != propagation_.end(); ++it) {
+    Propagation propagation_from_t;
+    split_success = it->split(msg.header.stamp, &propagation_from_t);
+    if (split_success) {
+      propagation_.insert(std::next(it), propagation_from_t);
+      break;
+    }
+  }
+  if (!split_success) {
+    LOG(W, "Failed to split propagation, skipping CFAR detections.");
+    return;
+  }
 }

@@ -59,11 +59,11 @@ bool Propagation::split(const ros::Time& t, Propagation* propagation_from_t) {
     return false;
   }
   if (t < states_.front()->imu->header.stamp) {
-    LOG(W, "t is before first IMU measurement, skipping split.");
+    LOG(D, "t is before first IMU measurement, skipping split.");
     return false;
   }
   if (t > states_.back()->imu->header.stamp) {
-    LOG(W, "t is after last IMU measurement, skipping split.");
+    LOG(D, "t is after last IMU measurement, skipping split.");
     return false;
   }
   auto it =
