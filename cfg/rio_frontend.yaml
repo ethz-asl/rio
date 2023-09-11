@@ -1,3 +1,5 @@
+max_dead_reckoning_duration: 60.0 # Seconds before propagation buffer is cleared.
+
 imu:
     bias_acc_sigma: 1.0e-4
     bias_omega_sigma: 1.0e-5
