@@ -19,6 +19,10 @@ class Optimization {
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
                       const gtsam::SharedNoiseModel& noise_model_I_v_IB,
                       const gtsam::SharedNoiseModel& noise_model_imu_bias);
+  void addRadarFactor(const State::ConstPtr& prev_state,
+                      const State::ConstPtr& split_state,
+                      const State::ConstPtr& next_state,
+                      const gtsam::SharedNoiseModel& noise_model_radar);
 
  private:
   // void solveThreaded();
@@ -27,7 +31,7 @@ class Optimization {
   void addFactor(const uint32_t idx, const State::ConstPtr& state,
                  const gtsam::SharedNoiseModel& noise_model);
 
- // gtsam::IncrementalFixedLagSmoother smoother_;
+  gtsam::IncrementalFixedLagSmoother smoother_;
   uint32_t idx_{0};
 
   gtsam::NonlinearFactorGraph new_graph_;
