@@ -1,5 +1,14 @@
 max_dead_reckoning_duration: 60.0 # Seconds before propagation buffer is cleared.
 
+prior_noise:
+    R_IB: [0.03, 0.03, 0.03]
+    I_p_IB: [0.01, 0.01, 0.01]
+    I_v_IB: [0.01, 0.01, 0.01]
+    # Acc bias repeatability from data sheet (BMI088 20mg -> 3-sigma = 0.2 m/s**2).
+    b_a: [0.07, 0.07, 0.07]
+    # Gyro bias up to sensitivity, because it is calibrated at startup. (BMI088 16.384 LSB/°/s @ 2000 °/s -> 3-sigma = 0.0011°/s)
+    b_g: [3.6e-4, 3.6e-4, 3.6e-4]
+
 imu:
     bias_acc_sigma: 1.0e-4
     bias_omega_sigma: 1.0e-5

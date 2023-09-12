@@ -41,6 +41,7 @@ struct State {
   geometry_msgs::Vector3Stamped getBiasAcc() const;
   geometry_msgs::Vector3Stamped getBiasGyro() const;
   gtsam::NavState getNavState() const;
+  gtsam::Pose3 getPose() const;
   gtsam::imuBias::ConstantBias getBias() const;
 };
 }  // namespace rio

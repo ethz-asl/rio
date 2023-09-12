@@ -55,7 +55,13 @@ geometry_msgs::Vector3Stamped State::getBiasGyro() const {
   return bias_gyro;
 }
 
+gtsam::imuBias::ConstantBias State::getBias() const {
+  return integrator.biasHat();
+}
+
 NavState State::getNavState() const { return NavState(R_IB, I_p_IB, I_v_IB); }
+
+Pose3 State::getPose() const { return Pose3(R_IB, I_p_IB); }
 
 bool State::operator==(const State& other) const {
   return odom_frame_id == other.odom_frame_id &&
