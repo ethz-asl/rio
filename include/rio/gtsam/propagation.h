@@ -34,6 +34,7 @@ class Propagation {
     return last_state_idx_;
   }
 
+  std::optional<gtsam::Pose3> B_T_BR_;
   std::optional<std::vector<mav_sensors::Radar::CfarDetection>>
       cfar_detections_;
 

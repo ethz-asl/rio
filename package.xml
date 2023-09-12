@@ -20,6 +20,7 @@
   <depend>std_msgs</depend>
   <depend>roslib</depend>
   <depend>tf2_eigen</depend>
+  <depend>tf2_ros</depend>
   <depend>nodelet</depend>
   <depend>gtsam</depend>
   <depend>std_srvs</depend>
