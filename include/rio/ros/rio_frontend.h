@@ -51,5 +51,6 @@ class RioFrontend {
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_v_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
+  uint64_t idx_{0};
 };
 }  // namespace rio
