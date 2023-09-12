@@ -33,7 +33,12 @@ void Optimization::addFactor<PriorFactor<Vector3>>(
 template <>
 void Optimization::addFactor<PriorFactor<imuBias::ConstantBias>>(
     const uint32_t idx, const State::ConstPtr& state,
-    const gtsam::SharedNoiseModel& noise_model) {}
+    const gtsam::SharedNoiseModel& noise_model) {
+  new_values_.insert(B(idx), state->getBias());
+  new_timestamps_[B(idx)] = state->imu->header.stamp.toSec();
+  new_graph_.add(PriorFactor<imuBias::ConstantBias>(B(idx), state->getBias(),
+                                                    noise_model));
+}
 
 template <>
 void Optimization::addFactor<DopplerFactor>(
@@ -56,10 +61,10 @@ void Optimization::addRadarFactor(
     const State::ConstPtr& prev_state, const State::ConstPtr& split_state,
     const State::ConstPtr& next_state,
     const gtsam::SharedNoiseModel& noise_model_radar) {
-        // Check if IMU factor between prev_state and next_state exists.
-        // If yes, remove it. (TODO)
-        
-        // Add IMU factor from prev_state to split_state.
+  // Check if IMU factor between prev_state and next_state exists.
+  // If yes, remove it. (TODO)
 
-        // Add all radar factors to split_state.
-    }
+  // Add IMU factor from prev_state to split_state.
+
+  // Add all radar factors to split_state.
+}
