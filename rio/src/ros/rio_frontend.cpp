@@ -139,7 +139,7 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
     propagation_.emplace_back(initial_state_, idx_++);
-    optimization_.addPriorFactor(initial_state_, prior_noise_model_I_T_IB_,
+    optimization_.addPriorFactor(propagation_.back(), prior_noise_model_I_T_IB_,
                                  prior_noise_model_I_v_IB_,
                                  prior_noise_model_imu_bias_);
     return;
