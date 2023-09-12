@@ -44,7 +44,7 @@ class RioFrontend {
   std::deque<Propagation> propagation_;
   ros::Duration max_dead_reckoning_duration_{60.0};
 
-  bool splitPropagation(const ros::Time& t);
+  std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
   void popOldPropagations();
 
   Optimization optimization_;

@@ -28,7 +28,7 @@ class Optimization {
 
   template <typename T>
   void addFactor(const Propagation& propagation,
-                 const gtsam::SharedNoiseModel& noise_model);
+                 const gtsam::SharedNoiseModel& noise_model = nullptr);
 
   // gtsam::IncrementalFixedLagSmoother smoother_;
 

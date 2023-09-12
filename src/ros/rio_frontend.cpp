@@ -170,7 +170,8 @@ void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
     return;
   }
 
-  if (!splitPropagation(msg.header.stamp)) {
+  auto split_it = splitPropagation(msg.header.stamp);
+  if (split_it == propagation_.end()) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
     LOG(W, "Split time: " << msg.header.stamp);
     LOG(W, "Last IMU time: "
@@ -178,22 +179,25 @@ void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
     return;
   }
 
+  optimization_.addRadarFactor(*split_it, *std::next(split_it),
+                               noiseModel::Unit::Create(1));
+
   popOldPropagations();
 }
 
-bool RioFrontend::splitPropagation(const ros::Time& t) {
-  bool success = false;
-  for (auto it = propagation_.begin(); it != propagation_.end(); ++it) {
+std::deque<Propagation>::iterator RioFrontend::splitPropagation(
+    const ros::Time& t) {
+  auto it = propagation_.begin();
+  for (; it != propagation_.end(); ++it) {
     Propagation propagation_to_t, propagation_from_t;
-    success = it->split(t, &idx_, &propagation_to_t, &propagation_from_t);
-    if (success) {
+    if (it->split(t, &idx_, &propagation_to_t, &propagation_from_t)) {
       *it = propagation_to_t;
       propagation_.insert(std::next(it), propagation_from_t);
-      break;
+      return it;
     }
   }
 
-  return success;
+  return it;
 }
 
 void RioFrontend::popOldPropagations() {
