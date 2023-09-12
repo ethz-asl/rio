@@ -3,6 +3,8 @@
 #include <optional>
 #include <vector>
 
+#include <mav_sensors_drivers/sensor_types/Radar.h>
+
 #include "rio/gtsam/state.h"
 #include "sensor_msgs/Imu.h"
 
@@ -31,6 +33,9 @@ class Propagation {
   inline std::optional<uint64_t> getLastStateIdx() const {
     return last_state_idx_;
   }
+
+  std::optional<std::vector<mav_sensors::Radar::CfarDetection>>
+      cfar_detections_;
 
  private:
   // Vector of IMU measurements and preintegration up to this IMU.

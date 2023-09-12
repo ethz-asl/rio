@@ -1,8 +1,10 @@
 #pragma once
 
 #include <deque>
+#include <vector>
 
 #include <gtsam/linear/NoiseModel.h>
+#include <mav_sensors_drivers/sensor_types/Radar.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -33,7 +35,7 @@ class RioFrontend {
   ros::Subscriber radar_cfar_sub_;
   void imuRawCallback(const sensor_msgs::ImuConstPtr& msg);
   void imuFilterCallback(const sensor_msgs::ImuConstPtr& msg);
-  void cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg);
+  void cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg);
 
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
@@ -51,6 +53,10 @@ class RioFrontend {
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_v_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
+  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_;
   uint64_t idx_{0};
+
+  std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
+      const sensor_msgs::PointCloud2Ptr& msg) const;
 };
 }  // namespace rio

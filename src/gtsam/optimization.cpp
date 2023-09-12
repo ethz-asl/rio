@@ -3,6 +3,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <log++.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include "rio/gtsam/doppler_factor.h"
 
@@ -67,7 +68,27 @@ void Optimization::addFactor<CombinedImuFactor>(
 template <>
 void Optimization::addFactor<DopplerFactor>(
     const Propagation& propagation,
-    const gtsam::SharedNoiseModel& noise_model) {}
+    const gtsam::SharedNoiseModel& noise_model) {
+  if (!propagation.cfar_detections_.has_value()) {
+    LOG(D,
+        "Propagation has no CFAR detections, skipping adding Doppler factor.");
+    return;
+  }
+  if (!propagation.getLastStateIdx().has_value()) {
+    LOG(D,
+        "Propagation has no last state index, skipping adding Doppler "
+        "factor.");
+    return;
+  }
+  auto idx = propagation.getLastStateIdx().value();
+  Vector3 I_omega_IB;
+  tf2::fromMsg(propagation.getLatestState()->imu->angular_velocity, I_omega_IB);
+  for (const auto& detection : propagation.cfar_detections_.value()) {
+    new_graph_.add(DopplerFactor(
+        X(idx), V(idx), B(idx), {detection.x, detection.y, detection.z},
+        detection.velocity, I_omega_IB, Pose3(), noise_model));
+  }
+}
 
 void Optimization::addPriorFactor(
     const Propagation& propagation,
@@ -84,7 +105,7 @@ void Optimization::addRadarFactor(
     const Propagation& propagation_to_radar,
     const Propagation& propagation_from_radar,
     const gtsam::SharedNoiseModel& noise_model_radar) {
-  // Remove possible IMU factor between prev_state and next_state.
+  // TODO(rikba): Remove possible IMU factor between prev_state and next_state.
 
   // Add IMU factor from prev_state to split_state.
   addFactor<CombinedImuFactor>(propagation_to_radar);
@@ -92,4 +113,5 @@ void Optimization::addRadarFactor(
   addFactor<CombinedImuFactor>(propagation_from_radar);
 
   // Add all radar factors to split_state.
+  addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar);
 }
