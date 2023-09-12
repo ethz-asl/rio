@@ -2,7 +2,6 @@
 
 #include <cmath>
 
-#include <gtsam/navigation/CombinedImuFactor.h>
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
 #include <tf2_eigen/tf2_eigen.h>
@@ -26,8 +25,6 @@ bool RioFrontend::init() {
                                &RioFrontend::imuRawCallback, this);
   imu_filter_sub_ = nh_.subscribe("imu/data", queue_size,
                                   &RioFrontend::imuFilterCallback, this);
-  radar_trigger_sub_ = nh_.subscribe("radar/trigger", queue_size,
-                                     &RioFrontend::radarTriggerCallback, this);
   radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
                                   &RioFrontend::cfarDetectionsCallback, this);
 
@@ -92,6 +89,39 @@ bool RioFrontend::init() {
       odom_frame_id, initial_state_->I_p_IB, initial_state_->R_IB,
       initial_state_->I_v_IB, initial_state_->imu, integrator);
 
+  // Prior noise pose.
+  Vector3 prior_noise_R_IB, prior_noise_I_p_IB;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/R_IB", &prior_noise_R_IB))
+    return false;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/I_p_IB",
+                          &prior_noise_I_p_IB))
+    return false;
+  prior_noise_model_I_T_IB_ = gtsam::noiseModel::Diagonal::Sigmas(
+      (gtsam::Vector(6) << prior_noise_R_IB, prior_noise_I_p_IB).finished());
+  prior_noise_model_I_T_IB_->print("prior_noise_model_I_T_IB: ");
+
+  // Prior noise velocity.
+  Vector3 prior_noise_I_v_IB;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/I_v_IB",
+                          &prior_noise_I_v_IB))
+    return false;
+  prior_noise_model_I_v_IB_ =
+      gtsam::noiseModel::Diagonal::Sigmas(prior_noise_I_v_IB);
+  prior_noise_model_I_v_IB_->print("prior_noise_model_I_v_IB: ");
+
+  // Prior noise IMU bias.
+  Vector3 prior_noise_bias_acc, prior_noise_bias_gyro;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/b_a",
+                          &prior_noise_bias_acc))
+    return false;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/b_g",
+                          &prior_noise_bias_gyro))
+    return false;
+  prior_noise_model_imu_bias_ = gtsam::noiseModel::Diagonal::Sigmas(
+      (gtsam::Vector(6) << prior_noise_bias_acc, prior_noise_bias_gyro)
+          .finished());
+  prior_noise_model_imu_bias_->print("prior_noise_model_imu_bias: ");
+
   double max_dead_reckoning_duration = max_dead_reckoning_duration_.toSec();
   if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
                          &max_dead_reckoning_duration))
@@ -109,6 +139,9 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
     propagation_.emplace_back(initial_state_);
+    optimization_.addPriorFactor(initial_state_, prior_noise_model_I_T_IB_,
+                                 prior_noise_model_I_v_IB_,
+                                 prior_noise_model_imu_bias_);
     return;
   }
   // Integrate.
@@ -128,10 +161,6 @@ void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   initial_state_ = std::make_shared<State>(
       initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
       initial_state_->I_v_IB, msg, initial_state_->integrator);
-}
-
-void RioFrontend::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
-  LOG_FIRST(I, 1, "Received first radar trigger message.");
 }
 
 void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
