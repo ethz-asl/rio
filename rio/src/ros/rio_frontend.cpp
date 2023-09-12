@@ -181,6 +181,23 @@ void RioFrontend::cfarDetectionsCallback(
     return;
   }
 
+  Pose3 B_T_BR;
+  try {
+    auto R_T_RB_tf = tf_buffer_.lookupTransform(
+        msg->header.frame_id,
+        propagation_.back().getLatestState()->imu->header.frame_id,
+        ros::Time(0), ros::Duration(0.0));
+    Eigen::Affine3d R_T_RB_eigen = tf2::transformToEigen(R_T_RB_tf.transform);
+    B_T_BR = Pose3(R_T_RB_eigen.inverse().matrix());
+    LOG_FIRST(I, 1,
+              "Looked up radar extrinsic calibration B_T_BR:\n"
+                  << B_T_BR);
+  } catch (tf2::TransformException& ex) {
+    LOG(W, "Failed to lookup transform: " << ex.what()
+                                          << ". Skipping CFAR detections.");
+    return;
+  }
+
   auto split_it = splitPropagation(msg->header.stamp);
   if (split_it == propagation_.end()) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
@@ -190,6 +207,7 @@ void RioFrontend::cfarDetectionsCallback(
     return;
   }
 
+  split_it->B_T_BR_ = B_T_BR;
   split_it->cfar_detections_ = parseRadarMsg(msg);
   optimization_.addRadarFactor(*split_it, *std::next(split_it),
                                noise_model_radar_);

@@ -80,13 +80,20 @@ void Optimization::addFactor<DopplerFactor>(
         "factor.");
     return;
   }
+  if (!propagation.B_T_BR_.has_value()) {
+    LOG(D,
+        "Propagation has no B_t_BR, skipping adding Doppler "
+        "factor.");
+    return;
+  }
   auto idx = propagation.getLastStateIdx().value();
   Vector3 I_omega_IB;
   tf2::fromMsg(propagation.getLatestState()->imu->angular_velocity, I_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
-    new_graph_.add(DopplerFactor(
-        X(idx), V(idx), B(idx), {detection.x, detection.y, detection.z},
-        detection.velocity, I_omega_IB, Pose3(), noise_model));
+    new_graph_.add(DopplerFactor(X(idx), V(idx), B(idx),
+                                 {detection.x, detection.y, detection.z},
+                                 detection.velocity, I_omega_IB,
+                                 propagation.B_T_BR_.value(), noise_model));
   }
 }
 

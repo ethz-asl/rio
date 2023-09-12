@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
                 sensor_msgs
                 std_msgs
                 roslib
+                tf2_eigen
+                tf2_ros
                 nodelet
             )
 find_package(Eigen3 REQUIRED)
