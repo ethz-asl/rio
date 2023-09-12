@@ -31,8 +31,8 @@ class Optimization {
   void addFactor(const uint32_t idx, const State::ConstPtr& state,
                  const gtsam::SharedNoiseModel& noise_model);
 
-  gtsam::IncrementalFixedLagSmoother smoother_;
-  uint32_t idx_{0};
+  //gtsam::IncrementalFixedLagSmoother smoother_;
+  uint64_t idx_{0};
 
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;

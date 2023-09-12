@@ -138,7 +138,7 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     return;
   } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
-    propagation_.emplace_back(initial_state_);
+    propagation_.emplace_back(initial_state_, idx_++);
     optimization_.addPriorFactor(initial_state_, prior_noise_model_I_T_IB_,
                                  prior_noise_model_I_v_IB_,
                                  prior_noise_model_imu_bias_);
@@ -185,7 +185,7 @@ bool RioFrontend::splitPropagation(const ros::Time& t) {
   bool success = false;
   for (auto it = propagation_.begin(); it != propagation_.end(); ++it) {
     Propagation propagation_to_t, propagation_from_t;
-    success = it->split(t, &propagation_to_t, &propagation_from_t);
+    success = it->split(t, &idx_, &propagation_to_t, &propagation_from_t);
     if (success) {
       *it = propagation_to_t;
       propagation_.insert(std::next(it), propagation_from_t);
