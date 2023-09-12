@@ -22,9 +22,15 @@ class Propagation {
   bool addImuMeasurement(const sensor_msgs::ImuConstPtr& msg);
   bool addImuMeasurement(const sensor_msgs::Imu& msg);
   inline State::ConstPtr getLatestState() const { return states_.back(); }
+  inline State::ConstPtr getFirstState() const { return states_.front(); }
   bool split(const ros::Time& t, uint64_t* split_idx,
              Propagation* propagation_to_t,
              Propagation* propagation_from_t) const;
+
+  inline uint64_t getFirstStateIdx() const { return first_state_idx_; }
+  inline std::optional<uint64_t> getLastStateIdx() const {
+    return last_state_idx_;
+  }
 
  private:
   // Vector of IMU measurements and preintegration up to this IMU.
