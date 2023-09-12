@@ -2,6 +2,7 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <log++.h>
 
 #include "rio/gtsam/doppler_factor.h"
 
@@ -47,6 +48,23 @@ void Optimization::addFactor<PriorFactor<imuBias::ConstantBias>>(
 }
 
 template <>
+void Optimization::addFactor<CombinedImuFactor>(
+    const Propagation& propagation,
+    const gtsam::SharedNoiseModel& noise_model) {
+  auto first_idx = propagation.getFirstStateIdx();
+  auto first_state = propagation.getFirstState();
+  auto second_idx = propagation.getLastStateIdx();
+  auto second_state = propagation.getLatestState();
+  if (!second_idx.has_value()) {
+    LOG(D, "Propagation has no last state index, skipping adding IMU factor.");
+    return;
+  }
+  new_graph_.add(CombinedImuFactor(
+      X(first_idx), V(first_idx), X(second_idx.value()), V(second_idx.value()),
+      B(first_idx), B(second_idx.value()), second_state->integrator));
+}
+
+template <>
 void Optimization::addFactor<DopplerFactor>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {}
@@ -68,8 +86,10 @@ void Optimization::addRadarFactor(
     const gtsam::SharedNoiseModel& noise_model_radar) {
   // Remove possible IMU factor between prev_state and next_state.
 
-
   // Add IMU factor from prev_state to split_state.
+  addFactor<CombinedImuFactor>(propagation_to_radar);
+  // Add IMU factor from split_state to next_state.
+  addFactor<CombinedImuFactor>(propagation_from_radar);
 
   // Add all radar factors to split_state.
 }
