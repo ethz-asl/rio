@@ -4,6 +4,7 @@
 
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_eigen/tf2_eigen.h>
 
 #include "rio/ros/common.h"
@@ -122,6 +123,15 @@ bool RioFrontend::init() {
           .finished());
   prior_noise_model_imu_bias_->print("prior_noise_model_imu_bias: ");
 
+  // Noise Radar doppler.
+  double noise_radar_doppler = 0.0;
+  if (!loadParam<double>(nh_private_, "noise/radar/doppler",
+                         &noise_radar_doppler))
+    return false;
+  noise_model_radar_ = gtsam::noiseModel::Diagonal::Sigmas(
+      (gtsam::Vector(1) << noise_radar_doppler).finished());
+  noise_model_radar_->print("noise_model_radar: ");
+
   double max_dead_reckoning_duration = max_dead_reckoning_duration_.toSec();
   if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
                          &max_dead_reckoning_duration))
@@ -163,24 +173,26 @@ void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
       initial_state_->I_v_IB, msg, initial_state_->integrator);
 }
 
-void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
+void RioFrontend::cfarDetectionsCallback(
+    const sensor_msgs::PointCloud2Ptr& msg) {
   LOG_FIRST(I, 1, "Received first CFAR detections.");
   if (propagation_.empty()) {
     LOG(W, "No propagation, skipping CFAR detections.");
     return;
   }
 
-  auto split_it = splitPropagation(msg.header.stamp);
+  auto split_it = splitPropagation(msg->header.stamp);
   if (split_it == propagation_.end()) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
-    LOG(W, "Split time: " << msg.header.stamp);
+    LOG(W, "Split time: " << msg->header.stamp);
     LOG(W, "Last IMU time: "
                << propagation_.back().getLatestState()->imu->header.stamp);
     return;
   }
 
+  split_it->cfar_detections_ = parseRadarMsg(msg);
   optimization_.addRadarFactor(*split_it, *std::next(split_it),
-                               noiseModel::Unit::Create(1));
+                               noise_model_radar_);
 
   popOldPropagations();
 }
@@ -207,4 +219,31 @@ void RioFrontend::popOldPropagations() {
              max_dead_reckoning_duration_) {
     propagation_.pop_front();
   }
+}
+
+std::vector<mav_sensors::Radar::CfarDetection> RioFrontend::parseRadarMsg(
+    const sensor_msgs::PointCloud2Ptr& msg) const {
+  std::vector<mav_sensors::Radar::CfarDetection> detections(msg->height *
+                                                            msg->width);
+  sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_doppler(*msg, "doppler");
+  sensor_msgs::PointCloud2Iterator<int16_t> iter_snr(*msg, "snr");
+  sensor_msgs::PointCloud2Iterator<int16_t> iter_noise(*msg, "noise");
+  for (auto& detection : detections) {
+    detection.x = *(iter_x);
+    detection.y = *(iter_y);
+    detection.z = *(iter_z);
+    detection.velocity = *(iter_doppler);
+    detection.snr = *(iter_snr);
+    detection.noise = *(iter_noise);
+    ++iter_x;
+    ++iter_y;
+    ++iter_z;
+    ++iter_doppler;
+    ++iter_snr;
+    ++iter_noise;
+  }
+  return detections;
 }

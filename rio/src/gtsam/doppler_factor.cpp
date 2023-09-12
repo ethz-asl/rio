@@ -10,7 +10,8 @@ DopplerFactor::DopplerFactor(
     const gtsam::Vector3& B_omega_IB_measured, const gtsam::Pose3& B_T_BR,
     const gtsam::noiseModel::Base::shared_ptr& noise_model,
     const double min_distance)
-    : R_r_RT_measured_(R_r_RT_measured.normalized()),
+    : Base(noise_model, I_T_I_B_key, I_v_IB_key, bias_key),
+      R_r_RT_measured_(R_r_RT_measured.normalized()),
       doppler_measured_(doppler_measured),
       B_omega_IB_measured_(B_omega_IB_measured),
       B_T_BR_(B_T_BR),
