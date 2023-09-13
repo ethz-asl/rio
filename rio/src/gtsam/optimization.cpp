@@ -1,10 +1,10 @@
 #include "rio/gtsam/optimization.h"
 
+#include <gtsam/base/timing.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <log++.h>
 #include <tf2_eigen/tf2_eigen.h>
-#include <gtsam/base/timing.h>
 
 #include "rio/gtsam/doppler_factor.h"
 
@@ -137,11 +137,9 @@ void Optimization::addRadarFactor(
 }
 
 bool Optimization::solve() {
-  if (!thread_.joinable()) {
-    LOG(I, "Optimization thread is not joinable, skipping optimization.");
+  if (thread_.joinable()) {
+    LOG(W, "Optimization thread not joined, get result first.");
     return false;
-  } else {
-    thread_.join();
   }
 
   // Create deep copy.
@@ -158,13 +156,50 @@ bool Optimization::solve() {
   return true;
 }
 
+bool Optimization::getResult(Timing* timing) {
+  if (thread_.joinable()) {
+    thread_.join();
+  } else {
+    LOG(W, "Optimization thread is still running, skipping result.");
+    return false;
+  }
+  if (!new_result_) {
+    LOG(W, "No new result.");
+    return false;
+  }
+
+  *timing = timing_;
+  return true;
+}
+
 void Optimization::solveThreaded(
     std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
     std::unique_ptr<gtsam::Values> values,
     std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps) {
+  graph->print("graph");
+  values->print("values");
+  for (const auto& stamp : *stamps) {
+    LOG(I, "key: " << stamp.first << " time: " << stamp.second);
+  }
   gttic_(optimize);
-  smoother_.update(*graph, *values, *stamps);
-  auto new_values = smoother_.calculateEstimate();
+  try {
+    smoother_.update(*graph, *values, *stamps);
+  } catch (const std::exception& e) {
+    LOG(F, "Exception in update: " << e.what());
+    return;
+  }
+  try {
+    auto new_values = smoother_.calculateEstimate();
+  } catch (const std::exception& e) {
+    LOG(F, "Exception in calculateEstimate: " << e.what());
+    return;
+  }
   gttoc_(optimize);
-  gtsam::tictoc_finishedIteration_();
+  tictoc_finishedIteration_();
+  tictoc_getNode(optimize, optimize);
+  timing_.time = optimize->self();
+  timing_.min = optimize->min();
+  timing_.max = optimize->max();
+  timing_.mean = optimize->mean();
+  new_result_ = true;
 }
