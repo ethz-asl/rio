@@ -150,6 +150,8 @@ bool Optimization::solve(const std::deque<Propagation>& propagations) {
   new_values_.clear();
   new_timestamps_.clear();
 
+  propagations_ = propagations;
+
   thread_ =
       std::thread(&Optimization::solveThreaded, this, graph, values, stamps);
   return true;
@@ -178,23 +180,60 @@ void Optimization::solveThreaded(
   try {
     smoother_.update(graph, values, stamps);
   } catch (const std::exception& e) {
-    LOG(F, "Exception in update: " << e.what());
+    LOG(E, "Exception in update: " << e.what());
     return;
   }
+
+  Values new_values;
   try {
-    auto new_values = smoother_.calculateEstimate();
-    new_values.print();
+    new_values = smoother_.calculateEstimate();
   } catch (const std::exception& e) {
-    LOG(F, "Exception in calculateEstimate: " << e.what());
+    LOG(E, "Exception in calculateEstimate: " << e.what());
     return;
   }
   gttoc_(optimize);
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
+  timing_.header.stamp =
+      propagations_.back().getLatestState()->imu->header.stamp;
+  timing_.header.frame_id = "optimize";
   timing_.iteration = optimize->self() - timing_.total;
   timing_.total = optimize->self();
   timing_.min = optimize->min();
   timing_.max = optimize->max();
   timing_.mean = optimize->mean();
   new_result_ = true;
+
+  // Update propagations.
+  auto smallest_time = std::min_element(
+      smoother_.timestamps().begin(), smoother_.timestamps().end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  while (!propagations_.empty() &&
+         propagations_.front().getFirstState()->imu->header.stamp.toSec() <
+             smallest_time->second) {
+    propagations_.pop_front();
+  }
+
+  for (auto& propagation : propagations_) {
+    try {
+      State initial_state(
+          propagation.getFirstState()->odom_frame_id,
+          new_values.at<gtsam::Pose3>(X(propagation.getFirstStateIdx())),
+          new_values.at<gtsam::Vector3>(V(propagation.getFirstStateIdx())),
+          propagation.getFirstState()->imu,
+          propagation.getFirstState()->integrator);
+      initial_state.integrator.resetIntegrationAndSetBias(
+          new_values.at<gtsam::imuBias::ConstantBias>(
+              B(propagation.getFirstStateIdx())));
+
+      if (!propagation.repropagate(initial_state)) {
+        LOG(E, "Failed to repropagate.");
+        return;
+      }
+    } catch (const std::exception& e) {
+      LOG(E, "Exception in getting new values at idx: "
+                 << propagation.getFirstStateIdx() << " Error: " << e.what());
+      return;
+    }
+  }
 }
