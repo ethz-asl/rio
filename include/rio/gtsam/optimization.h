@@ -26,6 +26,9 @@ class Optimization {
   void addRadarFactor(const Propagation& propagation_to_radar,
                       const Propagation& propagation_from_radar,
                       const gtsam::SharedNoiseModel& noise_model_radar);
+  inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
+    smoother_ = smoother;
+  }
 
  private:
   void solveThreaded(
