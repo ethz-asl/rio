@@ -134,3 +134,32 @@ void Optimization::addRadarFactor(
     new_timestamps_[B(idx)] = state->imu->header.stamp.toSec();
   }
 }
+
+bool Optimization::solve() {
+  if (!thread_.joinable()) {
+    LOG(D, "Optimization thread is not joinable, skipping optimization.");
+    return false;
+  } else {
+    thread_.join();
+  }
+
+  // Create deep copy.
+  auto graph = std::make_unique<gtsam::NonlinearFactorGraph>(new_graph_);
+  auto values = std::make_unique<gtsam::Values>(new_values_);
+  auto stamps = std::make_unique<gtsam::FixedLagSmoother::KeyTimestampMap>(
+      new_timestamps_);
+  new_graph_.resize(0);
+  new_values_.clear();
+  new_timestamps_.clear();
+
+  thread_ = std::thread(&Optimization::solveThreaded, this, std::move(graph),
+                        std::move(values), std::move(stamps));
+  return true;
+}
+
+void Optimization::solveThreaded(
+    std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
+    std::unique_ptr<gtsam::Values> values,
+    std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps) {
+      
+    }
