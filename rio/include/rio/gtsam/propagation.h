@@ -28,6 +28,7 @@ class Propagation {
   bool split(const ros::Time& t, uint64_t* split_idx,
              Propagation* propagation_to_t,
              Propagation* propagation_from_t) const;
+  bool repropagate(const State& initial_state);
 
   inline uint64_t getFirstStateIdx() const { return first_state_idx_; }
   inline std::optional<uint64_t> getLastStateIdx() const {

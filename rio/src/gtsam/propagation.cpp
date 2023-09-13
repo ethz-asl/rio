@@ -143,3 +143,22 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
 
   return true;
 }
+
+bool Propagation::repropagate(const State& initial_state) {
+  if (states_.empty()) {
+    LOG(W, "No initial state, skipping repropagation.");
+    return false;
+  }
+
+  Propagation propagation(initial_state, first_state_idx_, last_state_idx_);
+  for (auto it = std::next(states_.begin()); it != states_.end(); ++it) {
+    if (!propagation.addImuMeasurement((*it)->imu)) {
+      LOG(W, "Failed to add IMU message during repropagation.");
+      return false;
+    }
+  }
+
+  *this = propagation;
+
+  return true;
+}
