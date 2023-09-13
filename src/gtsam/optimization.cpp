@@ -69,15 +69,15 @@ template <>
 void Optimization::addFactor<DopplerFactor>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  if (!propagation.cfar_detections_.has_value()) {
-    LOG(D,
-        "Propagation has no CFAR detections, skipping adding Doppler factor.");
-    return;
-  }
   if (!propagation.getLastStateIdx().has_value()) {
     LOG(D,
         "Propagation has no last state index, skipping adding Doppler "
         "factor.");
+    return;
+  }
+  if (!propagation.cfar_detections_.has_value()) {
+    LOG(D,
+        "Propagation has no CFAR detections, skipping adding Doppler factor.");
     return;
   }
   if (!propagation.B_T_BR_.has_value()) {
@@ -121,4 +121,16 @@ void Optimization::addRadarFactor(
 
   // Add all radar factors to split_state.
   addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar);
+
+  // Add initial state at split_state.
+  if (propagation_to_radar.getLastStateIdx().has_value()) {
+    auto idx = propagation_to_radar.getLastStateIdx().value();
+    auto state = propagation_to_radar.getLatestState();
+    new_values_.insert(X(idx), state->getPose());
+    new_timestamps_[X(idx)] = state->imu->header.stamp.toSec();
+    new_values_.insert(V(idx), state->I_v_IB);
+    new_timestamps_[V(idx)] = state->imu->header.stamp.toSec();
+    new_values_.insert(B(idx), state->getBias());
+    new_timestamps_[B(idx)] = state->imu->header.stamp.toSec();
+  }
 }
