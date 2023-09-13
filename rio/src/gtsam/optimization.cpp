@@ -4,6 +4,7 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <log++.h>
 #include <tf2_eigen/tf2_eigen.h>
+#include <gtsam/base/timing.h>
 
 #include "rio/gtsam/doppler_factor.h"
 
@@ -137,7 +138,7 @@ void Optimization::addRadarFactor(
 
 bool Optimization::solve() {
   if (!thread_.joinable()) {
-    LOG(D, "Optimization thread is not joinable, skipping optimization.");
+    LOG(I, "Optimization thread is not joinable, skipping optimization.");
     return false;
   } else {
     thread_.join();
@@ -161,5 +162,9 @@ void Optimization::solveThreaded(
     std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
     std::unique_ptr<gtsam::Values> values,
     std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps) {
-      
-    }
+  gttic_(optimize);
+  smoother_.update(*graph, *values, *stamps);
+  auto new_values = smoother_.calculateEstimate();
+  gttoc_(optimize);
+  gtsam::tictoc_finishedIteration_();
+}

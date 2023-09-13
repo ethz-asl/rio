@@ -12,6 +12,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
   <depend>roscpp</depend>
   <depend>lpp</depend>
   <depend>mav_sensors_drivers</depend>
