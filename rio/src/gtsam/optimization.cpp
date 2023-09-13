@@ -138,7 +138,7 @@ void Optimization::addRadarFactor(
 
 bool Optimization::solve() {
   if (thread_.joinable()) {
-    LOG(W, "Optimization thread not joined, get result first.");
+    LOG(D, "Optimization thread not joined, get result first.");
     return false;
   }
 
@@ -160,7 +160,7 @@ bool Optimization::getResult(Timing* timing) {
   if (thread_.joinable()) {
     thread_.join();
   } else {
-    LOG(W, "Optimization thread is still running, skipping result.");
+    LOG(D, "Optimization thread is still running, skipping result.");
     return false;
   }
   if (!new_result_) {
@@ -176,17 +176,11 @@ void Optimization::solveThreaded(
     std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
     std::unique_ptr<gtsam::Values> values,
     std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps) {
-  graph->print("graph");
-  values->print("values");
-  for (const auto& stamp : *stamps) {
-    LOG(I, "key: " << stamp.first << " time: " << stamp.second);
-  }
   gttic_(optimize);
   try {
     smoother_.update(*graph, *values, *stamps);
   } catch (const std::exception& e) {
     LOG(F, "Exception in update: " << e.what());
-    smoother_.print();
     return;
   }
   try {
@@ -198,7 +192,8 @@ void Optimization::solveThreaded(
   gttoc_(optimize);
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
-  timing_.time = optimize->self();
+  timing_.iteration = optimize->self() - timing_.total;
+  timing_.total = optimize->self();
   timing_.min = optimize->min();
   timing_.max = optimize->max();
   timing_.mean = optimize->mean();
