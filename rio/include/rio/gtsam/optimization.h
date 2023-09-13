@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <thread>
+#include <deque>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -16,7 +16,7 @@ namespace rio {
 class Optimization {
  public:
   Optimization(){};
-  bool solve();
+  bool solve(const std::deque<Propagation>& propagations);
   bool getResult(Timing* timing);
 
   void addPriorFactor(const Propagation& propagation,
@@ -31,10 +31,9 @@ class Optimization {
   }
 
  private:
-  void solveThreaded(
-      std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
-      std::unique_ptr<gtsam::Values> values,
-      std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps);
+  void solveThreaded(const gtsam::NonlinearFactorGraph& graph,
+                     const gtsam::Values& values,
+                     const gtsam::FixedLagSmoother::KeyTimestampMap& stamps);
 
   template <typename T>
   void addFactor(const Propagation& propagation,
@@ -44,11 +43,11 @@ class Optimization {
   gtsam::Values new_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap new_timestamps_;
 
-  // Variables only modified in the optimization thread.
+  // Variables that should not be accessed while thread is running.
+  // TODO(rikba): Possibly mutex lock.
   gtsam::IncrementalFixedLagSmoother smoother_;
-  // Variables that should not be accessed while thread is running. Possibly
-  // mutex lock.
   Timing timing_;
+  std::deque<Propagation> propagations_;
   bool new_result_{false};
 
   std::thread thread_;

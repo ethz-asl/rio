@@ -265,7 +265,7 @@ void RioFrontend::cfarDetectionsCallback(
   split_it->cfar_detections_ = parseRadarMsg(msg);
   optimization_.addRadarFactor(*split_it, *std::next(split_it),
                                noise_model_radar_);
-  optimization_.solve();
+  optimization_.solve(propagation_);
 
   popOldPropagations();
 }
