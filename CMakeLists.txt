@@ -6,6 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS 
+                message_generation
                 roscpp 
                 lpp 
                 mav_sensors_drivers
@@ -21,8 +22,12 @@ find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
 find_package(GTSAM_UNSTABLE REQUIRED)
 
+add_message_files()
+generate_messages(DEPENDENCIES std_msgs)
+
 catkin_package( INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
                 LIBRARIES ${PROJECT_NAME} ${PROJECT_NAME}_nodelet
+                CATKIN_DEPENDS message_runtime roscpp lpp mav_sensors_drivers sensor_msgs std_msgs roslib tf2_eigen tf2_ros nodelet std_srvs
               )
 include_directories(include ${catkin_INCLUDE_DIRS})
 

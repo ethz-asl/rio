@@ -40,9 +40,8 @@ class Optimization {
 
   // Variables only modified in the optimization thread.
   gtsam::IncrementalFixedLagSmoother smoother_;
-  gtsam::NonlinearFactorGraph optimized_graph_;
-  gtsam::Values optimized_values_;
-  gtsam::FixedLagSmoother::KeyTimestampMap optimized_timestamps_;
+  // Variables that should not be accessed while thread is running. Possibly mutex lock.
+
 
   std::thread thread_;
 };
