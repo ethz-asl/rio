@@ -8,6 +8,7 @@
 #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
+#include "rio/Timing.h"
 #include "rio/gtsam/propagation.h"
 
 namespace rio {
@@ -16,6 +17,8 @@ class Optimization {
  public:
   Optimization(){};
   bool solve();
+  bool getResult(Timing* timing);
+
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
                       const gtsam::SharedNoiseModel& noise_model_I_v_IB,
@@ -40,8 +43,10 @@ class Optimization {
 
   // Variables only modified in the optimization thread.
   gtsam::IncrementalFixedLagSmoother smoother_;
-  // Variables that should not be accessed while thread is running. Possibly mutex lock.
-
+  // Variables that should not be accessed while thread is running. Possibly
+  // mutex lock.
+  Timing timing_;
+  bool new_result_{false};
 
   std::thread thread_;
 };
