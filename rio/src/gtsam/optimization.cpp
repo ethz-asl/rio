@@ -186,6 +186,7 @@ void Optimization::solveThreaded(
     smoother_.update(*graph, *values, *stamps);
   } catch (const std::exception& e) {
     LOG(F, "Exception in update: " << e.what());
+    smoother_.print();
     return;
   }
   try {

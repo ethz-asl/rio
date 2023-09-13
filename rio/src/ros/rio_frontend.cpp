@@ -137,6 +137,50 @@ bool RioFrontend::init() {
   if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
                          &max_dead_reckoning_duration))
     return false;
+
+  // iSAM2 smoother.
+  ISAM2Params parameters;
+  double relinearize_threshold_rot, relinearize_threshold_pos,
+      relinearize_threshold_vel, relinearize_threshold_acc_bias,
+      relinearize_threshold_gyro_bias;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_rot",
+                         &relinearize_threshold_rot))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_pos",
+                         &relinearize_threshold_pos))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_vel",
+                         &relinearize_threshold_vel))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_acc_bias",
+                         &relinearize_threshold_acc_bias))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_gyro_bias",
+                         &relinearize_threshold_gyro_bias))
+    return false;
+
+  FastMap<char, Vector> thresholds;
+  thresholds['x'] =
+      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_rot),
+       Eigen::Vector3d::Constant(relinearize_threshold_pos))
+          .finished();
+  thresholds['v'] = Eigen::Vector3d::Constant(relinearize_threshold_vel);
+  thresholds['b'] =
+      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_acc_bias),
+       Eigen::Vector3d::Constant(relinearize_threshold_gyro_bias))
+          .finished();
+  parameters.relinearizeThreshold = thresholds;
+  if (!loadParam(nh_private_, "isam2/relinearize_skip",
+                 &parameters.relinearizeSkip))
+    return false;
+  if (!loadParam(nh_private_, "isam2/enable_partial_relinarization_check",
+                 &parameters.enablePartialRelinearizationCheck))
+    return false;
+  double smoother_lag = 0.0;
+  if (!loadParam(nh_private_, "isam2/smoother_lag", &smoother_lag))
+    return false;
+  optimization_.setSmoother({smoother_lag, parameters});
+
   max_dead_reckoning_duration_ = ros::Duration(max_dead_reckoning_duration);
   return true;
 }
