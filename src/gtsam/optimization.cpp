@@ -136,23 +136,22 @@ void Optimization::addRadarFactor(
   }
 }
 
-bool Optimization::solve() {
+bool Optimization::solve(const std::deque<Propagation>& propagations) {
   if (thread_.joinable()) {
     LOG(D, "Optimization thread not joined, get result first.");
     return false;
   }
 
   // Create deep copy.
-  auto graph = std::make_unique<gtsam::NonlinearFactorGraph>(new_graph_);
-  auto values = std::make_unique<gtsam::Values>(new_values_);
-  auto stamps = std::make_unique<gtsam::FixedLagSmoother::KeyTimestampMap>(
-      new_timestamps_);
+  auto graph = new_graph_.clone();
+  auto values = new_values_;
+  auto stamps = new_timestamps_;
   new_graph_.resize(0);
   new_values_.clear();
   new_timestamps_.clear();
 
-  thread_ = std::thread(&Optimization::solveThreaded, this, std::move(graph),
-                        std::move(values), std::move(stamps));
+  thread_ =
+      std::thread(&Optimization::solveThreaded, this, graph, values, stamps);
   return true;
 }
 
@@ -173,18 +172,18 @@ bool Optimization::getResult(Timing* timing) {
 }
 
 void Optimization::solveThreaded(
-    std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
-    std::unique_ptr<gtsam::Values> values,
-    std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps) {
+    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::FixedLagSmoother::KeyTimestampMap& stamps) {
   gttic_(optimize);
   try {
-    smoother_.update(*graph, *values, *stamps);
+    smoother_.update(graph, values, stamps);
   } catch (const std::exception& e) {
     LOG(F, "Exception in update: " << e.what());
     return;
   }
   try {
     auto new_values = smoother_.calculateEstimate();
+    new_values.print();
   } catch (const std::exception& e) {
     LOG(F, "Exception in calculateEstimate: " << e.what());
     return;
