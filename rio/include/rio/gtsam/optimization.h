@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <thread>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -14,7 +15,7 @@ namespace rio {
 class Optimization {
  public:
   Optimization(){};
-  // bool solve();
+  bool solve();
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
                       const gtsam::SharedNoiseModel& noise_model_I_v_IB,
@@ -24,18 +25,21 @@ class Optimization {
                       const gtsam::SharedNoiseModel& noise_model_radar);
 
  private:
-  // void solveThreaded();
+  void solveThreaded(
+      std::unique_ptr<gtsam::NonlinearFactorGraph> graph,
+      std::unique_ptr<gtsam::Values> values,
+      std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap> stamps);
 
   template <typename T>
   void addFactor(const Propagation& propagation,
                  const gtsam::SharedNoiseModel& noise_model = nullptr);
 
-  // gtsam::IncrementalFixedLagSmoother smoother_;
-
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap new_timestamps_;
 
+  // Variables only modified in the optimization thread.
+  gtsam::IncrementalFixedLagSmoother smoother_;
   gtsam::NonlinearFactorGraph optimized_graph_;
   gtsam::Values optimized_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap optimized_timestamps_;
