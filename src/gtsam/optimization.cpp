@@ -157,7 +157,7 @@ bool Optimization::solve(const std::deque<Propagation>& propagations) {
 }
 
 bool Optimization::getResult(std::deque<Propagation>* propagation,
-                             Timing* timing) {
+                             std::map<std::string, Timing>* timing) {
   if (thread_.joinable()) {
     thread_.join();
   } else {
@@ -171,13 +171,16 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
 
   // Pop all propagations previous to the current propagation result, i.e.,
   // states that have been marginalized out.
+  gttic_(deqeueCleanup);
   while (!propagation->empty() &&
          propagation->front().getFirstStateIdx() !=
              propagations_.front().getFirstStateIdx()) {
     propagation->pop_front();
   }
+  gttoc_(deqeueCleanup);
 
   // Replace all propagations that have been updated with the new result.
+  gttic_(copyCachedPropagations);
   std::set<std::deque<Propagation>::iterator> updated;
   for (auto it = propagation->begin(); it != propagation->end(); ++it) {
     auto result_it = std::find_if(
@@ -194,8 +197,10 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
         propagations_.pop_front();  // Cleanup.
     }
   }
+  gttoc_(copyCachedPropagations);
 
   // Repropagate all remaining propagations.
+  gttic_(repropagateNewPropagations);
   for (auto it = propagation->begin(); it != propagation->end(); ++it) {
     if (updated.count(it) > 0) continue;
     if (it == propagation->begin()) {
@@ -207,6 +212,53 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
       continue;
     }
   }
+  gttoc_(repropagateNewPropagations);
+
+  tictoc_finishedIteration_();
+  tictoc_getNode(deqeueCleanup, deqeueCleanup);
+  if (timing_.find("deqeueCleanup") == timing_.end()) {
+    timing_["deqeueCleanup"] = Timing();
+  }
+  timing_["deqeueCleanup"].header.stamp = timing_["optimize"].header.stamp;
+  timing_["deqeueCleanup"].header.frame_id = "deqeueCleanup";
+  timing_["deqeueCleanup"].iteration =
+      deqeueCleanup->self() - timing_["deqeueCleanup"].total;
+  timing_["deqeueCleanup"].total = deqeueCleanup->self();
+  timing_["deqeueCleanup"].min = deqeueCleanup->min();
+  timing_["deqeueCleanup"].max = deqeueCleanup->max();
+  timing_["deqeueCleanup"].mean = deqeueCleanup->mean();
+
+  tictoc_getNode(copyCachedPropagations, copyCachedPropagations);
+  if (timing_.find("copyCachedPropagations") == timing_.end()) {
+    timing_["copyCachedPropagations"] = Timing();
+  }
+  timing_["copyCachedPropagations"].header.stamp =
+      timing_["optimize"].header.stamp;
+  timing_["copyCachedPropagations"].header.frame_id = "copyCachedPropagations";
+  timing_["copyCachedPropagations"].iteration =
+      copyCachedPropagations->self() - timing_["copyCachedPropagations"].total;
+  timing_["copyCachedPropagations"].total = copyCachedPropagations->self();
+  timing_["copyCachedPropagations"].min = copyCachedPropagations->min();
+  timing_["copyCachedPropagations"].max = copyCachedPropagations->max();
+  timing_["copyCachedPropagations"].mean = copyCachedPropagations->mean();
+
+  tictoc_getNode(repropagateNewPropagations, repropagateNewPropagations);
+  if (timing_.find("repropagateNewPropagations") == timing_.end()) {
+    timing_["repropagateNewPropagations"] = Timing();
+  }
+  timing_["repropagateNewPropagations"].header.stamp =
+      timing_["optimize"].header.stamp;
+  timing_["repropagateNewPropagations"].header.frame_id =
+      "repropagateNewPropagations";
+  timing_["repropagateNewPropagations"].iteration =
+      repropagateNewPropagations->self() -
+      timing_["repropagateNewPropagations"].total;
+  timing_["repropagateNewPropagations"].total =
+      repropagateNewPropagations->self();
+  timing_["repropagateNewPropagations"].min = repropagateNewPropagations->min();
+  timing_["repropagateNewPropagations"].max = repropagateNewPropagations->max();
+  timing_["repropagateNewPropagations"].mean =
+      repropagateNewPropagations->mean();
 
   *timing = timing_;
   return true;
@@ -231,18 +283,9 @@ void Optimization::solveThreaded(
     return;
   }
   gttoc_(optimize);
-  tictoc_finishedIteration_();
-  tictoc_getNode(optimize, optimize);
-  timing_.header.stamp =
-      propagations_.back().getLatestState()->imu->header.stamp;
-  timing_.header.frame_id = "optimize";
-  timing_.iteration = optimize->self() - timing_.total;
-  timing_.total = optimize->self();
-  timing_.min = optimize->min();
-  timing_.max = optimize->max();
-  timing_.mean = optimize->mean();
 
   // Update propagations.
+  gttic_(cachePropagations);
   auto smallest_time = std::min_element(
       smoother_.timestamps().begin(), smoother_.timestamps().end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
@@ -274,6 +317,35 @@ void Optimization::solveThreaded(
       return;
     }
   }
+  gttoc_(cachePropagations);
+
+  tictoc_finishedIteration_();
+  tictoc_getNode(optimize, optimize);
+  if (timing_.find("optimize") == timing_.end()) {
+    timing_["optimize"] = Timing();
+  }
+  timing_["optimize"].header.stamp =
+      propagations_.back().getLatestState()->imu->header.stamp;
+  timing_["optimize"].header.frame_id = "optimize";
+  timing_["optimize"].iteration = optimize->self() - timing_["optimize"].total;
+  timing_["optimize"].total = optimize->self();
+  timing_["optimize"].min = optimize->min();
+  timing_["optimize"].max = optimize->max();
+  timing_["optimize"].mean = optimize->mean();
+
+  tictoc_getNode(cachePropagations, cachePropagations);
+  if (timing_.find("cachePropagations") == timing_.end()) {
+    timing_["cachePropagations"] = Timing();
+  }
+  timing_["cachePropagations"].header.stamp =
+      propagations_.back().getLatestState()->imu->header.stamp;
+  timing_["cachePropagations"].header.frame_id = "cachePropagations";
+  timing_["cachePropagations"].iteration =
+      cachePropagations->self() - timing_["cachePropagations"].total;
+  timing_["cachePropagations"].total = cachePropagations->self();
+  timing_["cachePropagations"].min = cachePropagations->min();
+  timing_["cachePropagations"].max = cachePropagations->max();
+  timing_["cachePropagations"].mean = cachePropagations->mean();
 
   new_result_ = true;
 }
