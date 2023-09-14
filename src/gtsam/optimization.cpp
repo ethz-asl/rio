@@ -216,49 +216,14 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
 
   tictoc_finishedIteration_();
   tictoc_getNode(deqeueCleanup, deqeueCleanup);
-  if (timing_.find("deqeueCleanup") == timing_.end()) {
-    timing_["deqeueCleanup"] = Timing();
-  }
-  timing_["deqeueCleanup"].header.stamp = timing_["optimize"].header.stamp;
-  timing_["deqeueCleanup"].header.frame_id = "deqeueCleanup";
-  timing_["deqeueCleanup"].iteration =
-      deqeueCleanup->self() - timing_["deqeueCleanup"].total;
-  timing_["deqeueCleanup"].total = deqeueCleanup->self();
-  timing_["deqeueCleanup"].min = deqeueCleanup->min();
-  timing_["deqeueCleanup"].max = deqeueCleanup->max();
-  timing_["deqeueCleanup"].mean = deqeueCleanup->mean();
-
+  updateTiming(deqeueCleanup, "deqeueCleanup",
+               timing_["optimize"].header.stamp);
   tictoc_getNode(copyCachedPropagations, copyCachedPropagations);
-  if (timing_.find("copyCachedPropagations") == timing_.end()) {
-    timing_["copyCachedPropagations"] = Timing();
-  }
-  timing_["copyCachedPropagations"].header.stamp =
-      timing_["optimize"].header.stamp;
-  timing_["copyCachedPropagations"].header.frame_id = "copyCachedPropagations";
-  timing_["copyCachedPropagations"].iteration =
-      copyCachedPropagations->self() - timing_["copyCachedPropagations"].total;
-  timing_["copyCachedPropagations"].total = copyCachedPropagations->self();
-  timing_["copyCachedPropagations"].min = copyCachedPropagations->min();
-  timing_["copyCachedPropagations"].max = copyCachedPropagations->max();
-  timing_["copyCachedPropagations"].mean = copyCachedPropagations->mean();
-
+  updateTiming(copyCachedPropagations, "copyCachedPropagations",
+               timing_["optimize"].header.stamp);
   tictoc_getNode(repropagateNewPropagations, repropagateNewPropagations);
-  if (timing_.find("repropagateNewPropagations") == timing_.end()) {
-    timing_["repropagateNewPropagations"] = Timing();
-  }
-  timing_["repropagateNewPropagations"].header.stamp =
-      timing_["optimize"].header.stamp;
-  timing_["repropagateNewPropagations"].header.frame_id =
-      "repropagateNewPropagations";
-  timing_["repropagateNewPropagations"].iteration =
-      repropagateNewPropagations->self() -
-      timing_["repropagateNewPropagations"].total;
-  timing_["repropagateNewPropagations"].total =
-      repropagateNewPropagations->self();
-  timing_["repropagateNewPropagations"].min = repropagateNewPropagations->min();
-  timing_["repropagateNewPropagations"].max = repropagateNewPropagations->max();
-  timing_["repropagateNewPropagations"].mean =
-      repropagateNewPropagations->mean();
+  updateTiming(repropagateNewPropagations, "repropagateNewPropagations",
+               timing_["optimize"].header.stamp);
 
   *timing = timing_;
   return true;
@@ -321,31 +286,27 @@ void Optimization::solveThreaded(
 
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
-  if (timing_.find("optimize") == timing_.end()) {
-    timing_["optimize"] = Timing();
-  }
-  timing_["optimize"].header.stamp =
-      propagations_.back().getLatestState()->imu->header.stamp;
-  timing_["optimize"].header.frame_id = "optimize";
-  timing_["optimize"].iteration = optimize->self() - timing_["optimize"].total;
-  timing_["optimize"].total = optimize->self();
-  timing_["optimize"].min = optimize->min();
-  timing_["optimize"].max = optimize->max();
-  timing_["optimize"].mean = optimize->mean();
+  updateTiming(optimize, "optimize",
+               propagations_.back().getLatestState()->imu->header.stamp);
 
   tictoc_getNode(cachePropagations, cachePropagations);
-  if (timing_.find("cachePropagations") == timing_.end()) {
-    timing_["cachePropagations"] = Timing();
-  }
-  timing_["cachePropagations"].header.stamp =
-      propagations_.back().getLatestState()->imu->header.stamp;
-  timing_["cachePropagations"].header.frame_id = "cachePropagations";
-  timing_["cachePropagations"].iteration =
-      cachePropagations->self() - timing_["cachePropagations"].total;
-  timing_["cachePropagations"].total = cachePropagations->self();
-  timing_["cachePropagations"].min = cachePropagations->min();
-  timing_["cachePropagations"].max = cachePropagations->max();
-  timing_["cachePropagations"].mean = cachePropagations->mean();
+  updateTiming(cachePropagations, "cachePropagations",
+               propagations_.back().getLatestState()->imu->header.stamp);
 
   new_result_ = true;
+}
+
+void Optimization::updateTiming(
+    const boost::shared_ptr<const gtsam::internal::TimingOutline>& variable,
+    const std::string& label, const ros::Time& stamp) {
+  if (timing_.find(label) == timing_.end()) {
+    timing_[label] = Timing();
+  }
+  timing_[label].header.stamp = stamp;
+  timing_[label].header.frame_id = label;
+  timing_[label].iteration = variable->self() - timing_[label].total;
+  timing_[label].total = variable->self();
+  timing_[label].min = variable->min();
+  timing_[label].max = variable->max();
+  timing_[label].mean = variable->mean();
 }
