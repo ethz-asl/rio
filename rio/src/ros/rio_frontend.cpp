@@ -2,9 +2,9 @@
 
 #include <cmath>
 
-#include <gtsam/navigation/CombinedImuFactor.h>
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_eigen/tf2_eigen.h>
 
 #include "rio/ros/common.h"
@@ -26,8 +26,6 @@ bool RioFrontend::init() {
                                &RioFrontend::imuRawCallback, this);
   imu_filter_sub_ = nh_.subscribe("imu/data", queue_size,
                                   &RioFrontend::imuFilterCallback, this);
-  radar_trigger_sub_ = nh_.subscribe("radar/trigger", queue_size,
-                                     &RioFrontend::radarTriggerCallback, this);
   radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
                                   &RioFrontend::cfarDetectionsCallback, this);
 
@@ -36,6 +34,7 @@ bool RioFrontend::init() {
       "odometry_navigation", queue_size);
   odom_optimizer_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
       "odometry_optimizer", queue_size);
+  timing_pub_ = nh_private_.advertise<rio::Timing>("timing", queue_size);
 
   // IMU integration
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
@@ -91,6 +90,98 @@ bool RioFrontend::init() {
   initial_state_ = std::make_shared<State>(
       odom_frame_id, initial_state_->I_p_IB, initial_state_->R_IB,
       initial_state_->I_v_IB, initial_state_->imu, integrator);
+
+  // Prior noise pose.
+  Vector3 prior_noise_R_IB, prior_noise_I_p_IB;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/R_IB", &prior_noise_R_IB))
+    return false;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/I_p_IB",
+                          &prior_noise_I_p_IB))
+    return false;
+  prior_noise_model_I_T_IB_ = gtsam::noiseModel::Diagonal::Sigmas(
+      (gtsam::Vector(6) << prior_noise_R_IB, prior_noise_I_p_IB).finished());
+  prior_noise_model_I_T_IB_->print("prior_noise_model_I_T_IB: ");
+
+  // Prior noise velocity.
+  Vector3 prior_noise_I_v_IB;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/I_v_IB",
+                          &prior_noise_I_v_IB))
+    return false;
+  prior_noise_model_I_v_IB_ =
+      gtsam::noiseModel::Diagonal::Sigmas(prior_noise_I_v_IB);
+  prior_noise_model_I_v_IB_->print("prior_noise_model_I_v_IB: ");
+
+  // Prior noise IMU bias.
+  Vector3 prior_noise_bias_acc, prior_noise_bias_gyro;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/b_a",
+                          &prior_noise_bias_acc))
+    return false;
+  if (!loadParam<Vector3>(nh_private_, "prior_noise/b_g",
+                          &prior_noise_bias_gyro))
+    return false;
+  prior_noise_model_imu_bias_ = gtsam::noiseModel::Diagonal::Sigmas(
+      (gtsam::Vector(6) << prior_noise_bias_acc, prior_noise_bias_gyro)
+          .finished());
+  prior_noise_model_imu_bias_->print("prior_noise_model_imu_bias: ");
+
+  // Noise Radar doppler.
+  double noise_radar_doppler = 0.0;
+  if (!loadParam<double>(nh_private_, "noise/radar/doppler",
+                         &noise_radar_doppler))
+    return false;
+  noise_model_radar_ = gtsam::noiseModel::Diagonal::Sigmas(
+      (gtsam::Vector(1) << noise_radar_doppler).finished());
+  noise_model_radar_->print("noise_model_radar: ");
+
+  double max_dead_reckoning_duration = max_dead_reckoning_duration_.toSec();
+  if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
+                         &max_dead_reckoning_duration))
+    return false;
+
+  // iSAM2 smoother.
+  ISAM2Params parameters;
+  double relinearize_threshold_rot, relinearize_threshold_pos,
+      relinearize_threshold_vel, relinearize_threshold_acc_bias,
+      relinearize_threshold_gyro_bias;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_rot",
+                         &relinearize_threshold_rot))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_pos",
+                         &relinearize_threshold_pos))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_vel",
+                         &relinearize_threshold_vel))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_acc_bias",
+                         &relinearize_threshold_acc_bias))
+    return false;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_gyro_bias",
+                         &relinearize_threshold_gyro_bias))
+    return false;
+
+  FastMap<char, Vector> thresholds;
+  thresholds['x'] =
+      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_rot),
+       Eigen::Vector3d::Constant(relinearize_threshold_pos))
+          .finished();
+  thresholds['v'] = Eigen::Vector3d::Constant(relinearize_threshold_vel);
+  thresholds['b'] =
+      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_acc_bias),
+       Eigen::Vector3d::Constant(relinearize_threshold_gyro_bias))
+          .finished();
+  parameters.relinearizeThreshold = thresholds;
+  if (!loadParam(nh_private_, "isam2/relinearize_skip",
+                 &parameters.relinearizeSkip))
+    return false;
+  if (!loadParam(nh_private_, "isam2/enable_partial_relinarization_check",
+                 &parameters.enablePartialRelinearizationCheck))
+    return false;
+  double smoother_lag = 0.0;
+  if (!loadParam(nh_private_, "isam2/smoother_lag", &smoother_lag))
+    return false;
+  optimization_.setSmoother({smoother_lag, parameters});
+
+  max_dead_reckoning_duration_ = ros::Duration(max_dead_reckoning_duration);
   return true;
 }
 
@@ -102,9 +193,17 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     return;
   } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
-    propagation_.emplace_back(initial_state_);
+    propagation_.emplace_back(initial_state_, idx_++);
+    optimization_.addPriorFactor(propagation_.back(), prior_noise_model_I_T_IB_,
+                                 prior_noise_model_I_v_IB_,
+                                 prior_noise_model_imu_bias_);
     return;
   }
+
+  // Get update from optimization.
+  Timing timing;
+  auto new_result = optimization_.getResult(&propagation_, &timing);
+
   // Integrate.
   if (!propagation_.back().addImuMeasurement(msg)) {
     LOG(W, "Failed to add IMU measurement, skipping IMU integration.");
@@ -113,6 +212,10 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   // Publish.
   odom_navigation_pub_.publish(
       propagation_.back().getLatestState()->getOdometry());
+
+  if (new_result) {
+    timing_pub_.publish(timing);
+  }
 }
 
 void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
@@ -124,37 +227,96 @@ void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
       initial_state_->I_v_IB, msg, initial_state_->integrator);
 }
 
-void RioFrontend::radarTriggerCallback(const std_msgs::HeaderConstPtr& msg) {
-  LOG_FIRST(I, 1, "Received first radar trigger message.");
-}
-
-void RioFrontend::cfarDetectionsCallback(const sensor_msgs::PointCloud2& msg) {
+void RioFrontend::cfarDetectionsCallback(
+    const sensor_msgs::PointCloud2Ptr& msg) {
   LOG_FIRST(I, 1, "Received first CFAR detections.");
   if (propagation_.empty()) {
     LOG(W, "No propagation, skipping CFAR detections.");
     return;
   }
 
-  if (!splitPropagation(msg.header.stamp)) {
+  Pose3 B_T_BR;
+  try {
+    auto R_T_RB_tf = tf_buffer_.lookupTransform(
+        msg->header.frame_id,
+        propagation_.back().getLatestState()->imu->header.frame_id,
+        ros::Time(0), ros::Duration(0.0));
+    Eigen::Affine3d R_T_RB_eigen = tf2::transformToEigen(R_T_RB_tf.transform);
+    B_T_BR = Pose3(R_T_RB_eigen.inverse().matrix());
+    LOG_FIRST(I, 1,
+              "Looked up radar extrinsic calibration B_T_BR:\n"
+                  << B_T_BR);
+  } catch (tf2::TransformException& ex) {
+    LOG(W, "Failed to lookup transform: " << ex.what()
+                                          << ". Skipping CFAR detections.");
+    return;
+  }
+
+  auto split_it = splitPropagation(msg->header.stamp);
+  if (split_it == propagation_.end()) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
-    LOG(W, "Split time: " << msg.header.stamp);
+    LOG(W, "Split time: " << msg->header.stamp);
     LOG(W, "Last IMU time: "
                << propagation_.back().getLatestState()->imu->header.stamp);
     return;
   }
+
+  split_it->B_T_BR_ = B_T_BR;
+  split_it->cfar_detections_ = parseRadarMsg(msg);
+  optimization_.addRadarFactor(*split_it, *std::next(split_it),
+                               noise_model_radar_);
+  optimization_.solve(propagation_);
+
+  popOldPropagations();
 }
 
-bool RioFrontend::splitPropagation(const ros::Time& t) {
-  bool success = false;
-  for (auto it = propagation_.begin(); it != propagation_.end(); ++it) {
+std::deque<Propagation>::iterator RioFrontend::splitPropagation(
+    const ros::Time& t) {
+  auto it = propagation_.begin();
+  for (; it != propagation_.end(); ++it) {
     Propagation propagation_to_t, propagation_from_t;
-    success = it->split(t, &propagation_to_t, &propagation_from_t);
-    if (success) {
+    if (it->split(t, &idx_, &propagation_to_t, &propagation_from_t)) {
       *it = propagation_to_t;
       propagation_.insert(std::next(it), propagation_from_t);
-      break;
+      return it;
     }
   }
 
-  return success;
+  return it;
+}
+
+void RioFrontend::popOldPropagations() {
+  auto now = ros::Time::now();
+  while (propagation_.size() > 1 &&
+         (now - propagation_.front().getLatestState()->imu->header.stamp) >
+             max_dead_reckoning_duration_) {
+    propagation_.pop_front();
+  }
+}
+
+std::vector<mav_sensors::Radar::CfarDetection> RioFrontend::parseRadarMsg(
+    const sensor_msgs::PointCloud2Ptr& msg) const {
+  std::vector<mav_sensors::Radar::CfarDetection> detections(msg->height *
+                                                            msg->width);
+  sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_doppler(*msg, "doppler");
+  sensor_msgs::PointCloud2Iterator<int16_t> iter_snr(*msg, "snr");
+  sensor_msgs::PointCloud2Iterator<int16_t> iter_noise(*msg, "noise");
+  for (auto& detection : detections) {
+    detection.x = *(iter_x);
+    detection.y = *(iter_y);
+    detection.z = *(iter_z);
+    detection.velocity = *(iter_doppler);
+    detection.snr = *(iter_snr);
+    detection.noise = *(iter_noise);
+    ++iter_x;
+    ++iter_y;
+    ++iter_z;
+    ++iter_doppler;
+    ++iter_snr;
+    ++iter_noise;
+  }
+  return detections;
 }

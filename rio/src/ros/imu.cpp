@@ -51,6 +51,8 @@ bool Imu::openSensor() {
     return false;
   }
 
+  imu_.printImuConfig();
+
   return true;
 }
 

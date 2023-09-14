@@ -8,14 +8,24 @@
 using namespace rio;
 using namespace gtsam;
 
-Propagation::Propagation(const State& initial_state)
-    : Propagation(std::make_shared<State>(initial_state)) {}
+Propagation::Propagation(const State& initial_state,
+                         const uint64_t first_state_idx,
+                         const std::optional<uint64_t>& last_state_idx)
+    : Propagation(std::make_shared<State>(initial_state), first_state_idx,
+                  last_state_idx) {}
 
-Propagation::Propagation(const State::ConstPtr& initial_state)
-    : states_({initial_state}) {}
+Propagation::Propagation(const State::ConstPtr& initial_state,
+                         const uint64_t first_state_idx,
+                         const std::optional<uint64_t>& last_state_idx)
+    : Propagation(std::vector<State::ConstPtr>({initial_state}),
+                  first_state_idx, last_state_idx) {}
 
-Propagation::Propagation(const std::vector<State::ConstPtr>& initial_states)
-    : states_(initial_states) {}
+Propagation::Propagation(const std::vector<State::ConstPtr>& initial_states,
+                         const uint64_t first_state_idx,
+                         const std::optional<uint64_t>& last_state_idx)
+    : states_(initial_states),
+      first_state_idx_(first_state_idx),
+      last_state_idx_(last_state_idx) {}
 
 bool Propagation::addImuMeasurement(const sensor_msgs::Imu& msg) {
   return addImuMeasurement(sensor_msgs::ImuConstPtr(new sensor_msgs::Imu(msg)));
@@ -57,7 +67,8 @@ bool Propagation::addImuMeasurement(const sensor_msgs::ImuConstPtr& msg) {
   return true;
 }
 
-bool Propagation::split(const ros::Time& t, Propagation* propagation_to_t,
+bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
+                        Propagation* propagation_to_t,
                         Propagation* propagation_from_t) const {
   if (states_.empty()) {
     LOG(W, "No initial state, skipping split.");
@@ -98,7 +109,8 @@ bool Propagation::split(const ros::Time& t, Propagation* propagation_to_t,
   imu.angular_velocity = (*state_1)->imu->angular_velocity;
 
   *propagation_to_t =
-      Propagation(std::vector<State::ConstPtr>(states_.begin(), state_1));
+      Propagation(std::vector<State::ConstPtr>(states_.begin(), state_1),
+                  first_state_idx_, (*split_idx));
   if (t > (*state_0)->imu->header.stamp)
     propagation_to_t->addImuMeasurement(imu);
   else
@@ -115,16 +127,40 @@ bool Propagation::split(const ros::Time& t, Propagation* propagation_to_t,
                            propagation_to_t->getLatestState()->integrator};
     initial_state.integrator.resetIntegrationAndSetBias(
         propagation_to_t->getLatestState()->integrator.biasHat());
-    *propagation_from_t = Propagation(initial_state);
+    *propagation_from_t =
+        Propagation(initial_state, (*split_idx), last_state_idx_);
     for (auto it = state_1; it != states_.end(); ++it) {
       propagation_from_t->addImuMeasurement((*it)->imu);
     }
   } else {
     *propagation_from_t =
-        Propagation(std::vector<State::ConstPtr>(state_1, states_.end()));
+        Propagation(std::vector<State::ConstPtr>(state_1, states_.end()),
+                    (*split_idx), last_state_idx_);
     LOG(W, "Split after or exactly at measurement time. t_split: "
                << t << " t_1: " << (*state_1)->imu->header.stamp);
   }
+  (*split_idx)++;
+
+  return true;
+}
+
+bool Propagation::repropagate(const State& initial_state) {
+  if (states_.empty()) {
+    LOG(W, "No initial state, skipping repropagation.");
+    return false;
+  }
+  auto first_state = initial_state;
+  first_state.integrator.resetIntegration();
+
+  Propagation propagation(first_state, first_state_idx_, last_state_idx_);
+  for (auto it = std::next(states_.begin()); it != states_.end(); ++it) {
+    if (!propagation.addImuMeasurement((*it)->imu)) {
+      LOG(W, "Failed to add IMU message during repropagation.");
+      return false;
+    }
+  }
+
+  *this = propagation;
 
   return true;
 }
