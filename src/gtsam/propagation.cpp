@@ -149,8 +149,10 @@ bool Propagation::repropagate(const State& initial_state) {
     LOG(W, "No initial state, skipping repropagation.");
     return false;
   }
+  auto first_state = initial_state;
+  first_state.integrator.resetIntegration();
 
-  Propagation propagation(initial_state, first_state_idx_, last_state_idx_);
+  Propagation propagation(first_state, first_state_idx_, last_state_idx_);
   for (auto it = std::next(states_.begin()); it != states_.end(); ++it) {
     if (!propagation.addImuMeasurement((*it)->imu)) {
       LOG(W, "Failed to add IMU message during repropagation.");

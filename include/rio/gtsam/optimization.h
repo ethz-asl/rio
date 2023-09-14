@@ -1,7 +1,7 @@
 #pragma once
 
-#include <thread>
 #include <deque>
+#include <thread>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -17,7 +17,7 @@ class Optimization {
  public:
   Optimization(){};
   bool solve(const std::deque<Propagation>& propagations);
-  bool getResult(Timing* timing);
+  bool getResult(std::deque<Propagation>* propagation, Timing* timing);
 
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
