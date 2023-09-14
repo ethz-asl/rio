@@ -157,7 +157,7 @@ bool Optimization::solve(const std::deque<Propagation>& propagations) {
 }
 
 bool Optimization::getResult(std::deque<Propagation>* propagation,
-                             Timing* timing) {
+                             std::map<std::string, Timing>* timing) {
   if (thread_.joinable()) {
     thread_.join();
   } else {
@@ -171,13 +171,16 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
 
   // Pop all propagations previous to the current propagation result, i.e.,
   // states that have been marginalized out.
+  gttic_(deqeueCleanup);
   while (!propagation->empty() &&
          propagation->front().getFirstStateIdx() !=
              propagations_.front().getFirstStateIdx()) {
     propagation->pop_front();
   }
+  gttoc_(deqeueCleanup);
 
   // Replace all propagations that have been updated with the new result.
+  gttic_(copyCachedPropagations);
   std::set<std::deque<Propagation>::iterator> updated;
   for (auto it = propagation->begin(); it != propagation->end(); ++it) {
     auto result_it = std::find_if(
@@ -194,8 +197,10 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
         propagations_.pop_front();  // Cleanup.
     }
   }
+  gttoc_(copyCachedPropagations);
 
   // Repropagate all remaining propagations.
+  gttic_(repropagateNewPropagations);
   for (auto it = propagation->begin(); it != propagation->end(); ++it) {
     if (updated.count(it) > 0) continue;
     if (it == propagation->begin()) {
@@ -207,6 +212,18 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
       continue;
     }
   }
+  gttoc_(repropagateNewPropagations);
+
+  tictoc_finishedIteration_();
+  tictoc_getNode(deqeueCleanup, deqeueCleanup);
+  updateTiming(deqeueCleanup, "deqeueCleanup",
+               timing_["optimize"].header.stamp);
+  tictoc_getNode(copyCachedPropagations, copyCachedPropagations);
+  updateTiming(copyCachedPropagations, "copyCachedPropagations",
+               timing_["optimize"].header.stamp);
+  tictoc_getNode(repropagateNewPropagations, repropagateNewPropagations);
+  updateTiming(repropagateNewPropagations, "repropagateNewPropagations",
+               timing_["optimize"].header.stamp);
 
   *timing = timing_;
   return true;
@@ -231,18 +248,9 @@ void Optimization::solveThreaded(
     return;
   }
   gttoc_(optimize);
-  tictoc_finishedIteration_();
-  tictoc_getNode(optimize, optimize);
-  timing_.header.stamp =
-      propagations_.back().getLatestState()->imu->header.stamp;
-  timing_.header.frame_id = "optimize";
-  timing_.iteration = optimize->self() - timing_.total;
-  timing_.total = optimize->self();
-  timing_.min = optimize->min();
-  timing_.max = optimize->max();
-  timing_.mean = optimize->mean();
 
   // Update propagations.
+  gttic_(cachePropagations);
   auto smallest_time = std::min_element(
       smoother_.timestamps().begin(), smoother_.timestamps().end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
@@ -274,6 +282,31 @@ void Optimization::solveThreaded(
       return;
     }
   }
+  gttoc_(cachePropagations);
+
+  tictoc_finishedIteration_();
+  tictoc_getNode(optimize, optimize);
+  updateTiming(optimize, "optimize",
+               propagations_.back().getLatestState()->imu->header.stamp);
+
+  tictoc_getNode(cachePropagations, cachePropagations);
+  updateTiming(cachePropagations, "cachePropagations",
+               propagations_.back().getLatestState()->imu->header.stamp);
 
   new_result_ = true;
+}
+
+void Optimization::updateTiming(
+    const boost::shared_ptr<const gtsam::internal::TimingOutline>& variable,
+    const std::string& label, const ros::Time& stamp) {
+  if (timing_.find(label) == timing_.end()) {
+    timing_[label] = Timing();
+  }
+  timing_[label].header.stamp = stamp;
+  timing_[label].header.frame_id = label;
+  timing_[label].iteration = variable->self() - timing_[label].total;
+  timing_[label].total = variable->self();
+  timing_[label].min = variable->min();
+  timing_[label].max = variable->max();
+  timing_[label].mean = variable->mean();
 }
