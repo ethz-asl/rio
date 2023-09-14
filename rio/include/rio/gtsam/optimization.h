@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <thread>
+#include <map>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -17,7 +18,7 @@ class Optimization {
  public:
   Optimization(){};
   bool solve(const std::deque<Propagation>& propagations);
-  bool getResult(std::deque<Propagation>* propagation, Timing* timing);
+  bool getResult(std::deque<Propagation>* propagation, std::map<std::string, Timing>* timing);
 
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
@@ -39,6 +40,8 @@ class Optimization {
   void addFactor(const Propagation& propagation,
                  const gtsam::SharedNoiseModel& noise_model = nullptr);
 
+  void updateTiming(const std::string& name);
+
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap new_timestamps_;
@@ -46,7 +49,7 @@ class Optimization {
   // Variables that should not be accessed while thread is running.
   // TODO(rikba): Possibly mutex lock.
   gtsam::IncrementalFixedLagSmoother smoother_;
-  Timing timing_;
+  std::map<std::string, Timing> timing_;
   std::deque<Propagation> propagations_;
   bool new_result_{false};
 

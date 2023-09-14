@@ -34,7 +34,7 @@ bool RioFrontend::init() {
       "odometry_navigation", queue_size);
   odom_optimizer_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
       "odometry_optimizer", queue_size);
-  timing_pub_ = nh_private_.advertise<rio::Timing>("timing", queue_size);
+  timing_pub_ = nh_private_.advertise<rio::Timing>("timing", 100);
 
   // IMU integration
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
@@ -201,7 +201,7 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
 
   // Get update from optimization.
-  Timing timing;
+  std::map<std::string, Timing> timing;
   auto new_result = optimization_.getResult(&propagation_, &timing);
 
   // Integrate.
@@ -214,7 +214,7 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
       propagation_.back().getLatestState()->getOdometry());
 
   if (new_result) {
-    timing_pub_.publish(timing);
+    for (const auto& time : timing) timing_pub_.publish(time.second);
   }
 }
 
