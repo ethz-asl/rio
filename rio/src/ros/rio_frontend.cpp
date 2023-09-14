@@ -202,7 +202,7 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
 
   // Get update from optimization.
   Timing timing;
-  auto new_result = optimization_.getResult(&timing);
+  auto new_result = optimization_.getResult(&propagation_, &timing);
 
   // Integrate.
   if (!propagation_.back().addImuMeasurement(msg)) {

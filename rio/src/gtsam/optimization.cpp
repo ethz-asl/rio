@@ -7,7 +7,6 @@
 #include <tf2_eigen/tf2_eigen.h>
 
 #include "rio/gtsam/doppler_factor.h"
-
 using namespace rio;
 using namespace gtsam;
 
@@ -157,7 +156,8 @@ bool Optimization::solve(const std::deque<Propagation>& propagations) {
   return true;
 }
 
-bool Optimization::getResult(Timing* timing) {
+bool Optimization::getResult(std::deque<Propagation>* propagation,
+                             Timing* timing) {
   if (thread_.joinable()) {
     thread_.join();
   } else {
@@ -167,6 +167,45 @@ bool Optimization::getResult(Timing* timing) {
   if (!new_result_) {
     LOG(W, "No new result.");
     return false;
+  }
+
+  // Pop all propagations previous to the current propagation result, i.e.,
+  // states that have been marginalized out.
+  while (!propagation->empty() &&
+         propagation->front().getFirstStateIdx() !=
+             propagations_.front().getFirstStateIdx()) {
+    propagation->pop_front();
+  }
+
+  // Replace all propagations that have been updated with the new result.
+  std::set<std::deque<Propagation>::iterator> updated;
+  for (auto it = propagation->begin(); it != propagation->end(); ++it) {
+    auto result_it = std::find_if(
+        propagations_.begin(), propagations_.end(), [it](const auto& p) {
+          return p.getFirstStateIdx() == it->getFirstStateIdx() &&
+                 p.getLastStateIdx().has_value() &&
+                 it->getLastStateIdx().has_value() &&
+                 p.getLastStateIdx().value() == it->getLastStateIdx().value();
+        });
+    if (result_it != propagations_.end()) {
+      *it = *result_it;
+      updated.insert(it);
+      if (result_it == propagations_.begin())
+        propagations_.pop_front();  // Cleanup.
+    }
+  }
+
+  // Repropagate all remaining propagations.
+  for (auto it = propagation->begin(); it != propagation->end(); ++it) {
+    if (updated.count(it) > 0) continue;
+    if (it == propagation->begin()) {
+      LOG(E, "First propagation not updated, skipping.");
+      continue;
+    }
+    if (!it->repropagate(*(std::prev(it)->getLatestState()))) {
+      LOG(E, "Failed to repropagate.");
+      continue;
+    }
   }
 
   *timing = timing_;
@@ -202,7 +241,6 @@ void Optimization::solveThreaded(
   timing_.min = optimize->min();
   timing_.max = optimize->max();
   timing_.mean = optimize->mean();
-  new_result_ = true;
 
   // Update propagations.
   auto smallest_time = std::min_element(
@@ -236,4 +274,6 @@ void Optimization::solveThreaded(
       return;
     }
   }
+
+  new_result_ = true;
 }
