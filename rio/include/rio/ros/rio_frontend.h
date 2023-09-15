@@ -9,6 +9,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #include "rio/gtsam/optimization.h"
@@ -63,5 +64,6 @@ class RioFrontend {
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_{tf_buffer_};
+  tf2_ros::TransformBroadcaster tf_broadcaster_;
 };
 }  // namespace rio
