@@ -40,6 +40,7 @@
         <param name="poll_rate" value="$(arg baro_poll_rate)"/>
     </node>
     <node pkg="nodelet" type="nodelet" name="imu" args="load rio::ImuNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg imu_on)">
+        <rosparam file="$(find rio)/cfg/imu.yaml" />
         <param name="path_acc" value="$(arg imu_path_acc)"/>
         <param name="path_gyro" value="$(arg imu_path_gyro)"/>
         <param name="frame_id" value="$(arg imu_frame_id)"/>
