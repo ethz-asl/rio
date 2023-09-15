@@ -176,8 +176,8 @@ bool RioFrontend::init() {
   if (!loadParam(nh_private_, "isam2/enable_partial_relinarization_check",
                  &parameters.enablePartialRelinearizationCheck))
     return false;
-  if(!loadParam(nh_private_, "isam2/cache_linearized_factors",
-                &parameters.cacheLinearizedFactors))
+  if (!loadParam(nh_private_, "isam2/cache_linearized_factors",
+                 &parameters.cacheLinearizedFactors))
     return false;
   parameters.findUnusedFactorSlots = true;
   double smoother_lag = 0.0;
@@ -219,6 +219,8 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
 
   if (new_result) {
     for (const auto& time : timing) timing_pub_.publish(time.second);
+    tf_broadcaster_.sendTransform(
+        propagation_.back().getLatestState()->getTransform());
   }
 }
 
