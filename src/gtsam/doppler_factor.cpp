@@ -23,12 +23,12 @@ gtsam::Vector DopplerFactor::evaluateError(
     boost::optional<gtsam::Matrix&> H_T, boost::optional<gtsam::Matrix&> H_v,
     boost::optional<gtsam::Matrix&> H_b) const {
   // e(T, v, b) = [R_BR^-1 (R_IB^-1 * I_v_IB + (B_omega_IB - bias_omega) x
-  // B_r_BR)]^T * R_r_RT_measured / ||R_r_RT_measured|| - doppler_measured
+  // B_r_BR)]^T * R_r_RT_measured / ||R_r_RT_measured|| + doppler_measured
   // Expanded:
   // e(T, v, b) = I_v_IB^T * R_IB * R_BR * R_r_RT_measured / ||R_r_RT_measured||
   // + B_r_BR^T [(B_omega_IB - bias_omega)]x^T * R_BR * R_r_RT_measured /
   // ||R_r_RT_measured||
-  // - doppler_measured
+  // + doppler_measured
 
   if (H_T) {
     H_T->resize(1, 6);
@@ -73,7 +73,7 @@ gtsam::Vector DopplerFactor::evaluateError(
 
   if (H_b) *H_b = radar_proj_body_leverarm.transpose() * H_b_raw;
 
-  return gtsam::Vector1(e_v + e_omega - doppler_measured_);
+  return gtsam::Vector1(e_v + e_omega + doppler_measured_);
 }
 
 void DopplerFactor::print(const std::string& text,
