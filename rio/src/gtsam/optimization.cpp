@@ -132,6 +132,8 @@ void Optimization::addRadarFactor(
     new_timestamps_[V(idx)] = state->imu->header.stamp.toSec();
     new_values_.insert(B(idx), state->getBias());
     new_timestamps_[B(idx)] = state->imu->header.stamp.toSec();
+  } else {
+    LOG(E, "Propagation to radar has no last state index.");
   }
 }
 
@@ -168,6 +170,7 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
     LOG(W, "No new result.");
     return false;
   }
+  new_result_ = false;
 
   // Pop all propagations previous to the current propagation result, i.e.,
   // states that have been marginalized out.
@@ -239,14 +242,6 @@ void Optimization::solveThreaded(
     LOG(E, "Exception in update: " << e.what());
     return;
   }
-
-  Values new_values;
-  try {
-    new_values = smoother_.calculateEstimate();
-  } catch (const std::exception& e) {
-    LOG(E, "Exception in calculateEstimate: " << e.what());
-    return;
-  }
   gttoc_(optimize);
 
   // Update propagations.
@@ -262,14 +257,15 @@ void Optimization::solveThreaded(
 
   for (auto& propagation : propagations_) {
     try {
-      State initial_state(
-          propagation.getFirstState()->odom_frame_id,
-          new_values.at<gtsam::Pose3>(X(propagation.getFirstStateIdx())),
-          new_values.at<gtsam::Vector3>(V(propagation.getFirstStateIdx())),
-          propagation.getFirstState()->imu,
-          propagation.getFirstState()->integrator);
+      State initial_state(propagation.getFirstState()->odom_frame_id,
+                          smoother_.calculateEstimate<gtsam::Pose3>(
+                              X(propagation.getFirstStateIdx())),
+                          smoother_.calculateEstimate<gtsam::Velocity3>(
+                              V(propagation.getFirstStateIdx())),
+                          propagation.getFirstState()->imu,
+                          propagation.getFirstState()->integrator);
       initial_state.integrator.resetIntegrationAndSetBias(
-          new_values.at<gtsam::imuBias::ConstantBias>(
+          smoother_.calculateEstimate<gtsam::imuBias::ConstantBias>(
               B(propagation.getFirstStateIdx())));
 
       if (!propagation.repropagate(initial_state)) {
@@ -277,7 +273,7 @@ void Optimization::solveThreaded(
         return;
       }
     } catch (const std::exception& e) {
-      LOG(E, "Exception in getting new values at idx: "
+      LOG(E, "Exception in caching new values at idx: "
                  << propagation.getFirstStateIdx() << " Error: " << e.what());
       return;
     }
