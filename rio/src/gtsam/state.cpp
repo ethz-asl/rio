@@ -78,11 +78,11 @@ bool State::operator==(const State& other) const {
 }
 
 void State::print(const std::string& s) const {
-  LOG(INFO) << s << "  state:";
-  LOG(INFO) << s << "  odom_frame_id: " << odom_frame_id;
-  LOG(INFO) << s << "  I_p_IB: " << I_p_IB.transpose();
-  LOG(INFO) << s << "  R_IB:\n" << R_IB;
-  LOG(INFO) << s << "  I_v_IB: " << I_v_IB.transpose();
-  LOG(INFO) << s << "  imu: " << *imu;
+  LOG(I, s.c_str() << "  state:");
+  LOG(I, s.c_str() << "    odom_frame_id: " << odom_frame_id);
+  LOG(I, s.c_str() << "    I_p_IB: " << I_p_IB.transpose());
+  LOG(I, s.c_str() << "    R_IB:\n" << R_IB);
+  LOG(I, s.c_str() << "    I_v_IB: " << I_v_IB.transpose());
+  LOG(I, s.c_str() << "    imu: " << *imu);
   integrator.print();
 }
