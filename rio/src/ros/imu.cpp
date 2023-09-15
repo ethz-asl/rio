@@ -23,6 +23,17 @@ bool Imu::openSensor() {
   calibrate_srv_ =
       nh_private_.advertiseService("calibrate", &Imu::calibrate, this);
 
+  std::vector<double> gyro_bias;
+  if (!nh_private_.getParam("gyro_bias", gyro_bias)) {
+    LOG(W, "Failed to read gyro_bias.");
+  } else if (gyro_bias.size() == 3) {
+    b_g_ = {gyro_bias[0], gyro_bias[1], gyro_bias[2]};
+    LOG(I, "Using gyro_bias: [" << gyro_bias[0] << ", " << gyro_bias[1] << ", "
+                                << gyro_bias[2] << "] rad/s.");
+  } else {
+    LOG(W, "gyro_bias has wrong size.");
+  }
+
   std::string path_acc;
   if (!nh_private_.getParam("path_acc", path_acc)) {
     LOG(F, "Failed to read IMU path_acc.");
