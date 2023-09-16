@@ -293,7 +293,7 @@ void Optimization::solveThreaded(
 }
 
 void Optimization::updateTiming(
-    const boost::shared_ptr<const gtsam::internal::TimingOutline>& variable,
+    const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
     const std::string& label, const ros::Time& stamp) {
   if (timing_.find(label) == timing_.end()) {
     timing_[label] = Timing();

@@ -22,12 +22,12 @@ class DopplerFactor
                 const gtsam::noiseModel::Base::shared_ptr& noise_model,
                 const double min_distance = 0.1);
 
-  gtsam::Vector evaluateError(
-      const gtsam::Pose3& I_T_IB, const gtsam::Vector3& I_v_IB,
-      const gtsam::imuBias::ConstantBias& bias,
-      boost::optional<gtsam::Matrix&> H_T = boost::none,
-      boost::optional<gtsam::Matrix&> H_v = boost::none,
-      boost::optional<gtsam::Matrix&> H_b = boost::none) const override;
+  gtsam::Vector evaluateError(const gtsam::Pose3& I_T_IB,
+                              const gtsam::Vector3& I_v_IB,
+                              const gtsam::imuBias::ConstantBias& bias,
+                              gtsam::OptionalMatrixType H_T,
+                              gtsam::OptionalMatrixType H_v,
+                              gtsam::OptionalMatrixType H_b) const override;
 
   void print(const std::string& s = "",
              const gtsam::KeyFormatter& key_formatter =

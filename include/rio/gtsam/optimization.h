@@ -42,7 +42,7 @@ class Optimization {
                  const gtsam::SharedNoiseModel& noise_model = nullptr);
 
   void updateTiming(
-      const boost::shared_ptr<const gtsam::internal::TimingOutline>& variable,
+      const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
       const std::string& label, const ros::Time& stamp);
 
   gtsam::NonlinearFactorGraph new_graph_;
