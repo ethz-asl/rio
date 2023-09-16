@@ -1,3 +1,4 @@
+#include <memory>
 
 #include <log++.h>
 #include <nodelet/nodelet.h>
@@ -10,14 +11,14 @@ namespace rio {
 class BaroNodelet : public nodelet::Nodelet {
   virtual void onInit() {
     try {
-      baro_ = std::make_shared<Baro>(getPrivateNodeHandle());
-      baro_->init();
+      baro_ = std::make_unique<Baro>(getPrivateNodeHandle());
+      if (!baro_->init()) baro_.release();
     } catch (std::runtime_error e) {
       LOG(E, "%s", e.what());
     }
   }
 
-  std::shared_ptr<Baro> baro_;
+  std::unique_ptr<Baro> baro_;
 };
 }  // namespace rio
 

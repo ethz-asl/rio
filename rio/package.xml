@@ -12,6 +12,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
   <depend>roscpp</depend>
   <depend>lpp</depend>
   <depend>mav_sensors_drivers</depend>
@@ -20,7 +22,13 @@
   <depend>std_msgs</depend>
   <depend>roslib</depend>
   <depend>tf2_eigen</depend>
+  <depend>tf2_ros</depend>
   <depend>nodelet</depend>
+  <depend>gtsam</depend>
+  <depend>gtsam_unstable</depend>
+  <depend>std_srvs</depend>
+
+  <test_depend>rostest</test_depend>
 
   <export>
     <nodelet plugin="${prefix}/nodelet_plugins.xml" />

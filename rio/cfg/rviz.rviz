@@ -27,7 +27,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -62,9 +62,9 @@ Visualization Manager:
           Value: true
         bmi088:
           Value: true
-        livox_frame:
-          Value: true
         map:
+          Value: true
+        odom:
           Value: true
       Marker Alpha: 1
       Marker Scale: 1
@@ -73,10 +73,8 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        bmi088:
-          awr1843aop:
-            {}
-          livox_frame:
+        odom:
+          bmi088:
             {}
       Update Interval: 0
       Value: true
@@ -142,7 +140,7 @@ Visualization Manager:
   Global Options:
     Background Color: 255; 255; 255
     Default Light: true
-    Fixed Frame: bmi088
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:
@@ -166,7 +164,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.1633174419403076
+      Distance: 2.9955391883850098
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1

@@ -1,0 +1,38 @@
+max_dead_reckoning_duration: 60.0 # Seconds before propagation buffer is cleared.
+
+prior_noise:
+    R_IB: [0.03, 0.03, 0.03]
+    I_p_IB: [0.01, 0.01, 0.01]
+    I_v_IB: [0.01, 0.01, 0.01]
+    # Acc bias repeatability from data sheet (BMI088 20mg -> 3-sigma = 0.2 m/s**2).
+    b_a: [0.07, 0.07, 0.07]
+    # Gyro bias up to sensitivity, because it is calibrated at startup. (BMI088 16.384 LSB/°/s @ 2000 °/s -> 3-sigma = 0.0011°/s)
+    b_g: [3.6e-4, 3.6e-4, 3.6e-4]
+
+noise:
+    radar:
+        doppler: 0.1
+
+imu:
+    bias_acc_sigma: 1.0e-4
+    bias_omega_sigma: 1.0e-5
+    bias_acc_int_sigma: 1.0e-6
+    bias_omega_int_sigma: 1.0e-6
+
+    acc_sigma: 1.0e-1
+    gyro_sigma: 1.0e-2
+    integration_sigma: 1.0e-6
+
+    initial_bias_acc: [0.0, 0.0, 0.0]
+    initial_bias_gyro: [0.0, 0.0, 0.0]
+
+isam2:
+    relinearize_threshold_rot: 0.02 # rad
+    relinearize_threshold_pos: 0.01 # m
+    relinearize_threshold_vel: 0.01  # m/s
+    relinearize_threshold_acc_bias: 0.01 # m/s**2
+    relinearize_threshold_gyro_bias: 0.02 # rad/s
+    relinearize_skip: 1
+    cache_linearized_factors: False
+    enable_partial_relinarization_check: False
+    smoother_lag: 10.0 # s WARNING: This time needs to be greater than any imaginable sensor arrival delay

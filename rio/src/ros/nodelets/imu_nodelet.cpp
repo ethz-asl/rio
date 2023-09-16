@@ -1,3 +1,4 @@
+#include <memory>
 
 #include <log++.h>
 #include <nodelet/nodelet.h>
@@ -10,14 +11,14 @@ namespace rio {
 class ImuNodelet : public nodelet::Nodelet {
   virtual void onInit() {
     try {
-      imu_ = std::make_shared<Imu>(getPrivateNodeHandle());
-      imu_->init();
+      imu_ = std::make_unique<Imu>(getPrivateNodeHandle());
+      if (!imu_->init()) imu_.release();
     } catch (std::runtime_error e) {
       LOG(E, "%s", e.what());
     }
   }
 
-  std::shared_ptr<Imu> imu_;
+  std::unique_ptr<Imu> imu_;
 };
 }  // namespace rio
 
