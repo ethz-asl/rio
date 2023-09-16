@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.16.3)
 project(mmwave_sdk_catkin)
 
 find_package(catkin REQUIRED)
-catkin_package(
-    CFG_EXTRAS mmwave_sdk-extras.cmake)
+catkin_package(CFG_EXTRAS mmwave_sdk-extras.cmake)
 
 include(ExternalProject)
 
