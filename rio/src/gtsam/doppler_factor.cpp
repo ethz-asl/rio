@@ -19,9 +19,8 @@ DopplerFactor::DopplerFactor(
 
 gtsam::Vector DopplerFactor::evaluateError(
     const gtsam::Pose3& I_T_IB, const gtsam::Vector3& I_v_IB,
-    const gtsam::imuBias::ConstantBias& bias,
-    boost::optional<gtsam::Matrix&> H_T, boost::optional<gtsam::Matrix&> H_v,
-    boost::optional<gtsam::Matrix&> H_b) const {
+    const gtsam::imuBias::ConstantBias& bias, gtsam::OptionalMatrixType H_T,
+    gtsam::OptionalMatrixType H_v, gtsam::OptionalMatrixType H_b) const {
   // e(T, v, b) = [R_BR^-1 (R_IB^-1 * I_v_IB + (B_omega_IB - bias_omega) x
   // B_r_BR)]^T * R_r_RT_measured / ||R_r_RT_measured|| + doppler_measured
   // Expanded:
@@ -65,7 +64,7 @@ gtsam::Vector DopplerFactor::evaluateError(
   double e_v = radar_proj_body.dot(
       I_T_IB.rotation().unrotate(I_v_IB, &H_R_IB_raw, &H_I_v_IB_raw));
   double e_omega = radar_proj_body_leverarm.dot(
-      bias.correctGyroscope(B_omega_IB_measured_, &H_b_raw, boost::none));
+      bias.correctGyroscope(B_omega_IB_measured_, &H_b_raw));
 
   if (H_T) H_T->leftCols<3>() = radar_proj_body.transpose() * H_R_IB_raw;
 
