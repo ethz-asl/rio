@@ -1,7 +1,9 @@
 #pragma once
 
+#include <atomic>
 #include <deque>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -34,9 +36,11 @@ class Optimization {
   }
 
  private:
-  void solveThreaded(const gtsam::NonlinearFactorGraph& graph,
-                     const gtsam::Values& values,
-                     const gtsam::FixedLagSmoother::KeyTimestampMap& stamps);
+  void solveThreaded(
+      const std::unique_ptr<gtsam::NonlinearFactorGraph>& graph,
+      const std::unique_ptr<gtsam::Values>& values,
+      const std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap>& stamps,
+      const std::unique_ptr<std::deque<Propagation>>& propagations);
 
   template <typename T>
   void addFactor(const Propagation& propagation,
@@ -46,19 +50,23 @@ class Optimization {
       const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
       const std::string& label, const ros::Time& stamp);
 
+
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap new_timestamps_;
 
   // Variables that should not be accessed while thread is running.
-  // TODO(rikba): Possibly mutex lock.
-  gtsam::IncrementalFixedLagSmoother smoother_;
+  // Mutex lock!
   std::map<std::string, Timing> timing_;
-  std::deque<Propagation> propagations_;
   bool new_result_{false};
+  std::deque<Propagation> propagations_;
 
+  std::atomic<bool> running_{false};
   std::thread thread_;
   std::mutex mutex_;
+
+  // The smoother must not be changed while the thread is running.
+  gtsam::IncrementalFixedLagSmoother smoother_;
 };
 
 }  // namespace rio
