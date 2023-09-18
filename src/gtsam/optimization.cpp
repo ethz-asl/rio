@@ -141,29 +141,39 @@ void Optimization::addRadarFactor(
 }
 
 bool Optimization::solve(const std::deque<Propagation>& propagations) {
+  if (running_.load()) {
+    LOG(D, "Optimization thread still running.");
+    return false;
+  }
   if (thread_.joinable()) {
     LOG(D, "Optimization thread not joined, get result first.");
     return false;
   }
-  std::lock_guard<std::mutex> lock(mutex_);
 
   // Create deep copy.
-  auto graph = new_graph_.clone();
-  auto values = new_values_;
-  auto stamps = new_timestamps_;
+  auto propagations_copy =
+      std::make_unique<std::deque<Propagation>>(propagations);
+  auto graph = std::make_unique<NonlinearFactorGraph>(new_graph_);
+  auto values = std::make_unique<Values>(new_values_);
+  auto stamps =
+      std::make_unique<FixedLagSmoother::KeyTimestampMap>(new_timestamps_);
   new_graph_.resize(0);
   new_values_.clear();
   new_timestamps_.clear();
 
-  propagations_ = propagations;
-
-  thread_ =
-      std::thread(&Optimization::solveThreaded, this, graph, values, stamps);
+  running_.store(true);
+  thread_ = std::thread(&Optimization::solveThreaded, this, std::move(graph),
+                        std::move(values), std::move(stamps),
+                        std::move(propagations_copy));
   return true;
 }
 
 bool Optimization::getResult(std::deque<Propagation>* propagation,
                              std::map<std::string, Timing>* timing) {
+  if (running_.load()) {
+    LOG(D, "Optimization thread still running.");
+    return false;
+  }
   if (thread_.joinable()) {
     thread_.join();
   } else {
@@ -238,21 +248,16 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
 }
 
 void Optimization::solveThreaded(
-    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::FixedLagSmoother::KeyTimestampMap& stamps) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto smoother_before_update = smoother_;
+    const std::unique_ptr<gtsam::NonlinearFactorGraph>& graph,
+    const std::unique_ptr<gtsam::Values>& values,
+    const std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap>& stamps,
+    const std::unique_ptr<std::deque<Propagation>>& propagations) {
   gttic_(optimize);
   try {
-    smoother_.update(graph, values, stamps);
+    smoother_.update(*graph, *values, *stamps);
   } catch (const std::exception& e) {
     LOG(E, "Exception in update: " << e.what());
-    graph.print("New graph");
-    values.print("New values");
-    for (const auto& stamp : stamps) {
-      LOG(E, "New Key: " << stamp.first << std::setprecision(19)
-                         << " New Stamp: " << stamp.second);
-    }
+    running_.store(false);
     return;
   }
   gttoc_(optimize);
@@ -262,82 +267,54 @@ void Optimization::solveThreaded(
   auto smallest_time = std::min_element(
       smoother_.timestamps().begin(), smoother_.timestamps().end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
-  while (!propagations_.empty() &&
-         propagations_.front().getFirstState()->imu->header.stamp.toSec() <
+  while (!propagations->empty() &&
+         propagations->front().getFirstState()->imu->header.stamp.toSec() <
              smallest_time->second) {
-    propagations_.pop_front();
+    propagations->pop_front();
   }
 
-  for (auto& propagation : propagations_) {
+  for (auto& propagation : *propagations) {
     try {
-      const auto idx = propagation.getFirstStateIdx();
       State initial_state(propagation.getFirstState()->odom_frame_id,
-                          smoother_.calculateEstimate<gtsam::Pose3>(X(idx)),
-                          smoother_.calculateEstimate<gtsam::Velocity3>(V(idx)),
+                          smoother_.calculateEstimate<gtsam::Pose3>(
+                              X(propagation.getFirstStateIdx())),
+                          smoother_.calculateEstimate<gtsam::Velocity3>(
+                              V(propagation.getFirstStateIdx())),
                           propagation.getFirstState()->imu,
                           propagation.getFirstState()->integrator);
       initial_state.integrator.resetIntegrationAndSetBias(
-          smoother_.calculateEstimate<gtsam::imuBias::ConstantBias>(B(idx)));
+          smoother_.calculateEstimate<gtsam::imuBias::ConstantBias>(
+              B(propagation.getFirstStateIdx())));
 
       if (!propagation.repropagate(initial_state)) {
         LOG(E, "Failed to repropagate.");
+        running_.store(false);
         return;
       }
     } catch (const std::exception& e) {
-      smoother_before_update.getFactors().print("before update");
-      smoother_before_update.getDelta().print("before update");
-      for (const auto& stamp : smoother_before_update.timestamps()) {
-        LOG(E, "Smoother before update Key: " << stamp.first
-                                              << std::setprecision(19)
-                                              << " Stamp: " << stamp.second);
-      }
-      smoother_before_update.getFactors().saveGraph("/tmp/fail_graph_before.dot");
-
-      graph.print("New graph");
-      values.print("New values");
-      for (const auto& stamp : stamps) {
-        LOG(E, "New Key: " << stamp.first << std::setprecision(19)
-                           << " New Stamp: " << stamp.second);
-      }
-
       LOG(E, "Exception in caching new values at idx: "
                  << propagation.getFirstStateIdx() << " Error: " << e.what());
-      LOG(E,
-          "smallest_time: " << std::setprecision(19) << smallest_time->second);
-      for (const auto& stamp : smoother_.timestamps()) {
-        LOG(E, "Smoother Key: " << stamp.first << std::setprecision(19)
-                                << " Stamp: " << stamp.second);
-      }
-      for (const auto& propagation : propagations_) {
-        LOG(E, "Propagation: "
-                   << std::setprecision(19)
-                   << propagation.getFirstState()->imu->header.stamp.toSec());
-      }
-      LOG(E, "X(idx): " << X(propagation.getFirstStateIdx()));
-      LOG(E, "V(idx): " << V(propagation.getFirstStateIdx()));
-      LOG(E, "B(idx): " << B(propagation.getFirstStateIdx()));
-      smoother_.getFactors().saveGraph("/tmp/fail_graph.dot");
-      smoother_.getFactors().print();
-      smoother_.getISAM2Result().print();
+      running_.store(false);
       return;
     }
   }
   gttoc_(cachePropagations);
-  char buffer[50];
-  sprintf(buffer, "/tmp/graph_%04d.dot",
-          propagations_.front().getFirstStateIdx());
-  smoother_.getFactors().saveGraph(buffer);
+
+  // Update member variables.
+  std::lock_guard<std::mutex> lock(mutex_);
+  propagations_ = *propagations;
 
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
   updateTiming(optimize, "optimize",
-               propagations_.back().getLatestState()->imu->header.stamp);
+               propagations->back().getLatestState()->imu->header.stamp);
 
   tictoc_getNode(cachePropagations, cachePropagations);
   updateTiming(cachePropagations, "cachePropagations",
-               propagations_.back().getLatestState()->imu->header.stamp);
+               propagations->back().getLatestState()->imu->header.stamp);
 
   new_result_ = true;
+  running_.store(false);
 }
 
 void Optimization::updateTiming(
