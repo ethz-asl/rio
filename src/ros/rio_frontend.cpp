@@ -140,36 +140,11 @@ bool RioFrontend::init() {
 
   // iSAM2 smoother.
   ISAM2Params parameters;
-  double relinearize_threshold_rot, relinearize_threshold_pos,
-      relinearize_threshold_vel, relinearize_threshold_acc_bias,
-      relinearize_threshold_gyro_bias;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_rot",
-                         &relinearize_threshold_rot))
+  double relinearize_threshold;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold",
+                         &relinearize_threshold))
     return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_pos",
-                         &relinearize_threshold_pos))
-    return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_vel",
-                         &relinearize_threshold_vel))
-    return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_acc_bias",
-                         &relinearize_threshold_acc_bias))
-    return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_gyro_bias",
-                         &relinearize_threshold_gyro_bias))
-    return false;
-
-  FastMap<char, Vector> thresholds;
-  thresholds['x'] =
-      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_rot),
-       Eigen::Vector3d::Constant(relinearize_threshold_pos))
-          .finished();
-  thresholds['v'] = Eigen::Vector3d::Constant(relinearize_threshold_vel);
-  thresholds['b'] =
-      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_acc_bias),
-       Eigen::Vector3d::Constant(relinearize_threshold_gyro_bias))
-          .finished();
-  parameters.relinearizeThreshold = thresholds;
+  parameters.relinearizeThreshold = relinearize_threshold;
   if (!loadParam(nh_private_, "isam2/relinearize_skip",
                  &parameters.relinearizeSkip))
     return false;
@@ -179,7 +154,28 @@ bool RioFrontend::init() {
   if (!loadParam(nh_private_, "isam2/cache_linearized_factors",
                  &parameters.cacheLinearizedFactors))
     return false;
-  parameters.findUnusedFactorSlots = true;
+  if (!loadParam(nh_private_, "isam2/find_unused_factor_slots",
+                 &parameters.findUnusedFactorSlots))
+    return false;
+  int optimizer_type = 0;
+  if (!loadParam(nh_private_, "isam2/optimizer", &optimizer_type)) return false;
+  switch (optimizer_type) {
+    case 0:
+      double wildfire_threshold;
+      if (!loadParam(nh_private_, "isam2/gn/wildfire_threshold",
+                     &wildfire_threshold))
+        return false;
+      parameters.optimizationParams =
+          gtsam::ISAM2GaussNewtonParams(wildfire_threshold);
+      break;
+    case 1:
+      parameters.optimizationParams = gtsam::ISAM2DoglegParams();
+      break;
+    default:
+      LOG(F, "Unknown optimizer type: " << optimizer_type);
+      return false;
+  }
+
   double smoother_lag = 0.0;
   if (!loadParam(nh_private_, "isam2/smoother_lag", &smoother_lag))
     return false;

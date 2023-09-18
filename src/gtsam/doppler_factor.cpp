@@ -83,6 +83,7 @@ void DopplerFactor::print(const std::string& text,
   LOG(I, "Measured angular velocity: " << B_omega_IB_measured_.transpose());
   LOG(I, "Fixed extrinsic calibration:\n" << B_T_BR_);
   this->noiseModel_->print("Noise model: ");
+  LOG(I, "Min distance: " << min_distance_);
 }
 
 bool DopplerFactor::equals(const gtsam::NonlinearFactor& expected,

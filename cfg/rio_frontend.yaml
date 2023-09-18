@@ -27,12 +27,12 @@ imu:
     initial_bias_gyro: [0.0, 0.0, 0.0]
 
 isam2:
-    relinearize_threshold_rot: 0.02 # rad
-    relinearize_threshold_pos: 0.01 # m
-    relinearize_threshold_vel: 0.01  # m/s
-    relinearize_threshold_acc_bias: 0.01 # m/s**2
-    relinearize_threshold_gyro_bias: 0.02 # rad/s
-    relinearize_skip: 1
-    cache_linearized_factors: False
+    relinearize_threshold: 0.1
+    relinearize_skip: 10
+    find_unused_factor_slots: False
+    cache_linearized_factors: True
     enable_partial_relinarization_check: False
-    smoother_lag: 10.0 # s WARNING: This time needs to be greater than any imaginable sensor arrival delay
+    smoother_lag: 1.0 # s WARNING: This time needs to be greater than any imaginable sensor arrival delay
+    optimizer: 0 # 0: Gauss-Newton, 1: Dogleg
+    gn:
+        wildfire_threshold: 0.001

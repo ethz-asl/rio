@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <map>
+#include <mutex>
 #include <thread>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -57,6 +58,7 @@ class Optimization {
   bool new_result_{false};
 
   std::thread thread_;
+  std::mutex mutex_;
 };
 
 }  // namespace rio
