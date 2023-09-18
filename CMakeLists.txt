@@ -51,6 +51,7 @@ add_library(${PROJECT_NAME}
         src/ros/rio_frontend.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} gtsam gtsam_unstable Eigen3::Eigen)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GTSAM_ENABLE_DEBUG) 
 
 add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/baro_nodelet.cpp
@@ -59,6 +60,11 @@ add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/rio_frontend_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
+
+add_executable(rio_frontend_node
+        src/ros/nodes/rio_frontend_node.cpp
+        )
+target_link_libraries(rio_frontend_node ${PROJECT_NAME})
 
 #########
 # TESTS #
@@ -72,6 +78,11 @@ if (CATKIN_ENABLE_TESTING)
         test/doppler_factor-test.cpp
         )
         target_link_libraries(test_doppler_factor ${PROJECT_NAME})
+
+        catkin_add_gtest(test_optimization
+        test/optimization-test.cpp
+        )
+        target_link_libraries(test_optimization ${PROJECT_NAME})
 endif()
 
 ###########

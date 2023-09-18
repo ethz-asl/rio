@@ -32,30 +32,30 @@ TEST(DopplerFactor, Jacobian) {
                        noiseModel::Isotropic::Sigma(1, 0.10));
 
   Matrix actual_H_T, actual_H_v, actual_H_b;
-  factor.evaluateError(I_T_IB, I_v_IB, bias, actual_H_T, actual_H_v,
-                       actual_H_b);
+  factor.evaluateError(I_T_IB, I_v_IB, bias, &actual_H_T, &actual_H_v,
+                       &actual_H_b);
   Matrix numerical_H_T =
       numericalDerivative31<Vector, Pose3, Vector3, imuBias::ConstantBias>(
           std::bind(&DopplerFactor::evaluateError, &factor,
                     std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none),
+                    std::placeholders::_3, OptionalNone, OptionalNone,
+                    OptionalNone),
           I_T_IB, I_v_IB, bias);
 
   Matrix numerical_H_v =
       numericalDerivative32<Vector, Pose3, Vector3, imuBias::ConstantBias>(
           std::bind(&DopplerFactor::evaluateError, &factor,
                     std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none),
+                    std::placeholders::_3, OptionalNone, OptionalNone,
+                    OptionalNone),
           I_T_IB, I_v_IB, bias);
 
   Matrix numerical_H_b =
       numericalDerivative33<Vector, Pose3, Vector3, imuBias::ConstantBias>(
           std::bind(&DopplerFactor::evaluateError, &factor,
                     std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none),
+                    std::placeholders::_3, OptionalNone, OptionalNone,
+                    OptionalNone),
           I_T_IB, I_v_IB, bias);
 
   EXPECT_TRUE(assert_equal(numerical_H_T, actual_H_T, 1e-8));
