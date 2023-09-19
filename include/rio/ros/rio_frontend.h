@@ -50,7 +50,6 @@ class RioFrontend {
   ros::Duration max_dead_reckoning_duration_{60.0};
 
   std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
-  void popOldPropagations();
 
   Optimization optimization_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;

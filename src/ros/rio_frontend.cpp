@@ -133,11 +133,6 @@ bool RioFrontend::init() {
       (gtsam::Vector(1) << noise_radar_doppler).finished());
   noise_model_radar_->print("noise_model_radar: ");
 
-  double max_dead_reckoning_duration = max_dead_reckoning_duration_.toSec();
-  if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
-                         &max_dead_reckoning_duration))
-    return false;
-
   // iSAM2 smoother.
   ISAM2Params parameters;
   double relinearize_threshold;
@@ -181,7 +176,6 @@ bool RioFrontend::init() {
     return false;
   optimization_.setSmoother({smoother_lag, parameters});
 
-  max_dead_reckoning_duration_ = ros::Duration(max_dead_reckoning_duration);
   return true;
 }
 
@@ -268,8 +262,6 @@ void RioFrontend::cfarDetectionsCallback(
   optimization_.addRadarFactor(*split_it, *std::next(split_it),
                                noise_model_radar_);
   optimization_.solve(propagation_);
-
-  popOldPropagations();
 }
 
 std::deque<Propagation>::iterator RioFrontend::splitPropagation(
@@ -285,15 +277,6 @@ std::deque<Propagation>::iterator RioFrontend::splitPropagation(
   }
 
   return it;
-}
-
-void RioFrontend::popOldPropagations() {
-  auto now = ros::Time::now();
-  while (propagation_.size() > 1 &&
-         (now - propagation_.front().getLatestState()->imu->header.stamp) >
-             max_dead_reckoning_duration_) {
-    propagation_.pop_front();
-  }
 }
 
 std::vector<mav_sensors::Radar::CfarDetection> RioFrontend::parseRadarMsg(
