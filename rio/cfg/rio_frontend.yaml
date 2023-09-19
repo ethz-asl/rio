@@ -1,5 +1,3 @@
-max_dead_reckoning_duration: 60.0 # Seconds before propagation buffer is cleared.
-
 prior_noise:
     R_IB: [0.03, 0.03, 0.03]
     I_p_IB: [0.01, 0.01, 0.01]
