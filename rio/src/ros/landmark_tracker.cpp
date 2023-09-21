@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <log++.h>
+
 using namespace rio;
 
 bool Track::addCfarDetection(
@@ -16,6 +18,8 @@ bool Track::addCfarDetection(
   if (!equal) {
     return false;
   }
+  cfar_detection.print("Track " + std::to_string(id_) +
+                       " updated with detection: ");
   last_stamp_ = stamp;
   return true;
 }
@@ -40,26 +44,30 @@ std::vector<Track::Ptr> Tracker::addCfarDetections(
                std::back_inserter(active_tracks),
                [&](const auto& track) { return track->isValid(stamp); });
 
+  std::vector<Track::Ptr> updated_tracks;
   for (const auto& cfar_detection : cfar_detection) {
     // Skip detections that are not landmarks.
     if (!detectLandmark(cfar_detection)) {
       continue;
     }
-    // Update active tracks.
-    bool found = false;
-    for (auto& track : active_tracks) {
-      if (track->addCfarDetection(cfar_detection, stamp)) {
-        found = true;
-        break;
-      }
+    // Update tracks.
+    auto updated_track = std::find_if(
+        active_tracks.begin(), active_tracks.end(), [&](auto& track) {
+          return track->addCfarDetection(cfar_detection, stamp);
+        });
+    if (updated_track != active_tracks.end()) {
+      updated_tracks.emplace_back(*updated_track);
+      continue;
     }
     // Create new tracks.
-    if (!found) {
-      active_tracks.emplace_back(
-          new Track(cfar_detection, stamp, max_duration_, id_++));
-    }
+    updated_tracks.emplace_back(
+        new Track(cfar_detection, stamp, max_duration_, id_++));
+    active_tracks.push_back(updated_tracks.back());
+    LOG(I, "New track created with id: " << id_ - 1);
   }
 
+  LOG(I, "Returning " << updated_tracks.size() << " updated tracks.");
+  LOG(I, "Total " << active_tracks.size() << " active tracks.");
   tracks_ = active_tracks;
-  return active_tracks;
+  return updated_tracks;
 }

@@ -175,6 +175,7 @@ bool RioFrontend::init() {
   if (!loadParam(nh_private_, "isam2/smoother_lag", &smoother_lag))
     return false;
   optimization_.setSmoother({smoother_lag, parameters});
+  tracker_ = Tracker(smoother_lag);
 
   return true;
 }
@@ -261,6 +262,10 @@ void RioFrontend::cfarDetectionsCallback(
   split_it->cfar_detections_ = parseRadarMsg(msg);
   optimization_.addRadarFactor(*split_it, *std::next(split_it),
                                noise_model_radar_);
+
+  // Track zero velocity detections.
+  tracker_.addCfarDetections(split_it->cfar_detections_.value(),
+                              msg->header.stamp);   
   optimization_.solve(propagation_);
 }
 

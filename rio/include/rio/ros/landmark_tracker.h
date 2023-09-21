@@ -35,6 +35,7 @@ class Track {
 
 class Tracker {
  public:
+  Tracker() = default;
   Tracker(const double max_duration);
   // Add CFAR detections and return the active tracks at the given time.
   std::vector<Track::Ptr> addCfarDetections(
