@@ -47,6 +47,7 @@ add_library(${PROJECT_NAME}
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
         src/ros/imu.cpp
+        src/ros/landmark_tracker.cpp
         src/ros/radar.cpp
         src/ros/rio_frontend.cpp
         )
