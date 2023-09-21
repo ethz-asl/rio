@@ -15,6 +15,7 @@
 #include "rio/gtsam/optimization.h"
 #include "rio/gtsam/propagation.h"
 #include "rio/gtsam/state.h"
+#include "rio/ros/landmark_tracker.h"
 
 // This class implements a callback driven sensor fusion.
 // IMU raw callback: preintegrate IMU measurements and publish the result.
@@ -64,5 +65,7 @@ class RioFrontend {
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_{tf_buffer_};
   tf2_ros::TransformBroadcaster tf_broadcaster_;
+
+  Tracker tracker_;
 };
 }  // namespace rio
