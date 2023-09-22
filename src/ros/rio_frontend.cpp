@@ -129,9 +129,16 @@ bool RioFrontend::init() {
   if (!loadParam<double>(nh_private_, "noise/radar/doppler",
                          &noise_radar_doppler))
     return false;
-  noise_model_radar_ = gtsam::noiseModel::Diagonal::Sigmas(
+  noise_model_radar_doppler_ = gtsam::noiseModel::Diagonal::Sigmas(
       (gtsam::Vector(1) << noise_radar_doppler).finished());
-  noise_model_radar_->print("noise_model_radar: ");
+  noise_model_radar_doppler_->print("noise_model_radar_doppler: ");
+
+  Vector3 noise_radar_track;
+  if (!loadParam<Vector3>(nh_private_, "noise/radar/track", &noise_radar_track))
+    return false;
+  noise_model_radar_track_ =
+      gtsam::noiseModel::Diagonal::Sigmas(noise_radar_track);
+  noise_model_radar_track_->print("noise_model_radar_track: ");
 
   // iSAM2 smoother.
   ISAM2Params parameters;
@@ -259,11 +266,13 @@ void RioFrontend::cfarDetectionsCallback(
 
   split_it->B_T_BR_ = B_T_BR;
   split_it->cfar_detections_ = parseRadarMsg(msg);
-  optimization_.addRadarFactor(*split_it, *std::next(split_it),
-                               noise_model_radar_);
-
   // Track zero velocity detections.
-  tracker_.addCfarDetections(split_it->cfar_detections_.value());
+  split_it->cfar_tracks_ =
+      tracker_.addCfarDetections(split_it->cfar_detections_.value());
+  optimization_.addRadarFactor(*split_it, *std::next(split_it),
+                               noise_model_radar_doppler_,
+                               noise_model_radar_track_);
+
   optimization_.solve(propagation_);
 }
 

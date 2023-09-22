@@ -12,10 +12,10 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include "rio/gtsam/landmark_tracker.h"
 #include "rio/gtsam/optimization.h"
 #include "rio/gtsam/propagation.h"
 #include "rio/gtsam/state.h"
-#include "rio/ros/landmark_tracker.h"
 
 // This class implements a callback driven sensor fusion.
 // IMU raw callback: preintegrate IMU measurements and publish the result.
@@ -56,7 +56,8 @@ class RioFrontend {
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_v_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
-  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_;
+  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_doppler_;
+  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_;
   uint64_t idx_{0};
 
   std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(

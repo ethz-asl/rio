@@ -41,13 +41,13 @@ add_library(${PROJECT_NAME}
         src/common.cpp
         src/least_squares.cpp
         src/gtsam/doppler_factor.cpp
+        src/gtsam/landmark_tracker.cpp
         src/gtsam/optimization.cpp
         src/gtsam/propagation.cpp
         src/gtsam/state.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
         src/ros/imu.cpp
-        src/ros/landmark_tracker.cpp
         src/ros/radar.cpp
         src/ros/rio_frontend.cpp
         )

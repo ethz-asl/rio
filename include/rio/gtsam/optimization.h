@@ -30,7 +30,8 @@ class Optimization {
                       const gtsam::SharedNoiseModel& noise_model_imu_bias);
   void addRadarFactor(const Propagation& propagation_to_radar,
                       const Propagation& propagation_from_radar,
-                      const gtsam::SharedNoiseModel& noise_model_radar);
+                      const gtsam::SharedNoiseModel& noise_model_radar_doppler,
+                      const gtsam::SharedNoiseModel& noise_model_radar_track);
   inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
     smoother_ = smoother;
   }
@@ -49,7 +50,6 @@ class Optimization {
   void updateTiming(
       const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
       const std::string& label, const ros::Time& stamp);
-
 
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;
