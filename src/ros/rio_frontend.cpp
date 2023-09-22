@@ -140,6 +140,14 @@ bool RioFrontend::init() {
       gtsam::noiseModel::Diagonal::Sigmas(noise_radar_track);
   noise_model_radar_track_->print("noise_model_radar_track: ");
 
+  double noise_radar_track_prior = 0.0;
+  if (!loadParam<double>(nh_private_, "noise/radar/track_prior",
+                         &noise_radar_track_prior))
+    return false;
+  noise_model_radar_track_prior_ =
+      gtsam::noiseModel::Isotropic::Sigma(3, noise_radar_track_prior);
+  noise_model_radar_track_prior_->print("noise_model_radar_track_prior: ");
+
   // iSAM2 smoother.
   ISAM2Params parameters;
   double relinearize_threshold;
@@ -269,9 +277,9 @@ void RioFrontend::cfarDetectionsCallback(
   // Track zero velocity detections.
   split_it->cfar_tracks_ =
       tracker_.addCfarDetections(split_it->cfar_detections_.value());
-  optimization_.addRadarFactor(*split_it, *std::next(split_it),
-                               noise_model_radar_doppler_,
-                               noise_model_radar_track_);
+  optimization_.addRadarFactor(
+      *split_it, *std::next(split_it), noise_model_radar_doppler_,
+      noise_model_radar_track_, noise_model_radar_track_prior_);
 
   optimization_.solve(propagation_);
 }
