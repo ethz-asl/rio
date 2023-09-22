@@ -31,7 +31,6 @@ class Track {
 
  private:
   mav_sensors::Radar::CfarDetection cfar_detection_;
-  ros::Time last_stamp_;
   uint64_t age_{0};
   uint64_t id_{0};
   uint64_t max_age_{1};
