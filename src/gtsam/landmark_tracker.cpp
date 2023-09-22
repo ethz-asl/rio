@@ -15,7 +15,7 @@ bool Track::addCfarDetection(
   if (!equal) {
     return false;
   }
-  LOG(I, "Track " << id_ << " updated with detection: " << cfar_detection);
+  LOG(D, "Track " << id_ << " updated with detection: " << cfar_detection);
   age_ = 0;
   return true;
 }
