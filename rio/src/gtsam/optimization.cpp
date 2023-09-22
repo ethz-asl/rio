@@ -1,8 +1,11 @@
 #include "rio/gtsam/optimization.h"
 
 #include <gtsam/base/timing.h>
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
+#include <gtsam/slam/expressions.h>
 #include <log++.h>
 #include <tf2_eigen/tf2_eigen.h>
 
@@ -10,7 +13,10 @@
 using namespace rio;
 using namespace gtsam;
 
+typedef BearingRange<Pose3, Point3> BearingRange3D;
+
 using gtsam::symbol_shorthand::B;
+using gtsam::symbol_shorthand::L;
 using gtsam::symbol_shorthand::V;
 using gtsam::symbol_shorthand::X;
 
@@ -97,6 +103,46 @@ void Optimization::addFactor<DopplerFactor>(
   }
 }
 
+template <>
+void Optimization::addFactor<BearingRangeFactor<Pose3, Point3>>(
+    const Propagation& propagation,
+    const gtsam::SharedNoiseModel& noise_model) {
+  if (!propagation.getLastStateIdx().has_value()) {
+    LOG(E,
+        "Propagation has no last state index, skipping adding bearing "
+        "range factor.");
+    return;
+  }
+  if (!propagation.cfar_tracks_.has_value()) {
+    LOG(I,
+        "Propagation has no CFAR tracks, skipping adding bearing "
+        "range factor.");
+    return;
+  }
+  if (!propagation.B_T_BR_.has_value()) {
+    LOG(D,
+        "Propagation has no B_t_BR, skipping adding bearing "
+        "range factor.");
+    return;
+  }
+  auto idx = propagation.getLastStateIdx().value();
+  auto state = propagation.getLatestState();
+  for (const auto& track : propagation.cfar_tracks_.value()) {
+    // Landmark in sensor frame.
+    Point3 R_p_RP(track->getCfarDetection().x, track->getCfarDetection().y,
+                  track->getCfarDetection().z);
+    auto h = Expression<BearingRange3D>(
+        BearingRange3D::Measure,
+        Pose3_(X(idx)) * Pose3_(propagation.B_T_BR_.value()),
+        Point3_(L(track->getId())));
+    auto z = BearingRange3D(Pose3().bearing(R_p_RP), Pose3().range(R_p_RP));
+    new_graph_.addExpressionFactor(noise_model, z, h);
+    auto I_T_IR = state->getPose().compose(propagation.B_T_BR_.value());
+    new_values_.insert(L(track->getId()), I_T_IR.transformFrom(R_p_RP));
+    new_timestamps_[L(track->getId())] = state->imu->header.stamp.toSec();
+  }
+}
+
 void Optimization::addPriorFactor(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model_I_T_IB,
@@ -111,7 +157,8 @@ void Optimization::addPriorFactor(
 void Optimization::addRadarFactor(
     const Propagation& propagation_to_radar,
     const Propagation& propagation_from_radar,
-    const gtsam::SharedNoiseModel& noise_model_radar) {
+    const gtsam::SharedNoiseModel& noise_model_radar_doppler,
+    const gtsam::SharedNoiseModel& noise_model_radar_track) {
   // TODO(rikba): Remove possible IMU factor between prev_state and next_state.
 
   // Add IMU factor from prev_state to split_state.
@@ -122,8 +169,12 @@ void Optimization::addRadarFactor(
     LOG(E, "Weird.");
   }
 
-  // Add all radar factors to split_state.
-  addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar);
+  // Add all doppler factors to split_state.
+  addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar_doppler);
+
+  // Add all bearing range factors to split_state.
+  addFactor<BearingRangeFactor<Pose3, Point3>>(propagation_to_radar,
+                                               noise_model_radar_track);
 
   // Add initial state at split_state.
   if (propagation_to_radar.getLastStateIdx().has_value()) {

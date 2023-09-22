@@ -1,4 +1,4 @@
-#include "rio/ros/landmark_tracker.h"
+#include "rio/gtsam/landmark_tracker.h"
 
 #include <log++.h>
 

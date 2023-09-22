@@ -21,6 +21,10 @@ class Track {
   // returns true if the track is still valid.
   inline bool isValid() const { return age_ < max_age_; };
   inline void update() { age_++; };
+  inline mav_sensors::Radar::CfarDetection getCfarDetection() const {
+    return cfar_detection_;
+  }
+  inline uint64_t getId() const { return id_; }
 
  private:
   mav_sensors::Radar::CfarDetection cfar_detection_;
@@ -34,7 +38,7 @@ class Tracker {
  public:
   Tracker() = default;
   Tracker(const uint64_t max_age);
-  // Add CFAR detections and return the active tracks at the given time.
+  // Add CFAR detections and return the updated tracks at the given time.
   std::vector<Track::Ptr> addCfarDetections(
       const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection);
 
