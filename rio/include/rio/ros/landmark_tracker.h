@@ -4,8 +4,6 @@
 #include <vector>
 
 #include <mav_sensors_drivers/sensor_types/Radar.h>
-#include <ros/time.h>
-#include <sensor_msgs/PointCloud2.h>
 
 namespace rio {
 
@@ -14,39 +12,37 @@ class Track {
   typedef std::shared_ptr<Track> Ptr;
 
   Track(const mav_sensors::Radar::CfarDetection& cfar_detection,
-        const ros::Time& stamp, const double max_duration, const uint64_t id)
-      : cfar_detection_(cfar_detection),
-        last_stamp_(stamp),
-        max_duration_(max_duration),
-        id_(id) {}
+        const uint64_t id, const uint64_t max_age = 1)
+      : cfar_detection_(cfar_detection), id_(id), max_age_(max_age) {}
 
   // returns true if the detection was added.
-  bool addCfarDetection(const mav_sensors::Radar::CfarDetection& cfar_detection,
-                        const ros::Time& stamp);
+  bool addCfarDetection(
+      const mav_sensors::Radar::CfarDetection& cfar_detection);
   // returns true if the track is still valid.
-  bool isValid(const ros::Time& stamp) const;
+  inline bool isValid() const { return age_ < max_age_; };
+  inline void update() { age_++; };
 
  private:
   mav_sensors::Radar::CfarDetection cfar_detection_;
   ros::Time last_stamp_;
-  double max_duration_{0.0};
+  uint64_t age_{0};
   uint64_t id_{0};
+  uint64_t max_age_{1};
 };
 
 class Tracker {
  public:
   Tracker() = default;
-  Tracker(const double max_duration);
+  Tracker(const uint64_t max_age);
   // Add CFAR detections and return the active tracks at the given time.
   std::vector<Track::Ptr> addCfarDetections(
-      const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection,
-      const ros::Time& stamp);
+      const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection);
 
  private:
   bool detectLandmark(
       const mav_sensors::Radar::CfarDetection& cfar_detection) const;
-  double max_duration_{0.0};
   uint64_t id_{0};
+  uint64_t max_age_{1};
 
   std::vector<Track::Ptr> tracks_;
 };
