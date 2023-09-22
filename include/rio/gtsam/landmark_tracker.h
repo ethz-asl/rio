@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include <gtsam/geometry/Point3.h>
 #include <mav_sensors_drivers/sensor_types/Radar.h>
 
 namespace rio {
@@ -21,10 +22,12 @@ class Track {
   // returns true if the track is still valid.
   inline bool isValid() const { return age_ < max_age_; };
   inline void update() { age_++; };
-  inline mav_sensors::Radar::CfarDetection getCfarDetection() const {
-    return cfar_detection_;
-  }
   inline uint64_t getId() const { return id_; }
+  inline gtsam::Point3 getR_p_RT() const {
+    return {cfar_detection_.x, cfar_detection_.y, cfar_detection_.z};
+  }
+  inline void setAdded() { added_ = true; }
+  inline bool isAdded() const { return added_; }
 
  private:
   mav_sensors::Radar::CfarDetection cfar_detection_;
@@ -32,6 +35,7 @@ class Track {
   uint64_t age_{0};
   uint64_t id_{0};
   uint64_t max_age_{1};
+  bool added_{false};
 };
 
 class Tracker {

@@ -129,8 +129,7 @@ void Optimization::addFactor<BearingRangeFactor<Pose3, Point3>>(
   auto state = propagation.getLatestState();
   for (const auto& track : propagation.cfar_tracks_.value()) {
     // Landmark in sensor frame.
-    Point3 R_p_RP(track->getCfarDetection().x, track->getCfarDetection().y,
-                  track->getCfarDetection().z);
+    Point3 R_p_RP = track->getR_p_RT();
     auto h = Expression<BearingRange3D>(
         BearingRange3D::Measure,
         Pose3_(X(idx)) * Pose3_(propagation.B_T_BR_.value()),
@@ -138,8 +137,11 @@ void Optimization::addFactor<BearingRangeFactor<Pose3, Point3>>(
     auto z = BearingRange3D(Pose3().bearing(R_p_RP), Pose3().range(R_p_RP));
     new_graph_.addExpressionFactor(noise_model, z, h);
     auto I_T_IR = state->getPose().compose(propagation.B_T_BR_.value());
-    new_values_.insert(L(track->getId()), I_T_IR.transformFrom(R_p_RP));
-    new_timestamps_[L(track->getId())] = state->imu->header.stamp.toSec();
+    if (!track->isAdded()) {
+      new_values_.insert(L(track->getId()), I_T_IR.transformFrom(R_p_RP));
+      track->setAdded();
+    }
+    //new_timestamps_[L(track->getId())] = state->imu->header.stamp.toSec();
   }
 }
 
