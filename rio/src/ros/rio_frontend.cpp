@@ -148,6 +148,11 @@ bool RioFrontend::init() {
       gtsam::noiseModel::Isotropic::Sigma(3, noise_radar_track_prior);
   noise_model_radar_track_prior_->print("noise_model_radar_track_prior: ");
 
+  // Radar tracker.
+  int track_age;
+  if (!loadParam<int>(nh_private_, "radar/track_age", &track_age)) return false;
+  tracker_ = Tracker(track_age);
+
   // iSAM2 smoother.
   ISAM2Params parameters;
   double relinearize_threshold;
