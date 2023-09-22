@@ -10,7 +10,7 @@ prior_noise:
 noise:
     radar:
         doppler: 0.1
-        track: [0.1, 0.1, 0.5] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
+        track: [0.1, 0.1, 0.1] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
 
 imu:
     bias_acc_sigma: 1.0e-4
