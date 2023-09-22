@@ -166,7 +166,7 @@ void Optimization::addPriorRadarTrackFactor(
       auto I_p_IP = I_T_IR.transformFrom(track->getR_p_RT());
       new_values_.insert(L(track->getId()), I_p_IP);
       track->setAdded();
-      LOG(I, "Added landmark " + std::to_string(track->getId()) +
+      LOG(D, "Added landmark " + std::to_string(track->getId()) +
                      " at location I_T_IP: "
                  << I_T_IR.transformFrom(track->getR_p_RT()).transpose());
       new_graph_.add(
