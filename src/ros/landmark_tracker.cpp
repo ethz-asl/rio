@@ -1,14 +1,11 @@
 #include "rio/ros/landmark_tracker.h"
 
-#include <memory>
-
 #include <log++.h>
 
 using namespace rio;
 
 bool Track::addCfarDetection(
-    const mav_sensors::Radar::CfarDetection& cfar_detection,
-    const ros::Time& stamp) {
+    const mav_sensors::Radar::CfarDetection& cfar_detection) {
   bool equal = cfar_detection.x == cfar_detection_.x &&
                cfar_detection.y == cfar_detection_.y &&
                cfar_detection.z == cfar_detection_.z &&
@@ -20,15 +17,11 @@ bool Track::addCfarDetection(
   }
   cfar_detection.print("Track " + std::to_string(id_) +
                        " updated with detection: ");
-  last_stamp_ = stamp;
+  age_ = 0;
   return true;
 }
 
-bool Track::isValid(const ros::Time& stamp) const {
-  return (stamp - last_stamp_).toSec() < max_duration_;
-}
-
-Tracker::Tracker(const double max_duration) : max_duration_(max_duration) {}
+Tracker::Tracker(const uint64_t max_age) : max_age_(max_age) {}
 
 bool Tracker::detectLandmark(
     const mav_sensors::Radar::CfarDetection& cfar_detection) const {
@@ -36,13 +29,14 @@ bool Tracker::detectLandmark(
 }
 
 std::vector<Track::Ptr> Tracker::addCfarDetections(
-    const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection,
-    const ros::Time& stamp) {
+    const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection) {
   // Filter deprecated tracks.
   std::vector<Track::Ptr> active_tracks;
   std::copy_if(tracks_.begin(), tracks_.end(),
                std::back_inserter(active_tracks),
-               [&](const auto& track) { return track->isValid(stamp); });
+               [&](const auto& track) { return track->isValid(); });
+  std::for_each(active_tracks.begin(), active_tracks.end(),
+                [](const auto& track) { track->update(); });
 
   std::vector<Track::Ptr> updated_tracks;
   for (const auto& cfar_detection : cfar_detection) {
@@ -52,16 +46,14 @@ std::vector<Track::Ptr> Tracker::addCfarDetections(
     }
     // Update tracks.
     auto updated_track = std::find_if(
-        active_tracks.begin(), active_tracks.end(), [&](auto& track) {
-          return track->addCfarDetection(cfar_detection, stamp);
-        });
+        active_tracks.begin(), active_tracks.end(),
+        [&](auto& track) { return track->addCfarDetection(cfar_detection); });
     if (updated_track != active_tracks.end()) {
       updated_tracks.emplace_back(*updated_track);
       continue;
     }
     // Create new tracks.
-    updated_tracks.emplace_back(
-        new Track(cfar_detection, stamp, max_duration_, id_++));
+    updated_tracks.emplace_back(new Track(cfar_detection, id_++, max_age_));
     active_tracks.push_back(updated_tracks.back());
     LOG(I, "New track created with id: " << id_ - 1);
   }
