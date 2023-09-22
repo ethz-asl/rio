@@ -129,19 +129,49 @@ void Optimization::addFactor<BearingRangeFactor<Pose3, Point3>>(
   auto state = propagation.getLatestState();
   for (const auto& track : propagation.cfar_tracks_.value()) {
     // Landmark in sensor frame.
-    Point3 R_p_RP = track->getR_p_RT();
+    Point3 R_p_RT = track->getR_p_RT();
     auto h = Expression<BearingRange3D>(
         BearingRange3D::Measure,
         Pose3_(X(idx)) * Pose3_(propagation.B_T_BR_.value()),
         Point3_(L(track->getId())));
-    auto z = BearingRange3D(Pose3().bearing(R_p_RP), Pose3().range(R_p_RP));
+    auto z = BearingRange3D(Pose3().bearing(R_p_RT), Pose3().range(R_p_RT));
     new_graph_.addExpressionFactor(noise_model, z, h);
-    auto I_T_IR = state->getPose().compose(propagation.B_T_BR_.value());
+    new_timestamps_[L(track->getId())] = state->imu->header.stamp.toSec();
+  }
+}
+
+void Optimization::addPriorRadarTrackFactor(
+    const Propagation& propagation,
+    const gtsam::SharedNoiseModel& noise_model) {
+  if (!propagation.getLastStateIdx().has_value()) {
+    LOG(E,
+        "Propagation has no last state index, skipping adding prior landmark "
+        "factor.");
+  }
+  if (!propagation.cfar_tracks_.has_value()) {
+    LOG(I,
+        "Propagation has no CFAR tracks, skipping adding prior landmark "
+        "factor.");
+    return;
+  }
+  if (!propagation.B_T_BR_.has_value()) {
+    LOG(D, "Propagation has no B_t_BR, skipping adding prior landmark factor.");
+    return;
+  }
+  auto idx = propagation.getLastStateIdx().value();
+  auto I_T_IR = propagation.getLatestState()->getPose().compose(
+      propagation.B_T_BR_.value());
+  for (const auto& track : propagation.cfar_tracks_.value()) {
     if (!track->isAdded()) {
-      new_values_.insert(L(track->getId()), I_T_IR.transformFrom(R_p_RP));
+      auto I_p_IP = I_T_IR.transformFrom(track->getR_p_RT());
+      new_values_.insert(L(track->getId()), I_p_IP);
       track->setAdded();
+      LOG(I, "Added landmark " + std::to_string(track->getId()) +
+                     " at location I_T_IP: "
+                 << I_T_IR.transformFrom(track->getR_p_RT()).transpose());
+      new_graph_.add(
+          PriorFactor<Point3>(L(track->getId()), I_p_IP, noise_model));
     }
-    //new_timestamps_[L(track->getId())] = state->imu->header.stamp.toSec();
   }
 }
 
@@ -160,7 +190,8 @@ void Optimization::addRadarFactor(
     const Propagation& propagation_to_radar,
     const Propagation& propagation_from_radar,
     const gtsam::SharedNoiseModel& noise_model_radar_doppler,
-    const gtsam::SharedNoiseModel& noise_model_radar_track) {
+    const gtsam::SharedNoiseModel& noise_model_radar_track,
+    const gtsam::SharedNoiseModel& noise_model_radar_track_prior) {
   // TODO(rikba): Remove possible IMU factor between prev_state and next_state.
 
   // Add IMU factor from prev_state to split_state.
@@ -175,6 +206,7 @@ void Optimization::addRadarFactor(
   addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar_doppler);
 
   // Add all bearing range factors to split_state.
+  addPriorRadarTrackFactor(propagation_to_radar, noise_model_radar_track_prior);
   addFactor<BearingRangeFactor<Pose3, Point3>>(propagation_to_radar,
                                                noise_model_radar_track);
 
