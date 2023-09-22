@@ -15,8 +15,7 @@ bool Track::addCfarDetection(
   if (!equal) {
     return false;
   }
-  cfar_detection.print("Track " + std::to_string(id_) +
-                       " updated with detection: ");
+  LOG(I, "Track " << id_ << " updated with detection: " << cfar_detection);
   age_ = 0;
   return true;
 }
@@ -55,11 +54,11 @@ std::vector<Track::Ptr> Tracker::addCfarDetections(
     // Create new tracks.
     updated_tracks.emplace_back(new Track(cfar_detection, id_++, max_age_));
     active_tracks.push_back(updated_tracks.back());
-    LOG(I, "New track created with id: " << id_ - 1);
+    LOG(D, "New track created with id: " << id_ - 1);
   }
 
-  LOG(I, "Returning " << updated_tracks.size() << " updated tracks.");
-  LOG(I, "Total " << active_tracks.size() << " active tracks.");
+  LOG(D, "Returning " << updated_tracks.size() << " updated tracks.");
+  LOG(D, "Total " << active_tracks.size() << " active tracks.");
   tracks_ = active_tracks;
   return updated_tracks;
 }
