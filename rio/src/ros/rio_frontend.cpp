@@ -129,47 +129,37 @@ bool RioFrontend::init() {
   if (!loadParam<double>(nh_private_, "noise/radar/doppler",
                          &noise_radar_doppler))
     return false;
-  noise_model_radar_ = gtsam::noiseModel::Diagonal::Sigmas(
+  noise_model_radar_doppler_ = gtsam::noiseModel::Diagonal::Sigmas(
       (gtsam::Vector(1) << noise_radar_doppler).finished());
-  noise_model_radar_->print("noise_model_radar: ");
+  noise_model_radar_doppler_->print("noise_model_radar_doppler: ");
 
-  double max_dead_reckoning_duration = max_dead_reckoning_duration_.toSec();
-  if (!loadParam<double>(nh_private_, "max_dead_reckoning_duration",
-                         &max_dead_reckoning_duration))
+  Vector3 noise_radar_track;
+  if (!loadParam<Vector3>(nh_private_, "noise/radar/track", &noise_radar_track))
     return false;
+  noise_model_radar_track_ =
+      gtsam::noiseModel::Diagonal::Sigmas(noise_radar_track);
+  noise_model_radar_track_->print("noise_model_radar_track: ");
+
+  double noise_radar_track_prior = 0.0;
+  if (!loadParam<double>(nh_private_, "noise/radar/track_prior",
+                         &noise_radar_track_prior))
+    return false;
+  noise_model_radar_track_prior_ =
+      gtsam::noiseModel::Isotropic::Sigma(3, noise_radar_track_prior);
+  noise_model_radar_track_prior_->print("noise_model_radar_track_prior: ");
+
+  // Radar tracker.
+  int track_age;
+  if (!loadParam<int>(nh_private_, "radar/track_age", &track_age)) return false;
+  tracker_ = Tracker(track_age);
 
   // iSAM2 smoother.
   ISAM2Params parameters;
-  double relinearize_threshold_rot, relinearize_threshold_pos,
-      relinearize_threshold_vel, relinearize_threshold_acc_bias,
-      relinearize_threshold_gyro_bias;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_rot",
-                         &relinearize_threshold_rot))
+  double relinearize_threshold;
+  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold",
+                         &relinearize_threshold))
     return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_pos",
-                         &relinearize_threshold_pos))
-    return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_vel",
-                         &relinearize_threshold_vel))
-    return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_acc_bias",
-                         &relinearize_threshold_acc_bias))
-    return false;
-  if (!loadParam<double>(nh_private_, "isam2/relinearize_threshold_gyro_bias",
-                         &relinearize_threshold_gyro_bias))
-    return false;
-
-  FastMap<char, Vector> thresholds;
-  thresholds['x'] =
-      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_rot),
-       Eigen::Vector3d::Constant(relinearize_threshold_pos))
-          .finished();
-  thresholds['v'] = Eigen::Vector3d::Constant(relinearize_threshold_vel);
-  thresholds['b'] =
-      (Vector(6) << Eigen::Vector3d::Constant(relinearize_threshold_acc_bias),
-       Eigen::Vector3d::Constant(relinearize_threshold_gyro_bias))
-          .finished();
-  parameters.relinearizeThreshold = thresholds;
+  parameters.relinearizeThreshold = relinearize_threshold;
   if (!loadParam(nh_private_, "isam2/relinearize_skip",
                  &parameters.relinearizeSkip))
     return false;
@@ -179,13 +169,33 @@ bool RioFrontend::init() {
   if (!loadParam(nh_private_, "isam2/cache_linearized_factors",
                  &parameters.cacheLinearizedFactors))
     return false;
-  parameters.findUnusedFactorSlots = true;
+  if (!loadParam(nh_private_, "isam2/find_unused_factor_slots",
+                 &parameters.findUnusedFactorSlots))
+    return false;
+  int optimizer_type = 0;
+  if (!loadParam(nh_private_, "isam2/optimizer", &optimizer_type)) return false;
+  switch (optimizer_type) {
+    case 0:
+      double wildfire_threshold;
+      if (!loadParam(nh_private_, "isam2/gn/wildfire_threshold",
+                     &wildfire_threshold))
+        return false;
+      parameters.optimizationParams =
+          gtsam::ISAM2GaussNewtonParams(wildfire_threshold);
+      break;
+    case 1:
+      parameters.optimizationParams = gtsam::ISAM2DoglegParams();
+      break;
+    default:
+      LOG(F, "Unknown optimizer type: " << optimizer_type);
+      return false;
+  }
+
   double smoother_lag = 0.0;
   if (!loadParam(nh_private_, "isam2/smoother_lag", &smoother_lag))
     return false;
   optimization_.setSmoother({smoother_lag, parameters});
 
-  max_dead_reckoning_duration_ = ros::Duration(max_dead_reckoning_duration);
   return true;
 }
 
@@ -269,11 +279,14 @@ void RioFrontend::cfarDetectionsCallback(
 
   split_it->B_T_BR_ = B_T_BR;
   split_it->cfar_detections_ = parseRadarMsg(msg);
-  optimization_.addRadarFactor(*split_it, *std::next(split_it),
-                               noise_model_radar_);
-  optimization_.solve(propagation_);
+  // Track zero velocity detections.
+  split_it->cfar_tracks_ =
+      tracker_.addCfarDetections(split_it->cfar_detections_.value());
+  optimization_.addRadarFactor(
+      *split_it, *std::next(split_it), noise_model_radar_doppler_,
+      noise_model_radar_track_, noise_model_radar_track_prior_);
 
-  popOldPropagations();
+  optimization_.solve(propagation_);
 }
 
 std::deque<Propagation>::iterator RioFrontend::splitPropagation(
@@ -289,15 +302,6 @@ std::deque<Propagation>::iterator RioFrontend::splitPropagation(
   }
 
   return it;
-}
-
-void RioFrontend::popOldPropagations() {
-  auto now = ros::Time::now();
-  while (propagation_.size() > 1 &&
-         (now - propagation_.front().getLatestState()->imu->header.stamp) >
-             max_dead_reckoning_duration_) {
-    propagation_.pop_front();
-  }
 }
 
 std::vector<mav_sensors::Radar::CfarDetection> RioFrontend::parseRadarMsg(

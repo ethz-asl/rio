@@ -12,6 +12,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include "rio/gtsam/landmark_tracker.h"
 #include "rio/gtsam/optimization.h"
 #include "rio/gtsam/propagation.h"
 #include "rio/gtsam/state.h"
@@ -50,13 +51,14 @@ class RioFrontend {
   ros::Duration max_dead_reckoning_duration_{60.0};
 
   std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
-  void popOldPropagations();
 
   Optimization optimization_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_v_IB_;
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
-  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_;
+  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_doppler_;
+  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_;
+  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_prior_;
   uint64_t idx_{0};
 
   std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
@@ -65,5 +67,7 @@ class RioFrontend {
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_{tf_buffer_};
   tf2_ros::TransformBroadcaster tf_broadcaster_;
+
+  Tracker tracker_;
 };
 }  // namespace rio

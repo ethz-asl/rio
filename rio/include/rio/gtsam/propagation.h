@@ -5,6 +5,7 @@
 
 #include <mav_sensors_drivers/sensor_types/Radar.h>
 
+#include "rio/gtsam/landmark_tracker.h"
 #include "rio/gtsam/state.h"
 #include "sensor_msgs/Imu.h"
 
@@ -38,6 +39,7 @@ class Propagation {
   std::optional<gtsam::Pose3> B_T_BR_;
   std::optional<std::vector<mav_sensors::Radar::CfarDetection>>
       cfar_detections_;
+  std::optional<std::vector<Track::Ptr>> cfar_tracks_;
 
  private:
   // Vector of IMU measurements and preintegration up to this IMU.

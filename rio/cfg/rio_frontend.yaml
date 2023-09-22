@@ -1,5 +1,3 @@
-max_dead_reckoning_duration: 60.0 # Seconds before propagation buffer is cleared.
-
 prior_noise:
     R_IB: [0.03, 0.03, 0.03]
     I_p_IB: [0.01, 0.01, 0.01]
@@ -12,6 +10,10 @@ prior_noise:
 noise:
     radar:
         doppler: 0.1
+        track: [0.01, 0.01, 0.01] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
+        track_prior: 1.0e-9 # Prior standard deviation on zero-velocity track x, y, z world position. 
+radar:
+    track_age: 1 # track for n frames, i.e., 0 = only current frame, 1 = current and previous frame, etc.
 
 imu:
     bias_acc_sigma: 1.0e-4
@@ -27,12 +29,12 @@ imu:
     initial_bias_gyro: [0.0, 0.0, 0.0]
 
 isam2:
-    relinearize_threshold_rot: 0.02 # rad
-    relinearize_threshold_pos: 0.01 # m
-    relinearize_threshold_vel: 0.01  # m/s
-    relinearize_threshold_acc_bias: 0.01 # m/s**2
-    relinearize_threshold_gyro_bias: 0.02 # rad/s
-    relinearize_skip: 1
-    cache_linearized_factors: False
+    relinearize_threshold: 0.1
+    relinearize_skip: 10
+    find_unused_factor_slots: False
+    cache_linearized_factors: True
     enable_partial_relinarization_check: False
     smoother_lag: 10.0 # s WARNING: This time needs to be greater than any imaginable sensor arrival delay
+    optimizer: 0 # 0: Gauss-Newton, 1: Dogleg
+    gn:
+        wildfire_threshold: 0.001
