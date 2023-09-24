@@ -11,7 +11,6 @@ noise:
     radar:
         doppler: 0.1
         track: [0.01, 0.01, 0.01] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
-        track_prior: 1.0e-9 # Prior standard deviation on zero-velocity track x, y, z world position. 
 radar:
     track_age: 1 # track for n frames, i.e., 0 = only current frame, 1 = current and previous frame, etc.
 

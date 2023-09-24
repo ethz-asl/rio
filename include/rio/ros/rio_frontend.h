@@ -58,7 +58,6 @@ class RioFrontend {
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
   gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_doppler_;
   gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_;
-  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_prior_;
   uint64_t idx_{0};
 
   std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
