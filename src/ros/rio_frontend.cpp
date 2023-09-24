@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include <geometry_msgs/Vector3Stamped.h>
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -35,6 +36,10 @@ bool RioFrontend::init() {
   odom_optimizer_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
       "odometry_optimizer", queue_size);
   timing_pub_ = nh_private_.advertise<rio::Timing>("timing", 100);
+  acc_bias_pub_ =
+      nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_acc", 100);
+  gyro_bias_pub_ =
+      nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
 
   // IMU integration
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
@@ -223,6 +228,16 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     for (const auto& time : timing) timing_pub_.publish(time.second);
     tf_broadcaster_.sendTransform(
         propagation_.back().getLatestState()->getTransform());
+
+    geometry_msgs::Vector3Stamped bias_acc;
+    tf2::toMsg(propagation_.back().getLatestState()->getBias().accelerometer(), bias_acc.vector);
+    bias_acc.header = propagation_.back().getLatestState()->imu->header;
+    acc_bias_pub_.publish(bias_acc);
+
+    geometry_msgs::Vector3Stamped bias_gyro;
+    tf2::toMsg(propagation_.back().getLatestState()->getBias().gyroscope(), bias_gyro.vector);
+    bias_gyro.header = propagation_.back().getLatestState()->imu->header;
+    gyro_bias_pub_.publish(bias_gyro);
   }
 }
 

@@ -34,7 +34,6 @@ class RioFrontend {
 
   ros::Subscriber imu_raw_sub_;
   ros::Subscriber imu_filter_sub_;
-  ros::Subscriber radar_trigger_sub_;
   ros::Subscriber radar_cfar_sub_;
   void imuRawCallback(const sensor_msgs::ImuConstPtr& msg);
   void imuFilterCallback(const sensor_msgs::ImuConstPtr& msg);
@@ -43,6 +42,8 @@ class RioFrontend {
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
   ros::Publisher timing_pub_;
+  ros::Publisher acc_bias_pub_;
+  ros::Publisher gyro_bias_pub_;
 
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
