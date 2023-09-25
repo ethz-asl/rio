@@ -44,6 +44,7 @@ class RioFrontend {
   ros::Publisher timing_pub_;
   ros::Publisher acc_bias_pub_;
   ros::Publisher gyro_bias_pub_;
+  ros::Publisher doppler_residual_pub_;
 
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,

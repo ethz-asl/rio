@@ -8,6 +8,8 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_eigen/tf2_eigen.h>
 
+#include "rio/DopplerResidual.h"
+#include "rio/Timing.h"
 #include "rio/ros/common.h"
 
 using namespace rio;
@@ -40,6 +42,8 @@ bool RioFrontend::init() {
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_acc", 100);
   gyro_bias_pub_ =
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
+  doppler_residual_pub_ =
+      nh_private_.advertise<rio::DopplerResidual>("doppler_residual", 100);
 
   // IMU integration
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
@@ -230,12 +234,14 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
         propagation_.back().getLatestState()->getTransform());
 
     geometry_msgs::Vector3Stamped bias_acc;
-    tf2::toMsg(propagation_.back().getLatestState()->getBias().accelerometer(), bias_acc.vector);
+    tf2::toMsg(propagation_.back().getLatestState()->getBias().accelerometer(),
+               bias_acc.vector);
     bias_acc.header = propagation_.back().getLatestState()->imu->header;
     acc_bias_pub_.publish(bias_acc);
 
     geometry_msgs::Vector3Stamped bias_gyro;
-    tf2::toMsg(propagation_.back().getLatestState()->getBias().gyroscope(), bias_gyro.vector);
+    tf2::toMsg(propagation_.back().getLatestState()->getBias().gyroscope(),
+               bias_gyro.vector);
     bias_gyro.header = propagation_.back().getLatestState()->imu->header;
     gyro_bias_pub_.publish(bias_gyro);
   }
@@ -289,11 +295,19 @@ void RioFrontend::cfarDetectionsCallback(
   // Track zero velocity detections.
   split_it->cfar_tracks_ =
       tracker_.addCfarDetections(split_it->cfar_detections_.value());
+  std::vector<Vector1> doppler_residuals;
   optimization_.addRadarFactor(*split_it, *std::next(split_it),
                                noise_model_radar_doppler_,
-                               noise_model_radar_track_);
+                               noise_model_radar_track_, &doppler_residuals);
 
   optimization_.solve(propagation_);
+  
+  for (const auto& residual : doppler_residuals) {
+    DopplerResidual residual_msg;
+    residual_msg.header = msg->header;
+    residual_msg.residual = residual[0];
+    doppler_residual_pub_.publish(residual_msg);
+  }
 }
 
 std::deque<Propagation>::iterator RioFrontend::splitPropagation(

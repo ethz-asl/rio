@@ -71,10 +71,9 @@ void Optimization::addFactor<CombinedImuFactor>(
       B(first_idx), B(second_idx.value()), second_state->integrator));
 }
 
-template <>
-void Optimization::addFactor<DopplerFactor>(
-    const Propagation& propagation,
-    const gtsam::SharedNoiseModel& noise_model) {
+void Optimization::addDopplerFactors(const Propagation& propagation,
+                                     const gtsam::SharedNoiseModel& noise_model,
+                                     std::vector<Vector1>* doppler_residuals) {
   if (!propagation.getLastStateIdx().has_value()) {
     LOG(E,
         "Propagation has no last state index, skipping adding Doppler "
@@ -93,13 +92,20 @@ void Optimization::addFactor<DopplerFactor>(
     return;
   }
   auto idx = propagation.getLastStateIdx().value();
+  auto state = propagation.getLatestState();
   Vector3 I_omega_IB;
-  tf2::fromMsg(propagation.getLatestState()->imu->angular_velocity, I_omega_IB);
+  tf2::fromMsg(state->imu->angular_velocity, I_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
-    new_graph_.add(DopplerFactor(X(idx), V(idx), B(idx),
-                                 {detection.x, detection.y, detection.z},
-                                 detection.velocity, I_omega_IB,
-                                 propagation.B_T_BR_.value(), noise_model));
+    auto factor = DopplerFactor(X(idx), V(idx), B(idx),
+                                {detection.x, detection.y, detection.z},
+                                detection.velocity, I_omega_IB,
+                                propagation.B_T_BR_.value(), noise_model);
+    new_graph_.add(factor);
+    if (doppler_residuals) {
+      doppler_residuals->emplace_back(
+          factor.evaluateError(state->getPose(), state->I_v_IB,
+                               state->getBias(), nullptr, nullptr, nullptr));
+    }
   }
 }
 
@@ -165,7 +171,8 @@ void Optimization::addRadarFactor(
     const Propagation& propagation_to_radar,
     const Propagation& propagation_from_radar,
     const gtsam::SharedNoiseModel& noise_model_radar_doppler,
-    const gtsam::SharedNoiseModel& noise_model_radar_track) {
+    const gtsam::SharedNoiseModel& noise_model_radar_track,
+    std::vector<Vector1>* doppler_residuals) {
   // TODO(rikba): Remove possible IMU factor between prev_state and next_state.
 
   // Add IMU factor from prev_state to split_state.
@@ -177,7 +184,8 @@ void Optimization::addRadarFactor(
   }
 
   // Add all doppler factors to split_state.
-  addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar_doppler);
+  addDopplerFactors(propagation_to_radar, noise_model_radar_doppler,
+                    doppler_residuals);
 
   // Add all bearing range factors to split_state.
   addFactor<BearingRangeFactor<Pose3, Point3>>(propagation_to_radar,
@@ -211,6 +219,7 @@ bool Optimization::solve(const std::deque<Propagation>& propagations) {
   running_.store(true);
   thread_ = std::thread(&Optimization::solveThreaded, this, new_graph_,
                         new_values_, new_timestamps_, propagations);
+
   new_graph_.resize(0);
   new_values_.clear();
   new_timestamps_.clear();
