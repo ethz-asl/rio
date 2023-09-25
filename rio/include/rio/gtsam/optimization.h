@@ -47,9 +47,10 @@ class Optimization {
   void addFactor(const Propagation& propagation,
                  const gtsam::SharedNoiseModel& noise_model = nullptr);
 
-  void addDopplerFactors(const Propagation& propagation,
-                         const gtsam::SharedNoiseModel& noise_model = nullptr,
-                         std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
+  void addDopplerFactors(
+      const Propagation& propagation,
+      const gtsam::SharedNoiseModel& noise_model = nullptr,
+      std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
 
   void updateTiming(
       const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
