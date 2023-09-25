@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include <geometry_msgs/Vector3Stamped.h>
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -35,6 +36,10 @@ bool RioFrontend::init() {
   odom_optimizer_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
       "odometry_optimizer", queue_size);
   timing_pub_ = nh_private_.advertise<rio::Timing>("timing", 100);
+  acc_bias_pub_ =
+      nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_acc", 100);
+  gyro_bias_pub_ =
+      nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
 
   // IMU integration
   double bias_acc_sigma = 0.0, bias_omega_sigma = 0.0, bias_acc_int_sigma = 0.0,
@@ -140,14 +145,6 @@ bool RioFrontend::init() {
       gtsam::noiseModel::Diagonal::Sigmas(noise_radar_track);
   noise_model_radar_track_->print("noise_model_radar_track: ");
 
-  double noise_radar_track_prior = 0.0;
-  if (!loadParam<double>(nh_private_, "noise/radar/track_prior",
-                         &noise_radar_track_prior))
-    return false;
-  noise_model_radar_track_prior_ =
-      gtsam::noiseModel::Isotropic::Sigma(3, noise_radar_track_prior);
-  noise_model_radar_track_prior_->print("noise_model_radar_track_prior: ");
-
   // Radar tracker.
   int track_age;
   if (!loadParam<int>(nh_private_, "radar/track_age", &track_age)) return false;
@@ -231,6 +228,16 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     for (const auto& time : timing) timing_pub_.publish(time.second);
     tf_broadcaster_.sendTransform(
         propagation_.back().getLatestState()->getTransform());
+
+    geometry_msgs::Vector3Stamped bias_acc;
+    tf2::toMsg(propagation_.back().getLatestState()->getBias().accelerometer(), bias_acc.vector);
+    bias_acc.header = propagation_.back().getLatestState()->imu->header;
+    acc_bias_pub_.publish(bias_acc);
+
+    geometry_msgs::Vector3Stamped bias_gyro;
+    tf2::toMsg(propagation_.back().getLatestState()->getBias().gyroscope(), bias_gyro.vector);
+    bias_gyro.header = propagation_.back().getLatestState()->imu->header;
+    gyro_bias_pub_.publish(bias_gyro);
   }
 }
 
@@ -282,9 +289,9 @@ void RioFrontend::cfarDetectionsCallback(
   // Track zero velocity detections.
   split_it->cfar_tracks_ =
       tracker_.addCfarDetections(split_it->cfar_detections_.value());
-  optimization_.addRadarFactor(
-      *split_it, *std::next(split_it), noise_model_radar_doppler_,
-      noise_model_radar_track_, noise_model_radar_track_prior_);
+  optimization_.addRadarFactor(*split_it, *std::next(split_it),
+                               noise_model_radar_doppler_,
+                               noise_model_radar_track_);
 
   optimization_.solve(propagation_);
 }
