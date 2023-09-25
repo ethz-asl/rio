@@ -3,7 +3,6 @@
 #include <atomic>
 #include <deque>
 #include <map>
-#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -37,11 +36,10 @@ class Optimization {
   }
 
  private:
-  void solveThreaded(
-      const std::unique_ptr<gtsam::NonlinearFactorGraph>& graph,
-      const std::unique_ptr<gtsam::Values>& values,
-      const std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap>& stamps,
-      const std::unique_ptr<std::deque<Propagation>>& propagations);
+  void solveThreaded(const gtsam::NonlinearFactorGraph graph,
+                     const gtsam::Values values,
+                     const gtsam::FixedLagSmoother::KeyTimestampMap stamps,
+                     std::deque<Propagation> propagations);
 
   template <typename T>
   void addFactor(const Propagation& propagation,
