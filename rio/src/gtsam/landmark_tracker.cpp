@@ -16,6 +16,7 @@ bool Track::addCfarDetection(
     return false;
   }
   LOG(D, "Track " << id_ << " updated with detection: " << cfar_detection);
+  LOG_TIMED(I, 5.0, "Zero-velocity track update.");
   age_ = 0;
   return true;
 }
