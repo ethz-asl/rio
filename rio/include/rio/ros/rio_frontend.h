@@ -44,6 +44,7 @@ class RioFrontend {
   ros::Publisher timing_pub_;
   ros::Publisher acc_bias_pub_;
   ros::Publisher gyro_bias_pub_;
+  ros::Publisher doppler_residual_pub_;
 
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
@@ -59,6 +60,7 @@ class RioFrontend {
   gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
   gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_doppler_;
   gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_;
+  std::optional<gtsam::noiseModel::Robust::shared_ptr> noise_model_robust_radar_doppler_;
   uint64_t idx_{0};
 
   std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(

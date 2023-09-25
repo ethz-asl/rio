@@ -71,10 +71,9 @@ void Optimization::addFactor<CombinedImuFactor>(
       B(first_idx), B(second_idx.value()), second_state->integrator));
 }
 
-template <>
-void Optimization::addFactor<DopplerFactor>(
-    const Propagation& propagation,
-    const gtsam::SharedNoiseModel& noise_model) {
+void Optimization::addDopplerFactors(const Propagation& propagation,
+                                     const gtsam::SharedNoiseModel& noise_model,
+                                     std::vector<Vector1>* doppler_residuals) {
   if (!propagation.getLastStateIdx().has_value()) {
     LOG(E,
         "Propagation has no last state index, skipping adding Doppler "
@@ -93,13 +92,20 @@ void Optimization::addFactor<DopplerFactor>(
     return;
   }
   auto idx = propagation.getLastStateIdx().value();
+  auto state = propagation.getLatestState();
   Vector3 I_omega_IB;
-  tf2::fromMsg(propagation.getLatestState()->imu->angular_velocity, I_omega_IB);
+  tf2::fromMsg(state->imu->angular_velocity, I_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
-    new_graph_.add(DopplerFactor(X(idx), V(idx), B(idx),
-                                 {detection.x, detection.y, detection.z},
-                                 detection.velocity, I_omega_IB,
-                                 propagation.B_T_BR_.value(), noise_model));
+    auto factor = DopplerFactor(X(idx), V(idx), B(idx),
+                                {detection.x, detection.y, detection.z},
+                                detection.velocity, I_omega_IB,
+                                propagation.B_T_BR_.value(), noise_model);
+    new_graph_.add(factor);
+    if (doppler_residuals) {
+      doppler_residuals->emplace_back(
+          factor.evaluateError(state->getPose(), state->I_v_IB,
+                               state->getBias(), nullptr, nullptr, nullptr));
+    }
   }
 }
 
@@ -165,7 +171,8 @@ void Optimization::addRadarFactor(
     const Propagation& propagation_to_radar,
     const Propagation& propagation_from_radar,
     const gtsam::SharedNoiseModel& noise_model_radar_doppler,
-    const gtsam::SharedNoiseModel& noise_model_radar_track) {
+    const gtsam::SharedNoiseModel& noise_model_radar_track,
+    std::vector<Vector1>* doppler_residuals) {
   // TODO(rikba): Remove possible IMU factor between prev_state and next_state.
 
   // Add IMU factor from prev_state to split_state.
@@ -177,7 +184,8 @@ void Optimization::addRadarFactor(
   }
 
   // Add all doppler factors to split_state.
-  addFactor<DopplerFactor>(propagation_to_radar, noise_model_radar_doppler);
+  addDopplerFactors(propagation_to_radar, noise_model_radar_doppler,
+                    doppler_residuals);
 
   // Add all bearing range factors to split_state.
   addFactor<BearingRangeFactor<Pose3, Point3>>(propagation_to_radar,
@@ -208,21 +216,13 @@ bool Optimization::solve(const std::deque<Propagation>& propagations) {
     return false;
   }
 
-  // Create deep copy.
-  auto propagations_copy =
-      std::make_unique<std::deque<Propagation>>(propagations);
-  auto graph = std::make_unique<NonlinearFactorGraph>(new_graph_);
-  auto values = std::make_unique<Values>(new_values_);
-  auto stamps =
-      std::make_unique<FixedLagSmoother::KeyTimestampMap>(new_timestamps_);
+  running_.store(true);
+  thread_ = std::thread(&Optimization::solveThreaded, this, new_graph_,
+                        new_values_, new_timestamps_, propagations);
+
   new_graph_.resize(0);
   new_values_.clear();
   new_timestamps_.clear();
-
-  running_.store(true);
-  thread_ = std::thread(&Optimization::solveThreaded, this, std::move(graph),
-                        std::move(values), std::move(stamps),
-                        std::move(propagations_copy));
   return true;
 }
 
@@ -306,13 +306,12 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
 }
 
 void Optimization::solveThreaded(
-    const std::unique_ptr<gtsam::NonlinearFactorGraph>& graph,
-    const std::unique_ptr<gtsam::Values>& values,
-    const std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap>& stamps,
-    const std::unique_ptr<std::deque<Propagation>>& propagations) {
+    const gtsam::NonlinearFactorGraph graph, const gtsam::Values values,
+    const gtsam::FixedLagSmoother::KeyTimestampMap stamps,
+    std::deque<Propagation> propagations) {
   gttic_(optimize);
   try {
-    smoother_.update(*graph, *values, *stamps);
+    smoother_.update(graph, values, stamps);
   } catch (const std::exception& e) {
     LOG(E, "Exception in update: " << e.what());
     running_.store(false);
@@ -325,13 +324,13 @@ void Optimization::solveThreaded(
   auto smallest_time = std::min_element(
       smoother_.timestamps().begin(), smoother_.timestamps().end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
-  while (!propagations->empty() &&
-         propagations->front().getFirstState()->imu->header.stamp.toSec() <
+  while (!propagations.empty() &&
+         propagations.front().getFirstState()->imu->header.stamp.toSec() <
              smallest_time->second) {
-    propagations->pop_front();
+    propagations.pop_front();
   }
 
-  for (auto& propagation : *propagations) {
+  for (auto& propagation : propagations) {
     try {
       State initial_state(propagation.getFirstState()->odom_frame_id,
                           smoother_.calculateEstimate<gtsam::Pose3>(
@@ -360,16 +359,16 @@ void Optimization::solveThreaded(
 
   // Update member variables.
   std::lock_guard<std::mutex> lock(mutex_);
-  propagations_ = *propagations;
+  propagations_ = propagations;
 
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
   updateTiming(optimize, "optimize",
-               propagations->back().getLatestState()->imu->header.stamp);
+               propagations.back().getLatestState()->imu->header.stamp);
 
   tictoc_getNode(cachePropagations, cachePropagations);
   updateTiming(cachePropagations, "cachePropagations",
-               propagations->back().getLatestState()->imu->header.stamp);
+               propagations.back().getLatestState()->imu->header.stamp);
 
   new_result_ = true;
   running_.store(false);

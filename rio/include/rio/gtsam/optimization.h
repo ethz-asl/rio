@@ -3,9 +3,9 @@
 #include <atomic>
 #include <deque>
 #include <map>
-#include <memory>
 #include <mutex>
 #include <thread>
+#include <utility>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -31,21 +31,26 @@ class Optimization {
   void addRadarFactor(const Propagation& propagation_to_radar,
                       const Propagation& propagation_from_radar,
                       const gtsam::SharedNoiseModel& noise_model_radar_doppler,
-                      const gtsam::SharedNoiseModel& noise_model_radar_track);
+                      const gtsam::SharedNoiseModel& noise_model_radar_track,
+                      std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
   inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
     smoother_ = smoother;
   }
 
  private:
-  void solveThreaded(
-      const std::unique_ptr<gtsam::NonlinearFactorGraph>& graph,
-      const std::unique_ptr<gtsam::Values>& values,
-      const std::unique_ptr<gtsam::FixedLagSmoother::KeyTimestampMap>& stamps,
-      const std::unique_ptr<std::deque<Propagation>>& propagations);
+  void solveThreaded(const gtsam::NonlinearFactorGraph graph,
+                     const gtsam::Values values,
+                     const gtsam::FixedLagSmoother::KeyTimestampMap stamps,
+                     std::deque<Propagation> propagations);
 
   template <typename T>
   void addFactor(const Propagation& propagation,
                  const gtsam::SharedNoiseModel& noise_model = nullptr);
+
+  void addDopplerFactors(
+      const Propagation& propagation,
+      const gtsam::SharedNoiseModel& noise_model = nullptr,
+      std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
 
   void updateTiming(
       const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
