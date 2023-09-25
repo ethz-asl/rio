@@ -149,6 +149,22 @@ bool RioFrontend::init() {
       gtsam::noiseModel::Diagonal::Sigmas(noise_radar_track);
   noise_model_radar_track_->print("noise_model_radar_track: ");
 
+  bool use_noise_model_robust_doppler;
+  if (!loadParam<bool>(nh_private_, "noise/radar/robust_doppler",
+                       &use_noise_model_robust_doppler))
+    return false;
+  if (use_noise_model_robust_doppler) {
+    double noise_radar_doppler_robust_k;
+    if (!loadParam<double>(nh_private_, "noise/radar/robust_doppler_k",
+                           &noise_radar_doppler_robust_k))
+      return false;
+    noise_model_robust_radar_doppler_ = noiseModel::Robust::Create(
+        noiseModel::mEstimator::Huber::Create(noise_radar_doppler_robust_k),
+        noise_model_radar_doppler_);
+    noise_model_robust_radar_doppler_.value()->print(
+        "noise_model_robust_radar_doppler: ");
+  }
+
   // Radar tracker.
   int track_age;
   if (!loadParam<int>(nh_private_, "radar/track_age", &track_age)) return false;
@@ -296,12 +312,14 @@ void RioFrontend::cfarDetectionsCallback(
   split_it->cfar_tracks_ =
       tracker_.addCfarDetections(split_it->cfar_detections_.value());
   std::vector<Vector1> doppler_residuals;
-  optimization_.addRadarFactor(*split_it, *std::next(split_it),
-                               noise_model_radar_doppler_,
+  gtsam::SharedNoiseModel doppler_noise = noise_model_radar_doppler_;
+  if (noise_model_robust_radar_doppler_.has_value())
+    doppler_noise = noise_model_robust_radar_doppler_.value();
+  optimization_.addRadarFactor(*split_it, *std::next(split_it), doppler_noise,
                                noise_model_radar_track_, &doppler_residuals);
 
   optimization_.solve(propagation_);
-  
+
   for (const auto& residual : doppler_residuals) {
     DopplerResidual residual_msg;
     residual_msg.header = msg->header;
