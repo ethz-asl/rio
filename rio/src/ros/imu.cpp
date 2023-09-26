@@ -45,6 +45,36 @@ bool Imu::openSensor() {
     return false;
   }
 
+  std::string acc_range;
+  if (!nh_private_.getParam("acc_range", acc_range)) {
+    LOG(F, "Failed to read IMU acc_range.");
+    return false;
+  }
+
+  std::string acc_bwp;
+  if (!nh_private_.getParam("acc_bwp", acc_bwp)) {
+    LOG(F, "Failed to read IMU acc_bwp.");
+    return false;
+  }
+
+  std::string acc_odr;
+  if (!nh_private_.getParam("acc_odr", acc_odr)) {
+    LOG(F, "Failed to read IMU acc_odr.");
+    return false;
+  }
+
+  std::string gyro_range;
+  if (!nh_private_.getParam("gyro_range", gyro_range)) {
+    LOG(F, "Failed to read IMU gyro_range.");
+    return false;
+  }
+
+  std::string gyro_bw;
+  if (!nh_private_.getParam("gyro_bw", gyro_bw)) {
+    LOG(F, "Failed to read IMU gyro_bw.");
+    return false;
+  }
+
   if (!nh_private_.getParam("bias_samples", bias_samples_)) {
     LOG(F, "Failed to read IMU bias_samples.");
     return false;
@@ -56,6 +86,11 @@ bool Imu::openSensor() {
   mav_sensors::SensorConfig cfg;
   cfg.set("path_acc", path_acc);
   cfg.set("path_gyro", path_gyro);
+  cfg.set("acc_range", acc_range);
+  cfg.set("acc_bwp", acc_bwp);
+  cfg.set("acc_odr", acc_odr);
+  cfg.set("gyro_range", gyro_range);
+  cfg.set("gyro_bw", gyro_bw);
   imu_.setConfig(cfg);
   if (!imu_.open()) {
     LOG(F, "Failed to open IMU.");

@@ -1,1 +1,7 @@
 gyro_bias: [-0.003, 0.0, 0.004]
+
+acc_range: "03"
+acc_bwp: "02"
+acc_odr: "0A"
+gyro_range: "00"
+gyro_bw: "03"
