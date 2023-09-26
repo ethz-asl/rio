@@ -301,7 +301,7 @@ bool Optimization::getResult(std::deque<Propagation>* propagation,
   updateTiming(repropagateNewPropagations, "repropagateNewPropagations",
                timing_["optimize"].header.stamp);
 
-  *timing = timing_;
+  if (timing) *timing = timing_;
   return true;
 }
 
