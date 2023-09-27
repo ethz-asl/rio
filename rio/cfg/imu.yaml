@@ -1,1 +1,7 @@
 gyro_bias: [-0.003, 0.0, 0.004]
+
+acc_range: "01"   # 00: 3g, 01: 6g, 02: 12g, 03: 24g
+acc_bwp: "02"     # 00: 4-fold, 01: 2-fold, 02: 1-fold oversampling
+acc_odr: "0A"     # 05: 12.5 Hz, 06: 25 Hz, 07: 50 Hz, 08: 100 Hz, 09: 200 Hz, 0A: 400 Hz, 0B: 800 Hz, 0C: 1600 Hz
+gyro_range: "03"  # 00: 2000 dps, 01: 1000 dps, 02: 500 dps, 03: 250 dps, 04: 125 dps
+gyro_bw: "03"     # 00: 523 Hz, 01: 230 Hz, 02: 116 Hz, 03: 47 Hz, 04: 23 Hz, 05: 12 Hz, 06: 64 Hz, 07: 32 Hz
