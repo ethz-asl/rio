@@ -241,13 +241,16 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     return;
   }
   // Publish.
-  odom_navigation_pub_.publish(
-      propagation_.back().getLatestState()->getOdometry());
+  auto new_odometry = propagation_.back().getLatestState()->getOdometry();
+  odom_navigation_pub_.publish(new_odometry);
 
   if (new_result) {
-    for (const auto& time : timing) timing_pub_.publish(time.second);
+    odom_optimizer_pub_.publish(new_odometry);
+
     tf_broadcaster_.sendTransform(
         propagation_.back().getLatestState()->getTransform());
+
+    for (const auto& time : timing) timing_pub_.publish(time.second);
 
     geometry_msgs::Vector3Stamped bias_acc;
     tf2::toMsg(propagation_.back().getLatestState()->getBias().accelerometer(),
