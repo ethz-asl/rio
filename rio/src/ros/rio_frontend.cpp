@@ -159,7 +159,7 @@ bool RioFrontend::init() {
                            &noise_radar_doppler_robust_k))
       return false;
     noise_model_robust_radar_doppler_ = noiseModel::Robust::Create(
-        noiseModel::mEstimator::Huber::Create(noise_radar_doppler_robust_k),
+        noiseModel::mEstimator::Cauchy::Create(noise_radar_doppler_robust_k),
         noise_model_radar_doppler_);
     noise_model_robust_radar_doppler_.value()->print(
         "noise_model_robust_radar_doppler: ");

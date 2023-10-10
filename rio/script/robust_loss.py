@@ -38,7 +38,7 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(3, 1, figsize=(8, 8))
     x = np.linspace(-3, 3, 100)
     k = 0.1
-    c = 0.1
+    c = 0.2
     ax[0].plot(x, fair_loss(x, k), label='Fair loss')
     ax[0].plot(x, huber_loss(x, k), label='Huber loss')
     ax[0].plot(x, cauchy_loss(x, c), label='Cauchy loss')

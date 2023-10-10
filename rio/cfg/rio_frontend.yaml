@@ -12,7 +12,7 @@ noise:
         doppler: 0.1
         track: [0.1, 0.1, 0.1] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
         robust_doppler: True
-        robust_doppler_k: 0.1
+        robust_doppler_k: 0.2
 radar:
     track_age: 10 # track for n frames, i.e., 0 = only current frame, 1 = current and previous frame, etc.
 
