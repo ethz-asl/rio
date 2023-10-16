@@ -29,8 +29,8 @@
                                     <field>pose/pose/position/x</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>7</absolute_maximum>
-                                        <absolute_minimum>-30</absolute_minimum>
+                                        <absolute_maximum>80</absolute_maximum>
+                                        <absolute_minimum>-3</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>1</type>
@@ -42,8 +42,8 @@
                                     <field>pose/pose/position/y</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>1</absolute_maximum>
-                                        <absolute_minimum>-17</absolute_minimum>
+                                        <absolute_maximum>14</absolute_maximum>
+                                        <absolute_minimum>-26</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>1</type>
