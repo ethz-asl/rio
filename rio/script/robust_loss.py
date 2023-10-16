@@ -1,4 +1,4 @@
-
+#!/usr/bin/python3
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,27 +33,57 @@ def cauchy_influence(x, c):
 def cauchy_weight(x, c):
     return 1 / (1 + (x / c) ** 2)
 
+# Plot welsh loss rho, influence and weight function
+def welsh_loss(x, c):
+    return 0.5 * c ** 2 * (1 - np.exp(-(x / c) ** 2))
+
+def welsh_influence(x, c):
+    return x * np.exp(-(x / c) ** 2)
+
+def welsh_weight(x, c):
+    return np.exp(-(x / c) ** 2)
+
+# Plot tukey loss rho, influence and weight function
+def tukey_loss(x, c):
+    return np.where(np.abs(x) < c, x ** 2 / 6.0 * (1 - (x / c) ** 2) ** 3, c ** 2 / 6.0)
+
+def tukey_influence(x, c):
+    return np.where(np.abs(x) < c, x * (1 - (x / c) ** 2) ** 2, 0)
+
+def tukey_weight(x, c):
+    return np.where(np.abs(x) < c, (1 - (x / c) ** 2) ** 2, 0)
+
 if __name__ == '__main__':
     # Plot huber and cauchy in same 3,1 subplots
     fig, ax = plt.subplots(3, 1, figsize=(8, 8))
     x = np.linspace(-3, 3, 100)
-    k = 0.1
-    c = 0.2
-    ax[0].plot(x, fair_loss(x, k), label='Fair loss')
-    ax[0].plot(x, huber_loss(x, k), label='Huber loss')
-    ax[0].plot(x, cauchy_loss(x, c), label='Cauchy loss')
+    sigma = 0.1
+    c_fair = 1.3998 * sigma
+    c_huber = 1.345 * sigma
+    c_cauchy = 2.3849 * sigma
+    c_welsh = 2.9846 * sigma
+    c_tukey = 4.6851 * sigma
+    ax[0].plot(x, fair_loss(x, c_fair), label='Fair loss')
+    ax[0].plot(x, huber_loss(x, c_huber), label='Huber loss')
+    ax[0].plot(x, cauchy_loss(x, c_cauchy), label='Cauchy loss')
+    ax[0].plot(x, welsh_loss(x, c_welsh), label='Welsh loss')
+    ax[0].plot(x, tukey_loss(x, c_tukey), label='Tukey loss')
     ax[0].legend()
     ax[0].set_title('Loss function')
     ax[0].grid()
-    ax[1].plot(x, fair_influence(x, k), label='Fair influence')
-    ax[1].plot(x, huber_influence(x, k), label='Huber influence')
-    ax[1].plot(x, cauchy_influence(x, c), label='Cauchy influence')
+    ax[1].plot(x, fair_influence(x, c_fair), label='Fair influence')
+    ax[1].plot(x, huber_influence(x, c_huber), label='Huber influence')
+    ax[1].plot(x, cauchy_influence(x, c_cauchy), label='Cauchy influence')
+    ax[1].plot(x, welsh_influence(x, c_welsh), label='Welsh influence')
+    ax[1].plot(x, tukey_influence(x, c_tukey), label='Tukey influence')
     ax[1].legend()
     ax[1].set_title('Influence function')
     ax[1].grid()
-    ax[2].plot(x, fair_weight(x, k), label='Fair weight')
-    ax[2].plot(x, huber_weight(x, k), label='Huber weight')
-    ax[2].plot(x, cauchy_weight(x, c), label='Cauchy weight')
+    ax[2].plot(x, fair_weight(x, c_fair), label='Fair weight')
+    ax[2].plot(x, huber_weight(x, c_huber), label='Huber weight')
+    ax[2].plot(x, cauchy_weight(x, c_cauchy), label='Cauchy weight')
+    ax[2].plot(x, welsh_weight(x, c_welsh), label='Welsh weight')
+    ax[2].plot(x, tukey_weight(x, c_tukey), label='Tukey weight')
     ax[2].legend()
     ax[2].set_title('Weight function')
     ax[2].grid()
