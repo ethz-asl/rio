@@ -171,12 +171,18 @@ bool RioFrontend::init() {
       break;
     }
     case 4: {
+      const double c = 1.0;
+      noise_model_radar_doppler_ = noiseModel::Robust::Create(
+          noiseModel::mEstimator::GemanMcClure::Create(c), radar_gaussian_noise);
+      break;
+    }
+    case 5: {
       const double c = 2.9846;
       noise_model_radar_doppler_ = noiseModel::Robust::Create(
           noiseModel::mEstimator::Welsch::Create(c), radar_gaussian_noise);
       break;
     }
-    case 5: {
+    case 6: {
       const double c = 4.6851;
       noise_model_radar_doppler_ = noiseModel::Robust::Create(
           noiseModel::mEstimator::Tukey::Create(c), radar_gaussian_noise);
