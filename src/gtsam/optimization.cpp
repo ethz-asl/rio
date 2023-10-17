@@ -9,6 +9,7 @@
 #include <log++.h>
 #include <tf2_eigen/tf2_eigen.h>
 
+#include "rio/gtsam/expressions.h"
 #include "rio/gtsam/doppler_factor.h"
 using namespace rio;
 using namespace gtsam;
@@ -96,6 +97,22 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
   Vector3 I_omega_IB;
   tf2::fromMsg(state->imu->angular_velocity, I_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
+    auto R_v_IR_ = Vector3_(V(idx)); 
+    // auto h = radialVelocity_(V(idx), L(detection.id));
+    // Expression<BearingRange3D>(
+    //     BearingRange3D::Measure,
+    //     Pose3_(X(idx)) * Pose3_(propagation.B_T_BR_.value()),
+    //     Point3_(L(track->getId())));
+    // auto z = BearingRange3D(Pose3().bearing(R_p_RT), Pose3().range(R_p_RT));
+
+    // new_graph_.addExpressionFactor(
+    //     noise_model,
+    //     DopplerFactor(X(idx), V(idx), B(idx),
+    //                   {detection.x, detection.y, detection.z},
+    //                   detection.velocity, I_omega_IB,
+    //                   propagation.B_T_BR_.value(), noise_model),
+    //     radialVelocity_(V(idx), L(detection.id))
+
     auto factor = DopplerFactor(X(idx), V(idx), B(idx),
                                 {detection.x, detection.y, detection.z},
                                 detection.velocity, I_omega_IB,
