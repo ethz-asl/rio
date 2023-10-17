@@ -97,6 +97,8 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
   Vector3 I_omega_IB;
   tf2::fromMsg(state->imu->angular_velocity, I_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
+    auto T_IB_ = Pose3_(X(idx));
+    //T_IB_.rotation();
     auto R_v_IR_ = Vector3_(V(idx)); 
     // auto h = radialVelocity_(V(idx), L(detection.id));
     // Expression<BearingRange3D>(
