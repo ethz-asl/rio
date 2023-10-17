@@ -18,9 +18,10 @@ double radialVelocity(const Vector3& R_v_IR, const Point3& R_p_RT,
   const Point3 pn = b.point3(H_p ? &H_pn_p : nullptr);
 
   // Compute the dot product.
+  // Note(rikba): Radial velocity is negative of relative velocity.
   Matrix13 H_dot_v, H_dot_pn;
   const double d =
-      dot(R_v_IR, pn, H_v ? &H_dot_v : nullptr, H_p ? &H_dot_pn : nullptr);
+      dot(-R_v_IR, pn, H_v ? &H_dot_v : nullptr, H_p ? &H_dot_pn : nullptr);
 
   if (H_v) {
     (*H_v) << H_dot_v;
