@@ -98,6 +98,11 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
   tf2::fromMsg(state->imu->angular_velocity, I_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
     auto T_IB_ = Pose3_(X(idx));
+    auto R_IB_ = rotation(T_IB_);
+    auto B_v_IB_ = unrotate(R_IB_, Vector3_(V(idx)));
+    auto T_BR_ = Pose3_(propagation.B_T_BR_.value()); // For calibration replace this.
+    auto R_BR_ = rotation(T_BR_);
+    auto R_v_IB_ = unrotate(R_BR_, B_v_IB_);
     //T_IB_.rotation();
     auto R_v_IR_ = Vector3_(V(idx)); 
     // auto h = radialVelocity_(V(idx), L(detection.id));
