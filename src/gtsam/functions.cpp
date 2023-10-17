@@ -1,4 +1,4 @@
-#include "rio/gtsam/radial_velocity.h"
+#include "rio/gtsam/functions.h"
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
