@@ -44,7 +44,7 @@ add_library(${PROJECT_NAME}
         src/gtsam/landmark_tracker.cpp
         src/gtsam/optimization.cpp
         src/gtsam/propagation.cpp
-        src/gtsam/radial_velocity.cpp
+        src/gtsam/functions.cpp
         src/gtsam/state.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
