@@ -107,8 +107,13 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
         rotation(T_IB * T_BR),
         Vector3_(V(idx)) +
             rotate(rotation(T_IB), cross(B_omega_IB, translation(T_BR))));
-    auto h = radialVelocity_(
-        R_v_IR, Point3_(-Point3(detection.x, detection.y, detection.z)));
+    Point3 R_p_RT(detection.x, detection.y, detection.z);
+    if (R_p_RT.norm() < 0.1) {
+      LOG(E, "DopplerFactor: Radar point is too close to radar. Distance: "
+                 << R_p_RT.norm() << "m");
+      continue;
+    }
+    auto h = radialVelocity_(R_v_IR, Point3_(-R_p_RT));
     auto z = static_cast<double>(detection.velocity);
     new_graph_.addExpressionFactor(noise_model, z, h);
 
