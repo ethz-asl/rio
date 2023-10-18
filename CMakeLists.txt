@@ -41,7 +41,6 @@ add_library(${PROJECT_NAME}
         src/common.cpp
         src/least_squares.cpp
         src/gtsam/doppler_factor.cpp
-        src/gtsam/functions.cpp
         src/gtsam/landmark_tracker.cpp
         src/gtsam/optimization.cpp
         src/gtsam/propagation.cpp
@@ -85,11 +84,6 @@ if (CATKIN_ENABLE_TESTING)
         test/doppler_factor-test.cpp
         )
         target_link_libraries(test_doppler_factor ${PROJECT_NAME})
-
-        catkin_add_gtest(test_optimization
-        test/optimization-test.cpp
-        )
-        target_link_libraries(test_optimization ${PROJECT_NAME})
 endif()
 
 ###########

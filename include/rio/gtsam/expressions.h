@@ -5,8 +5,6 @@
 #include <gtsam/nonlinear/expressions.h>
 #include <gtsam/slam/expressions.h>
 
-#include "rio/gtsam/functions.h"
-
 namespace rio {
 
 typedef gtsam::Expression<gtsam::imuBias::ConstantBias> ConstantBias_;
