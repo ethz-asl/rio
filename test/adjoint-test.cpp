@@ -59,13 +59,12 @@ TEST(Adjoint, CalibrationExample) {
   // Oneliner, but this time with cross product instead of adjoint (we are not
   // interested in angular velocity).
   // I_v_IR = I_v_IB + I_omega_IB x I_t_BR
+  // R_v_IR = R_RI * I_v_IR = R_RI * (I_v_IB + R_IB * (B_omega_IB x B_t_BR))
   auto R_v_IR_oneliner_cross =
       (I_T_IB * B_T_BR)
           .rotation()
-          .unrotate(I_v_IB +
-                    I_T_IB.rotation()
-                        .rotate(B_omega_IB)
-                        .cross(I_T_IB.rotation().rotate(B_T_BR.translation())));
+          .unrotate(I_v_IB + I_T_IB.rotation().rotate(
+                                 B_omega_IB.cross(B_T_BR.translation())));
   EXPECT_TRUE(assert_equal(R_v_IR_expected, R_v_IR_oneliner_cross));
 }
 
