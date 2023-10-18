@@ -105,8 +105,8 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
     // TODO(rikba): Correct B_omega_IB bias.
     auto R_v_IR = unrotate(
         rotation(T_IB * T_BR),
-        Vector3_(V(idx)) + cross(rotate(rotation(T_IB), B_omega_IB),
-                                 rotate(rotation(T_IB), translation(T_BR))));
+        Vector3_(V(idx)) +
+            rotate(rotation(T_IB), cross(B_omega_IB, translation(T_BR))));
     auto h = radialVelocity_(
         R_v_IR, Point3_(-Point3(detection.x, detection.y, detection.z)));
     auto z = static_cast<double>(detection.velocity);
