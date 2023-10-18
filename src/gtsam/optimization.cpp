@@ -102,11 +102,12 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
     auto T_IB = Pose3_(X(idx));
     // Note(rikba): For calibration replace constant B_T_BR_ with symbol.
     auto T_BR = Pose3_(propagation.B_T_BR_.value());
-    // TODO(rikba): Correct B_omega_IB bias.
     auto R_v_IR = unrotate(
         rotation(T_IB * T_BR),
         Vector3_(V(idx)) +
-            rotate(rotation(T_IB), cross(B_omega_IB, translation(T_BR))));
+            rotate(rotation(T_IB),
+                   cross(correctGyroscope_(ConstantBias_(B(idx)), B_omega_IB),
+                         translation(T_BR))));
     Point3 R_p_RT(detection.x, detection.y, detection.z);
     if (R_p_RT.norm() < 0.1) {
       LOG(E, "DopplerFactor: Radar point is too close to radar. Distance: "
