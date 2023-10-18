@@ -19,60 +19,54 @@ TEST(Adjoint, Create) {
   EXPECT_TRUE(assert_equal(Ad_IB, I_T_IB.AdjointMap()));
 }
 
-TEST(Adjoint, TransformTwistNoLinearVelocity) {
-  auto omega_B = Vector3(0.0, 0.0, 1.0);
-  auto v_B = Vector3(0.0, 0.0, 0.0);
-  Vector6 V_B;
-  V_B << omega_B, v_B;
-  auto R_IB = Rot3();
-  auto I_t_IB = Point3(2.0, 0.0, 0.0);
-  auto I_T_IB = Pose3(R_IB, I_t_IB);
-
-  auto V_I = I_T_IB.Adjoint(V_B);
-  Vector6 V_I_expected;
-  V_I_expected << 0.0, 0.0, 1.0, 0.0, -2.0, 0.0;
-  EXPECT_TRUE(assert_equal(V_I_expected, V_I));
-  EXPECT_TRUE(assert_equal(V_B, I_T_IB.inverse().Adjoint(V_I)));
-}
-
-TEST(Adjoint, TransformTwistWithLinearVelocity) {
-  auto omega_B = Vector3(0.0, 0.0, 1.0);
-  auto v_B = Vector3(1.0, 0.0, 0.0);
-  Vector6 V_B;
-  V_B << omega_B, v_B;
-  auto R_IB = Rot3();
-  auto I_t_IB = Point3(2.0, 0.0, 0.0);
-  auto I_T_IB = Pose3(R_IB, I_t_IB);
-
-  auto V_I = I_T_IB.Adjoint(V_B);
-  Vector6 V_I_expected;
-  V_I_expected << 0.0, 0.0, 1.0, 1.0, -2.0, 0.0;
-  EXPECT_TRUE(assert_equal(V_I_expected, V_I));
-  EXPECT_TRUE(assert_equal(V_B, I_T_IB.inverse().Adjoint(V_I)));
-}
-
-TEST(Adjoint, TransformWithRotation) {
-  auto omega_B = Vector3(0.0, 0.0, 1.0);
-  auto v_B = Vector3(1.0, 0.0, 0.0);
-  Vector6 V_B;
-  V_B << omega_B, v_B;
-  auto R_IB = Rot3({0, -1, 0}, {1, 0, 0}, {0, 0, 1});
-  auto I_t_IB = Point3(2.0, 0.0, 0.0);
-  auto I_T_IB = Pose3(R_IB, I_t_IB);
-
-  auto V_I = I_T_IB.Adjoint(V_B);
-  Vector6 V_I_expected;
-  V_I_expected << 0.0, 0.0, 1.0, 0.0, -3.0, 0.0;
-  EXPECT_TRUE(assert_equal(V_I_expected, V_I));
-  EXPECT_TRUE(assert_equal(V_B, I_T_IB.inverse().Adjoint(V_I)));
-}
-
 TEST(Adjoint, CalibrationExample) {
+  // Given state variables.
+  auto R_IB = Rot3({0, -1, 0}, {1, 0, 0}, {0, 0, 1});
+  auto I_t_IB = Point3(4.0, 0.0, 0.0);
+  auto I_T_IB = Pose3(R_IB, I_t_IB);
+
   auto R_BR = Rot3({0, -1, 0}, {1, 0, 0}, {0, 0, 1});
   auto B_t_BR = Point3(2.0, 0.0, 0.0);
   auto B_T_BR = Pose3(R_BR, B_t_BR);
 
   auto B_omega_IB = Vector3(0.0, 0.0, 1.0);
+  auto I_v_IB = Vector3(1.0, 0.0, 0.0);
+
+  // Goal: velocity in radar frame.
+  auto B_v_IB = I_T_IB.rotation().unrotate(I_v_IB);
+  Vector6 V_B = (Vector6() << B_omega_IB, B_v_IB).finished();
+  Vector6 V_B_expected = (Vector6() << 0.0, 0.0, 1.0, 0.0, 1.0, 0.0).finished();
+  EXPECT_TRUE(assert_equal(V_B_expected, V_B));
+
+  auto I_v_IR_expected = Vector3(3, 0, 0);
+  auto I_omega_IR_expected = Vector3(0, 0, 1);
+  auto R_v_IR_expected = (I_T_IB * B_T_BR).rotation().unrotate(I_v_IR_expected);
+  auto R_omega_IR_expected =
+      (I_T_IB * B_T_BR).rotation().unrotate(I_omega_IR_expected);
+  auto V_R_expected =
+      (Vector6() << R_omega_IR_expected, R_v_IR_expected).finished();
+
+  auto V_R = B_T_BR.inverse().Adjoint(V_B);
+  EXPECT_TRUE(assert_equal(V_R_expected, V_R));
+
+  // Oneliner. Twist in body frame, then transform to radar frame.
+  auto V_R_oneliner = B_T_BR.inverse().Adjoint(
+      (Vector6() << B_omega_IB, I_T_IB.rotation().unrotate(I_v_IB)).finished());
+  EXPECT_TRUE(assert_equal(V_R_oneliner, V_R));
+  Vector3 R_v_IR_oneliner = V_R_oneliner.tail<3>();
+  EXPECT_TRUE(assert_equal(R_v_IR_expected, R_v_IR_oneliner));
+
+  // Oneliner, but this time with cross product instead of adjoint (we are not
+  // interested in angular velocity).
+  // I_v_IR = I_v_IB + I_omega_IB x I_t_BR
+  auto R_v_IR_oneliner_cross =
+      (I_T_IB * B_T_BR)
+          .rotation()
+          .unrotate(I_v_IB +
+                    I_T_IB.rotation()
+                        .rotate(B_omega_IB)
+                        .cross(I_T_IB.rotation().rotate(B_T_BR.translation())));
+  EXPECT_TRUE(assert_equal(R_v_IR_expected, R_v_IR_oneliner_cross));
 }
 
 int main(int argc, char** argv) {
