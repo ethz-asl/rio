@@ -76,6 +76,11 @@ if (CATKIN_ENABLE_TESTING)
         find_package(GTest REQUIRED)
         include_directories(${GTEST_INCLUDE_DIRS})
 
+        catkin_add_gtest(test_adjoint
+        test/adjoint-test.cpp
+        )
+        target_link_libraries(test_adjoint ${PROJECT_NAME})
+
         catkin_add_gtest(test_doppler_factor
         test/doppler_factor-test.cpp
         )
