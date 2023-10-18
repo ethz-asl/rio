@@ -40,7 +40,6 @@ add_compile_definitions(MODE_ROSLOG)
 add_library(${PROJECT_NAME}
         src/common.cpp
         src/least_squares.cpp
-        src/gtsam/doppler_factor.cpp
         src/gtsam/landmark_tracker.cpp
         src/gtsam/optimization.cpp
         src/gtsam/propagation.cpp
@@ -79,11 +78,6 @@ if (CATKIN_ENABLE_TESTING)
         test/adjoint-test.cpp
         )
         target_link_libraries(test_adjoint ${PROJECT_NAME})
-
-        catkin_add_gtest(test_doppler_factor
-        test/doppler_factor-test.cpp
-        )
-        target_link_libraries(test_doppler_factor ${PROJECT_NAME})
 endif()
 
 ###########
