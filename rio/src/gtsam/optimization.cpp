@@ -110,39 +110,23 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
                          translation(T_BR))));
     Point3 R_p_RT(detection.x, detection.y, detection.z);
     if (R_p_RT.norm() < 0.1) {
-      LOG(E, "DopplerFactor: Radar point is too close to radar. Distance: "
-                 << R_p_RT.norm() << "m");
+      LOG(E,
+          "Radial velocity factor: Radar point is too close to radar. "
+          "Distance: "
+              << R_p_RT.norm() << "m");
       continue;
     }
     auto h = radialVelocity_(R_v_IR, Point3_(-R_p_RT));
     auto z = static_cast<double>(detection.velocity);
-    new_graph_.addExpressionFactor(noise_model, z, h);
-
-    // auto h = radialVelocity_(V(idx), L(detection.id));
-    // Expression<BearingRange3D>(
-    //     BearingRange3D::Measure,
-    //     Pose3_(X(idx)) * Pose3_(propagation.B_T_BR_.value()),
-    //     Point3_(L(track->getId())));
-    // auto z = BearingRange3D(Pose3().bearing(R_p_RT), Pose3().range(R_p_RT));
-
-    // new_graph_.addExpressionFactor(
-    //     noise_model,
-    //     DopplerFactor(X(idx), V(idx), B(idx),
-    //                   {detection.x, detection.y, detection.z},
-    //                   detection.velocity, I_omega_IB,
-    //                   propagation.B_T_BR_.value(), noise_model),
-    //     radialVelocity_(V(idx), L(detection.id))
-
-    // auto factor = DopplerFactor(X(idx), V(idx), B(idx),
-    //                             {detection.x, detection.y, detection.z},
-    //                             detection.velocity, B_omega_IB,
-    //                             propagation.B_T_BR_.value(), noise_model);
-    // new_graph_.add(factor);
-    // if (doppler_residuals) {
-    //   doppler_residuals->emplace_back(
-    //       factor.evaluateError(state->getPose(), state->I_v_IB,
-    //                            state->getBias(), nullptr, nullptr, nullptr));
-    // }
+    auto factor = ExpressionFactor(noise_model, z, h);
+    new_graph_.add(factor);
+    if (doppler_residuals) {
+      Values x;
+      x.insert(X(idx), state->getPose());
+      x.insert(V(idx), state->I_v_IB);
+      x.insert(B(idx), state->getBias());
+      doppler_residuals->emplace_back(factor.unwhitenedError(x));
+    }
   }
 }
 
