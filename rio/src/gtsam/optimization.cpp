@@ -9,8 +9,8 @@
 #include <log++.h>
 #include <tf2_eigen/tf2_eigen.h>
 
-#include "rio/gtsam/expressions.h"
 #include "rio/gtsam/doppler_factor.h"
+#include "rio/gtsam/expressions.h"
 using namespace rio;
 using namespace gtsam;
 
@@ -94,17 +94,24 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
   }
   auto idx = propagation.getLastStateIdx().value();
   auto state = propagation.getLatestState();
-  Vector3 I_omega_IB;
-  tf2::fromMsg(state->imu->angular_velocity, I_omega_IB);
+  Vector3 B_omega_IB;
+  tf2::fromMsg(state->imu->angular_velocity, B_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
-    auto T_IB_ = Pose3_(X(idx));
-    auto R_IB_ = rotation(T_IB_);
-    auto B_v_IB_ = unrotate(R_IB_, Vector3_(V(idx)));
-    auto T_BR_ = Pose3_(propagation.B_T_BR_.value()); // For calibration replace this.
-    auto R_BR_ = rotation(T_BR_);
-    auto R_v_IB_ = unrotate(R_BR_, B_v_IB_);
-    //T_IB_.rotation();
-    auto R_v_IR_ = Vector3_(V(idx)); 
+    // See https://dongjing3309.github.io/files/gtsam-tutorial.pdf
+    // and adjoint-test.cpp for the derivation of the following.
+    auto T_IB = Pose3_(X(idx));
+    // Note(rikba): For calibration replace constant B_T_BR_ with symbol.
+    auto T_BR = Pose3_(propagation.B_T_BR_.value());
+    // TODO(rikba): Correct B_omega_IB bias.
+    auto R_v_IR = unrotate(
+        rotation(T_IB * T_BR),
+        Vector3_(V(idx)) + cross(rotate(rotation(T_IB), B_omega_IB),
+                                 rotate(rotation(T_IB), translation(T_BR))));
+    auto h = radialVelocity_(
+        R_v_IR, Point3_(-Point3(detection.x, detection.y, detection.z)));
+    auto z = static_cast<double>(detection.velocity);
+    new_graph_.addExpressionFactor(noise_model, z, h);
+
     // auto h = radialVelocity_(V(idx), L(detection.id));
     // Expression<BearingRange3D>(
     //     BearingRange3D::Measure,
@@ -120,16 +127,16 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
     //                   propagation.B_T_BR_.value(), noise_model),
     //     radialVelocity_(V(idx), L(detection.id))
 
-    auto factor = DopplerFactor(X(idx), V(idx), B(idx),
-                                {detection.x, detection.y, detection.z},
-                                detection.velocity, I_omega_IB,
-                                propagation.B_T_BR_.value(), noise_model);
-    new_graph_.add(factor);
-    if (doppler_residuals) {
-      doppler_residuals->emplace_back(
-          factor.evaluateError(state->getPose(), state->I_v_IB,
-                               state->getBias(), nullptr, nullptr, nullptr));
-    }
+    // auto factor = DopplerFactor(X(idx), V(idx), B(idx),
+    //                             {detection.x, detection.y, detection.z},
+    //                             detection.velocity, B_omega_IB,
+    //                             propagation.B_T_BR_.value(), noise_model);
+    // new_graph_.add(factor);
+    // if (doppler_residuals) {
+    //   doppler_residuals->emplace_back(
+    //       factor.evaluateError(state->getPose(), state->I_v_IB,
+    //                            state->getBias(), nullptr, nullptr, nullptr));
+    // }
   }
 }
 
