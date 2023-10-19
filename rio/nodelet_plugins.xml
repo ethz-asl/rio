@@ -17,7 +17,7 @@
     </description>
   </class>
   
-  <class type="rio::RioFrontendNodelet" base_class_type="nodelet::Nodelet">
+  <class type="rio::RioNodelet" base_class_type="nodelet::Nodelet">
     <description>
       A callback driven nodelet that receives IMU and radar data and creates an optimization graph.
     </description>

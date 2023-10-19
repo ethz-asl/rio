@@ -23,9 +23,9 @@
 // radar measurement callback: split preintegration to add radar factor, start
 // optimization.
 namespace rio {
-class RioFrontend {
+class Rio {
  public:
-  RioFrontend(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  Rio(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   bool init();
 
  private:
