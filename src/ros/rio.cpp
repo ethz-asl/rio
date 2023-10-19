@@ -1,4 +1,4 @@
-#include "rio/ros/rio_frontend.h"
+#include "rio/ros/rio.h"
 
 #include <cmath>
 
@@ -15,22 +15,21 @@
 using namespace rio;
 using namespace gtsam;
 
-RioFrontend::RioFrontend(const ros::NodeHandle& nh,
-                         const ros::NodeHandle& nh_private)
+Rio::Rio(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private) {}
 
-bool RioFrontend::init() {
+bool Rio::init() {
   // ROS communication.
   int queue_size = 1;
   if (!loadParam<int>(nh_private_, "queue_size", &queue_size)) return false;
 
   // Subscribers.
-  imu_raw_sub_ = nh_.subscribe("imu/data_raw", queue_size,
-                               &RioFrontend::imuRawCallback, this);
-  imu_filter_sub_ = nh_.subscribe("imu/data", queue_size,
-                                  &RioFrontend::imuFilterCallback, this);
+  imu_raw_sub_ =
+      nh_.subscribe("imu/data_raw", queue_size, &Rio::imuRawCallback, this);
+  imu_filter_sub_ =
+      nh_.subscribe("imu/data", queue_size, &Rio::imuFilterCallback, this);
   radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
-                                  &RioFrontend::cfarDetectionsCallback, this);
+                                  &Rio::cfarDetectionsCallback, this);
 
   // Publishers
   odom_navigation_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
@@ -59,19 +58,24 @@ bool RioFrontend::init() {
       initial_state_->I_v_IB, initial_state_->imu, integrator);
 
   // Prior noise pose.
-  if(!loadPriorNoisePose(nh_private_, &prior_noise_model_I_T_IB_)) return false;
+  if (!loadPriorNoisePose(nh_private_, &prior_noise_model_I_T_IB_))
+    return false;
 
   // Prior noise velocity.
-  if(!loadPriorNoiseVelocity(nh_private_, &prior_noise_model_I_v_IB_)) return false;
+  if (!loadPriorNoiseVelocity(nh_private_, &prior_noise_model_I_v_IB_))
+    return false;
 
   // Prior noise IMU bias.
-  if(!loadPriorNoiseImuBias(nh_private_, &prior_noise_model_imu_bias_)) return false;
+  if (!loadPriorNoiseImuBias(nh_private_, &prior_noise_model_imu_bias_))
+    return false;
 
   // Noise Radar doppler.
-  if(!loadNoiseRadarRadialVelocity(nh_private_, &noise_model_radar_doppler_)) return false;
- 
+  if (!loadNoiseRadarRadialVelocity(nh_private_, &noise_model_radar_doppler_))
+    return false;
+
   // Noise Radar track.
-  if(!loadNoiseRadarTrack(nh_private_, &noise_model_radar_track_)) return false;
+  if (!loadNoiseRadarTrack(nh_private_, &noise_model_radar_track_))
+    return false;
 
   // Radar tracker.
   int track_age;
@@ -124,7 +128,7 @@ bool RioFrontend::init() {
   return true;
 }
 
-void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
+void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
   if (initial_state_->imu == nullptr) {
@@ -174,7 +178,7 @@ void RioFrontend::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
 }
 
-void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
+void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
@@ -183,8 +187,7 @@ void RioFrontend::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
       initial_state_->I_v_IB, msg, initial_state_->integrator);
 }
 
-void RioFrontend::cfarDetectionsCallback(
-    const sensor_msgs::PointCloud2Ptr& msg) {
+void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
   LOG_FIRST(I, 1, "Received first CFAR detections.");
   if (propagation_.empty()) {
     LOG(W, "No propagation, skipping CFAR detections.");
@@ -237,8 +240,7 @@ void RioFrontend::cfarDetectionsCallback(
   }
 }
 
-std::deque<Propagation>::iterator RioFrontend::splitPropagation(
-    const ros::Time& t) {
+std::deque<Propagation>::iterator Rio::splitPropagation(const ros::Time& t) {
   auto it = propagation_.begin();
   for (; it != propagation_.end(); ++it) {
     Propagation propagation_to_t, propagation_from_t;
@@ -252,7 +254,7 @@ std::deque<Propagation>::iterator RioFrontend::splitPropagation(
   return it;
 }
 
-std::vector<mav_sensors::Radar::CfarDetection> RioFrontend::parseRadarMsg(
+std::vector<mav_sensors::Radar::CfarDetection> Rio::parseRadarMsg(
     const sensor_msgs::PointCloud2Ptr& msg) const {
   std::vector<mav_sensors::Radar::CfarDetection> detections(msg->height *
                                                             msg->width);
