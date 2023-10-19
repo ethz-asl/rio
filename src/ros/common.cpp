@@ -1,5 +1,7 @@
 #include "rio/ros/common.h"
 
+#include <sensor_msgs/point_cloud2_iterator.h>
+
 using namespace rio;
 using namespace gtsam;
 
@@ -178,4 +180,31 @@ bool rio::loadNoiseRadarTrack(const ros::NodeHandle& nh,
   std::dynamic_pointer_cast<noiseModel::Diagonal>(*noise)->print(
       "Noise model radar track: ");
   return true;
+}
+
+std::vector<mav_sensors::Radar::CfarDetection> rio::parseRadarMsg(
+    const sensor_msgs::PointCloud2Ptr& msg) {
+  std::vector<mav_sensors::Radar::CfarDetection> detections(msg->height *
+                                                            msg->width);
+  sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_doppler(*msg, "doppler");
+  sensor_msgs::PointCloud2Iterator<int16_t> iter_snr(*msg, "snr");
+  sensor_msgs::PointCloud2Iterator<int16_t> iter_noise(*msg, "noise");
+  for (auto& detection : detections) {
+    detection.x = *(iter_x);
+    detection.y = *(iter_y);
+    detection.z = *(iter_z);
+    detection.velocity = *(iter_doppler);
+    detection.snr = *(iter_snr);
+    detection.noise = *(iter_noise);
+    ++iter_x;
+    ++iter_y;
+    ++iter_z;
+    ++iter_doppler;
+    ++iter_snr;
+    ++iter_noise;
+  }
+  return detections;
 }

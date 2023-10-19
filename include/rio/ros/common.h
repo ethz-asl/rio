@@ -6,7 +6,9 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <log++.h>
+#include <mav_sensors_drivers/sensor_types/Radar.h>
 #include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace rio {
 template <typename T>
@@ -61,5 +63,8 @@ bool loadNoiseRadarRadialVelocity(const ros::NodeHandle& nh,
 
 bool loadNoiseRadarTrack(const ros::NodeHandle& nh,
                          gtsam::SharedNoiseModel* noise);
+
+std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
+    const sensor_msgs::PointCloud2Ptr& msg);
 
 }  // namespace rio

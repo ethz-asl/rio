@@ -62,9 +62,6 @@ class Rio {
   gtsam::SharedNoiseModel noise_model_radar_track_;
   uint64_t idx_{0};
 
-  std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
-      const sensor_msgs::PointCloud2Ptr& msg) const;
-
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_{tf_buffer_};
   tf2_ros::TransformBroadcaster tf_broadcaster_;
