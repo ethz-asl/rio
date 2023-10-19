@@ -7,6 +7,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS 
                 message_generation
+                rosbag
                 roscpp 
                 lpp 
                 mav_sensors_drivers
@@ -67,9 +68,10 @@ add_executable(rio_node
         )
 target_link_libraries(rio_node ${PROJECT_NAME})
 
-#add_executable(rio_calibration_node
-#        src/ros/nodes/rio_calibration_node.cpp
-#)
+add_executable(rio_calibration_node
+        src/ros/nodes/rio_calibration_node.cpp
+)
+target_link_libraries(rio_calibration_node ${PROJECT_NAME})
 
 #########
 # TESTS #
