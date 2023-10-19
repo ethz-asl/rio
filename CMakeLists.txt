@@ -46,6 +46,7 @@ add_library(${PROJECT_NAME}
         src/gtsam/state.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
+        src/ros/common.cpp
         src/ros/imu.cpp
         src/ros/radar.cpp
         src/ros/rio_frontend.cpp

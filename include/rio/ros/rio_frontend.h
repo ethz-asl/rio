@@ -55,11 +55,11 @@ class RioFrontend {
   std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
 
   Optimization optimization_;
-  gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;
-  gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_v_IB_;
-  gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
+  gtsam::SharedNoiseModel prior_noise_model_I_T_IB_;
+  gtsam::SharedNoiseModel prior_noise_model_I_v_IB_;
+  gtsam::SharedNoiseModel prior_noise_model_imu_bias_;
   gtsam::SharedNoiseModel noise_model_radar_doppler_;
-  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_;
+  gtsam::SharedNoiseModel noise_model_radar_track_;
   uint64_t idx_{0};
 
   std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(

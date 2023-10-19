@@ -1,12 +1,17 @@
+#pragma once
+
 #include <vector>
 
 #include <gtsam/base/Vector.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/navigation/CombinedImuFactor.h>
 #include <log++.h>
 #include <ros/ros.h>
 
 namespace rio {
 template <typename T>
-bool loadParam(const ros::NodeHandle& nh, const std::string& name, T* value) {
+inline bool loadParam(const ros::NodeHandle& nh, const std::string& name,
+                      T* value) {
   if (!nh.getParam(name, *value)) {
     LOG(F, "Failed to read " << nh.resolveName(name).c_str() << ".");
     return false;
@@ -15,8 +20,9 @@ bool loadParam(const ros::NodeHandle& nh, const std::string& name, T* value) {
 }
 
 template <>
-bool loadParam<gtsam::Vector3>(const ros::NodeHandle& nh,
-                               const std::string& name, gtsam::Vector3* value) {
+inline bool loadParam<gtsam::Vector3>(const ros::NodeHandle& nh,
+                                      const std::string& name,
+                                      gtsam::Vector3* value) {
   std::vector<double> vec;
   if (!loadParam<std::vector<double>>(nh, name, &vec)) return false;
   if (vec.size() != value->size()) {
@@ -29,7 +35,7 @@ bool loadParam<gtsam::Vector3>(const ros::NodeHandle& nh,
 }
 
 template <>
-bool loadParam<std::optional<gtsam::Vector3>>(
+inline bool loadParam<std::optional<gtsam::Vector3>>(
     const ros::NodeHandle& nh, const std::string& name,
     std::optional<gtsam::Vector3>* value) {
   gtsam::Vector3 vec;
@@ -37,5 +43,23 @@ bool loadParam<std::optional<gtsam::Vector3>>(
   *value = vec;
   return true;
 }
+
+bool loadPreintegratedCombinedMeasurements(
+    const ros::NodeHandle& nh, gtsam::PreintegratedCombinedMeasurements* imu);
+
+bool loadPriorNoisePose(const ros::NodeHandle& nh,
+                        gtsam::SharedNoiseModel* noise);
+
+bool loadPriorNoiseVelocity(const ros::NodeHandle& nh,
+                            gtsam::SharedNoiseModel* noise);
+
+bool loadPriorNoiseImuBias(const ros::NodeHandle& nh,
+                           gtsam::SharedNoiseModel* noise);
+
+bool loadNoiseRadarRadialVelocity(const ros::NodeHandle& nh,
+                                  gtsam::SharedNoiseModel* noise);
+
+bool loadNoiseRadarTrack(const ros::NodeHandle& nh,
+                         gtsam::SharedNoiseModel* noise);
 
 }  // namespace rio
