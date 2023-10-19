@@ -64,13 +64,13 @@
 
     <group if="$(arg rio_on)">
         <node pkg="nodelet" type="nodelet" name="rio_frontend" args="load rio::RioFrontendNodelet $(arg nodelet_manager_name)" output="screen">
-			<rosparam file="$(find rio)/cfg/rio_frontend.yaml" />
+			<rosparam file="$(find rio)/cfg/rio.yaml" />
             <param name="queue_size" value="$(arg rio_queue_size)"/>
             <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
         </node>
 
         <!--node pkg="rio" type="rio_frontend_node" name="rio_frontend" output="screen" -->
-			<!--rosparam file="$(find rio)/cfg/rio_frontend.yaml" />
+			<!--rosparam file="$(find rio)/cfg/rio.yaml" />
             <param name="queue_size" value="$(arg rio_queue_size)"/>
             <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
         </node-->
