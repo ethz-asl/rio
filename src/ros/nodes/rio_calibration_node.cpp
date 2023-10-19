@@ -4,7 +4,10 @@
  */
 
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/expressions.h>
 #include <log++.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -20,6 +23,11 @@ using namespace rio;
 using namespace gtsam;
 using namespace ros;
 
+using gtsam::symbol_shorthand::B;
+using gtsam::symbol_shorthand::C;
+using gtsam::symbol_shorthand::V;
+using gtsam::symbol_shorthand::X;
+
 struct ImuMeasurement {
   double t;
   Vector3 a;
@@ -32,9 +40,11 @@ struct RadarMeasurement {
   double v;
 };
 
-struct OrientationMeasurement {
+struct OdometryMeasurement {
   double t;
-  Rot3 R_IB;
+  Pose3 T_IB;
+  Vector3 I_v_IB;
+  Vector3 B_omega_IB;
 };
 
 int main(int argc, char** argv) {
@@ -47,11 +57,6 @@ int main(int argc, char** argv) {
   if (!loadParam<std::string>(nh_private, "bag_path", &bag_path)) {
     return 1;
   }
-  std::string orientation_topic;
-  if (!loadParam<std::string>(nh_private, "orientation_topic",
-                              &orientation_topic)) {
-    return 1;
-  }
   std::string imu_topic;
   if (!loadParam<std::string>(nh_private, "imu_topic", &imu_topic)) {
     return 1;
@@ -60,26 +65,36 @@ int main(int argc, char** argv) {
   if (!loadParam<std::string>(nh_private, "radar_topic", &radar_topic)) {
     return 1;
   }
+  std::string odometry_topic;
+  if (!loadParam<std::string>(nh_private, "odometry_topic", &odometry_topic)) {
+    return 1;
+  }
 
   // Load rosbag.
   rosbag::Bag bag;
   bag.open(bag_path, rosbag::bagmode::Read);
 
   // Read IMU, IMU raw and radar data from rosbag
-  std::vector<OrientationMeasurement> orientation_measurements;
+  std::vector<OdometryMeasurement> odometry_measurements;
   std::vector<ImuMeasurement> imu_raw_measurements;
   std::vector<RadarMeasurement> radar_measurements;
 
   rosbag::View view(bag);
   for (const rosbag::MessageInstance& msg : view) {
-    if (msg.getTopic() == orientation_topic) {
-      sensor_msgs::ImuConstPtr imu_msg = msg.instantiate<sensor_msgs::Imu>();
+    if (msg.getTopic() == odometry_topic) {
+      nav_msgs::OdometryConstPtr odom_msg =
+          msg.instantiate<nav_msgs::Odometry>();
       Eigen::Quaterniond q_IB;
-      tf2::fromMsg(imu_msg->orientation, q_IB);
-      OrientationMeasurement orientation_measurement;
-      orientation_measurement.t = imu_msg->header.stamp.toSec();
-      orientation_measurement.R_IB = Rot3(q_IB);
-      orientation_measurements.push_back(orientation_measurement);
+      tf2::fromMsg(odom_msg->pose.pose.orientation, q_IB);
+      Vector3 I_t_IB;
+      tf2::fromMsg(odom_msg->pose.pose.position, I_t_IB);
+      OdometryMeasurement odometry_measurement;
+      odometry_measurement.t = odom_msg->header.stamp.toSec();
+      odometry_measurement.T_IB = {Rot3(q_IB), I_t_IB};
+      tf2::fromMsg(odom_msg->twist.twist.linear, odometry_measurement.I_v_IB);
+      tf2::fromMsg(odom_msg->twist.twist.angular,
+                   odometry_measurement.B_omega_IB);
+      odometry_measurements.push_back(odometry_measurement);
     } else if (msg.getTopic() == imu_topic) {
       sensor_msgs::ImuConstPtr imu_msg = msg.instantiate<sensor_msgs::Imu>();
       ImuMeasurement imu_measurement;
@@ -106,10 +121,49 @@ int main(int argc, char** argv) {
     }
   }
 
-  LOG(I, "Loaded " << orientation_measurements.size()
-                   << " orientation measurements, "
+  LOG(I, "Loaded " << odometry_measurements.size()
+                   << " odometry measurements, "
                    << imu_raw_measurements.size() << " IMU measurements and "
                    << radar_measurements.size() << " radar measurements.");
+
+  // Find the time at which we have all measurements.
+  double t_start =
+      std::max({odometry_measurements.front().t, imu_raw_measurements.front().t,
+                radar_measurements.front().t});
+  // Remove measurements before t_start.
+  odometry_measurements.erase(
+      odometry_measurements.begin(),
+      std::lower_bound(
+          odometry_measurements.begin(), odometry_measurements.end(), t_start,
+          [](const OdometryMeasurement& m, double t) { return m.t < t; }));
+  imu_raw_measurements.erase(
+      imu_raw_measurements.begin(),
+      std::lower_bound(
+          imu_raw_measurements.begin(), imu_raw_measurements.end(), t_start,
+          [](const ImuMeasurement& m, double t) { return m.t < t; }));
+  radar_measurements.erase(
+      radar_measurements.begin(),
+      std::lower_bound(
+          radar_measurements.begin(), radar_measurements.end(), t_start,
+          [](const RadarMeasurement& m, double t) { return m.t < t; }));
+
+  // Create nonlinear factor graph.
+  NonlinearFactorGraph graph;
+  Values values;
+
+  // Add a radar factor for each radar measurement.
+  size_t idx = 0;
+  // for (const auto& radar_measurement : radar_measurements) {
+    // auto T_IB = Pose3_(X(idx));
+    // auto T_BR = Pose3_(C(idx));
+    // auto R_v_IR = unrotate(
+    //     rotation(T_IB * T_BR),
+    //     Vector3_(V(idx)) +
+    //         rotate(rotation(T_IB),
+    //                cross(correctGyroscope_(ConstantBias_(B(idx)), B_omega_IB),
+    //                      translation(T_BR))));
+  //   idx++;
+  // }
 
   return 0;
 }
