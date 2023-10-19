@@ -14,6 +14,7 @@
 
   <depend>message_generation</depend>
   <depend>message_runtime</depend>
+  <depend>rosbag</depend>
   <depend>roscpp</depend>
   <depend>lpp</depend>
   <depend>mav_sensors_drivers</depend>
