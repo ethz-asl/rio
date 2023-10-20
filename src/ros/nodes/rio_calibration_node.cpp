@@ -87,6 +87,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  SharedNoiseModel loop_closure_noise_T;
+  if (!loadNoiseLoopClosureT(nh_private, &loop_closure_noise_T)) {
+    return 1;
+  }
+
   Vector3 init_B_t_BR;
   if (!loadParam<Vector3>(nh_private, "B_t_BR", &init_B_t_BR)) return false;
   Vector4 init_q_BR;
@@ -234,14 +239,16 @@ int main(int argc, char** argv) {
     }
   }
 
+  auto last_idx = std::prev(idx_stamp_map.end())->first;
+
   // Add calibration between constraints.
-  for (size_t i = 0; i < idx_stamp_map.size() - 2; i++) {
+  for (size_t i = 0; i < last_idx - 1; i++) {
     graph.add(BetweenConstraint(Pose3(), C(i), C(i + 1)));
   }
 
   // Add IMU in between factors.
-  LOG(I, "Adding " << idx_stamp_map.size() - 2 << " IMU factors.");
-  for (size_t i = 0; i < idx_stamp_map.size() - 2; i++) {
+  LOG(I, "Adding " << last_idx - 1 << " IMU factors.");
+  for (size_t i = 0; i < last_idx - 1; i++) {
     auto imu_begin = std::lower_bound(
         imu_raw_measurements.begin(), imu_raw_measurements.end(),
         idx_stamp_map[i],
@@ -263,6 +270,12 @@ int main(int argc, char** argv) {
                                 imu_integrator));
   }
 
+  // Add loop closure constraint.
+  graph.add(
+      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(), loop_closure_noise_T));
+  Vector3 delta_v_0 = Z_3x1;
+  graph.add(BetweenConstraint(delta_v_0, V(0), V(last_idx)));
+
   // Solve.
   LOG(I, "Solving...");
   gtsam::LevenbergMarquardtOptimizer optimizer(graph, values);
@@ -281,8 +294,8 @@ int main(int argc, char** argv) {
                                       .transpose());
   LOG(I, "IMU biases:");
   LOG(I, "B_0: " << result.at<imuBias::ConstantBias>(B(0)));
-  LOG(I, "B_" << idx_stamp_map.size() - 2 << ": "
-              << result.at<imuBias::ConstantBias>(B(idx_stamp_map.size() - 2)));
+  LOG(I, "B_" << last_idx << ": "
+              << result.at<imuBias::ConstantBias>(B(last_idx)));
 
   return 0;
 }
