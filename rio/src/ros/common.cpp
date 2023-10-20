@@ -208,3 +208,19 @@ std::vector<mav_sensors::Radar::CfarDetection> rio::parseRadarMsg(
   }
   return detections;
 }
+
+bool rio::loadNoiseLoopClosureT(const ros::NodeHandle& nh,
+                                gtsam::SharedNoiseModel* noise) {
+  assert(noise);
+  Vector3 noise_loop_closure_p;
+  if (!loadParam<Vector3>(nh, "noise/loop_closure/p", &noise_loop_closure_p))
+    return false;
+  Vector3 noise_loop_closure_R;
+  if (!loadParam<Vector3>(nh, "noise/loop_closure/R", &noise_loop_closure_R))
+    return false;
+  *noise = noiseModel::Diagonal::Sigmas(
+      (Vector6() << noise_loop_closure_R, noise_loop_closure_p).finished());
+  std::dynamic_pointer_cast<noiseModel::Diagonal>(*noise)->print(
+      "Noise model loop closure T: ");
+  return true;
+}
