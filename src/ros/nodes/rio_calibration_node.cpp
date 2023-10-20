@@ -5,7 +5,9 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/expressions.h>
 #include <log++.h>
 #include <nav_msgs/Odometry.h>
@@ -221,9 +223,14 @@ int main(int argc, char** argv) {
     }
   }
 
+  // Add calibration between constraints.
+  for (size_t i = 0; i < idx_stamp_map.size() - 1; i++) {
+    graph.add(BetweenConstraint(Pose3(), C(i), C(i + 1)));
+  }
+
   // Add IMU in between factors.
-  LOG(I, "Adding " << idx - 1 << " IMU factors.");
-  for (size_t i = 0; i < idx - 1; i++) {
+  LOG(I, "Adding " << idx_stamp_map.size() - 1 << " IMU factors.");
+  for (size_t i = 0; i < idx_stamp_map.size() - 1; i++) {
     auto imu_begin = std::lower_bound(
         imu_raw_measurements.begin(), imu_raw_measurements.end(),
         idx_stamp_map[i],
@@ -244,6 +251,15 @@ int main(int argc, char** argv) {
     graph.add(CombinedImuFactor(X(i), V(i), X(i + 1), V(i + 1), B(i), B(i + 1),
                                 imu_integrator));
   }
+
+  // Solve.
+  LOG(I, "Solving...");
+  gtsam::LevenbergMarquardtOptimizer optimizer(graph, values);
+  LOG(I, "Error before optimization: " << optimizer.error());
+  auto result = optimizer.optimize();
+  LOG(I, "Error after optimization: " << optimizer.error());
+
+  // Print results.
 
   return 0;
 }
