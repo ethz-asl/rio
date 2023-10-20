@@ -2,24 +2,24 @@
     <arg name="nodelet_manager_on" default="true" />
     <arg name="nodelet_manager_name" default="rio_nodelet_manager" />
 
-    <arg name="baro_on" default="false" />
+    <arg name="baro_on" default="true" />
     <arg name="baro_path" default="/dev/spidev2.0" />
     <arg name="baro_frame_id" default="bmp390" />
     <arg name="baro_poll_rate" default="60.0" />
 
-    <arg name="imu_on" default="false" />
+    <arg name="imu_on" default="true" />
     <arg name="imu_path_acc" default="/dev/spidev0.0" />
     <arg name="imu_path_gyro" default="/dev/spidev0.1" />
     <arg name="imu_frame_id" default="bmi088" />
     <arg name="imu_poll_rate" default="500.0" />
     <arg name="imu_bias_samples" default="2000" />
 
-    <arg name="radar_on" default="false" />
+    <arg name="radar_on" default="true" />
     <arg name="radar_path_cfg" default="/dev/ttyUSB0" />
     <arg name="radar_path_data" default="/dev/ttyUSB1" />
     <arg name="radar_frame_id" default="awr1843aop" />
     <arg name="radar_poll_rate" default="8.0" />
-    <!--arg name="radar_cfg" default="$(find mav_sensors_demo)/cfg/radar/xwr18xx_AOP_profile_best_velocity_resolution.cfg" /-->
+    <arg name="radar_cfg" default="$(find mav_sensors_demo)/cfg/radar/xwr18xx_AOP_profile_best_velocity_resolution.cfg" />
     <arg name="radar_trigger" default="true" />
     <arg name="radar_trigger_delay" default="500" />
     <arg name="radar_trigger_gpio" default="443" />
@@ -29,7 +29,7 @@
     <arg name="rio_queue_size" default="1" />
     <arg name="rio_odom_frame_id" default="odom" />
 
-    <arg name="imu_filter_on" default="false" />
+    <arg name="imu_filter_on" default="true" />
 
     <arg name="lidar_on" default="false" />
 
