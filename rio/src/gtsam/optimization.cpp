@@ -3,6 +3,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/expressions.h>

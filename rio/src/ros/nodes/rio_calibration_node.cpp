@@ -4,6 +4,7 @@
  */
 
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/expressions.h>
 #include <log++.h>
@@ -31,20 +32,23 @@ using gtsam::symbol_shorthand::X;
 struct ImuMeasurement {
   double t;
   Vector3 a;
-  Vector3 w;
+  Vector3 b_omega_ib;
+};
+
+struct RadarDetection {
+  Vector3 R_p_RT;
+  double v;
 };
 
 struct RadarMeasurement {
   double t;
-  Vector3 p;
-  double v;
+  std::vector<RadarDetection> detections;
 };
 
 struct OdometryMeasurement {
   double t;
   Pose3 T_IB;
   Vector3 I_v_IB;
-  Vector3 B_omega_IB;
 };
 
 int main(int argc, char** argv) {
@@ -70,6 +74,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  SharedNoiseModel radar_radial_velocity_noise_model;
+  if (!loadNoiseRadarRadialVelocity(nh_private,
+                                    &radar_radial_velocity_noise_model)) {
+    return 1;
+  }
+
   // Load rosbag.
   rosbag::Bag bag;
   bag.open(bag_path, rosbag::bagmode::Read);
@@ -92,37 +102,49 @@ int main(int argc, char** argv) {
       odometry_measurement.t = odom_msg->header.stamp.toSec();
       odometry_measurement.T_IB = {Rot3(q_IB), I_t_IB};
       tf2::fromMsg(odom_msg->twist.twist.linear, odometry_measurement.I_v_IB);
-      tf2::fromMsg(odom_msg->twist.twist.angular,
-                   odometry_measurement.B_omega_IB);
       odometry_measurements.push_back(odometry_measurement);
     } else if (msg.getTopic() == imu_topic) {
       sensor_msgs::ImuConstPtr imu_msg = msg.instantiate<sensor_msgs::Imu>();
       ImuMeasurement imu_measurement;
       imu_measurement.t = imu_msg->header.stamp.toSec();
       tf2::fromMsg(imu_msg->linear_acceleration, imu_measurement.a);
-      tf2::fromMsg(imu_msg->angular_velocity, imu_measurement.w);
+      tf2::fromMsg(imu_msg->angular_velocity, imu_measurement.b_omega_ib);
       imu_raw_measurements.push_back(imu_measurement);
     } else if (msg.getTopic() == radar_topic) {
       sensor_msgs::PointCloud2Ptr radar_msg =
           msg.instantiate<sensor_msgs::PointCloud2>();
       auto detections = parseRadarMsg(radar_msg);
+      RadarMeasurement radar_measurement;
+      radar_measurement.t = radar_msg->header.stamp.toSec();
       for (const auto& detection : detections) {
-        RadarMeasurement radar_measurement;
-        radar_measurement.t = radar_msg->header.stamp.toSec();
-        radar_measurement.p = {detection.x, detection.y, detection.z};
-        if (radar_measurement.p.norm() < 0.1) {
+        RadarDetection radar_detection;
+        radar_detection.R_p_RT = {detection.x, detection.y, detection.z};
+        if (radar_detection.R_p_RT.norm() < 0.1) {
           LOG(W, "Ignoring radar measurement with detection distance "
-                     << radar_measurement.p.norm());
+                     << radar_detection.R_p_RT.norm());
           continue;
         }
-        radar_measurement.v = detection.velocity;
-        radar_measurements.push_back(radar_measurement);
+        radar_detection.v = static_cast<double>(detection.velocity);
+        radar_measurement.detections.push_back(radar_detection);
       }
+      radar_measurements.push_back(radar_measurement);
     }
   }
 
-  LOG(I, "Loaded " << odometry_measurements.size()
-                   << " odometry measurements, "
+  if (odometry_measurements.empty()) {
+    LOG(F, "No odometry measurements found in rosbag.");
+    return 1;
+  }
+  if (imu_raw_measurements.empty()) {
+    LOG(F, "No IMU measurements found in rosbag.");
+    return 1;
+  }
+  if (radar_measurements.empty()) {
+    LOG(F, "No radar measurements found in rosbag.");
+    return 1;
+  }
+
+  LOG(I, "Loaded " << odometry_measurements.size() << " odometry measurements, "
                    << imu_raw_measurements.size() << " IMU measurements and "
                    << radar_measurements.size() << " radar measurements.");
 
@@ -153,17 +175,29 @@ int main(int argc, char** argv) {
 
   // Add a radar factor for each radar measurement.
   size_t idx = 0;
-  // for (const auto& radar_measurement : radar_measurements) {
-    // auto T_IB = Pose3_(X(idx));
-    // auto T_BR = Pose3_(C(idx));
-    // auto R_v_IR = unrotate(
-    //     rotation(T_IB * T_BR),
-    //     Vector3_(V(idx)) +
-    //         rotate(rotation(T_IB),
-    //                cross(correctGyroscope_(ConstantBias_(B(idx)), B_omega_IB),
-    //                      translation(T_BR))));
-  //   idx++;
-  // }
+  for (const auto& radar_measurement : radar_measurements) {
+    auto T_IB = Pose3_(X(idx));
+    auto T_BR = Pose3_(C(idx));
+    // Find the next IMU message to determine angular velocity.
+    auto imu = std::lower_bound(
+        imu_raw_measurements.begin(), imu_raw_measurements.end(),
+        radar_measurement.t,
+        [](const ImuMeasurement& m, double t) { return m.t < t; });
+    auto R_v_IR = unrotate(
+        rotation(T_IB * T_BR),
+        Vector3_(V(idx)) + rotate(rotation(T_IB),
+                                  cross(correctGyroscope_(ConstantBias_(B(idx)),
+                                                          imu->b_omega_ib),
+                                        translation(T_BR))));
+    idx++;
+
+    for (const auto& detection : radar_measurement.detections) {
+      auto h = radialVelocity_(R_v_IR, Point3_(-detection.R_p_RT));
+      auto z = detection.v;
+      auto factor = ExpressionFactor(radar_radial_velocity_noise_model, z, h);
+      graph.add(factor);
+    }
+  }
 
   return 0;
 }
