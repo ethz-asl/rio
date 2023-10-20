@@ -37,6 +37,21 @@ inline bool loadParam<gtsam::Vector3>(const ros::NodeHandle& nh,
 }
 
 template <>
+inline bool loadParam<gtsam::Vector4>(const ros::NodeHandle& nh,
+                                      const std::string& name,
+                                      gtsam::Vector4* value) {
+  std::vector<double> vec;
+  if (!loadParam<std::vector<double>>(nh, name, &vec)) return false;
+  if (vec.size() != value->size()) {
+    LOG(F, "Expected " << value->size() << " elements for " << name.c_str()
+                       << ", got " << vec.size() << ".");
+    return false;
+  }
+  *value = Eigen::Map<gtsam::Vector4>(vec.data(), vec.size());
+  return true;
+}
+
+template <>
 inline bool loadParam<std::optional<gtsam::Vector3>>(
     const ros::NodeHandle& nh, const std::string& name,
     std::optional<gtsam::Vector3>* value) {
