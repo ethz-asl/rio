@@ -7,6 +7,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS 
                 message_generation
+                rosbag
                 roscpp 
                 lpp 
                 mav_sensors_drivers
@@ -46,9 +47,10 @@ add_library(${PROJECT_NAME}
         src/gtsam/state.cpp
         src/ros/base_sensor.cpp
         src/ros/baro.cpp
+        src/ros/common.cpp
         src/ros/imu.cpp
         src/ros/radar.cpp
-        src/ros/rio_frontend.cpp
+        src/ros/rio.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} gtsam gtsam_unstable Eigen3::Eigen)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GTSAM_ENABLE_DEBUG) 
@@ -57,14 +59,19 @@ add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/baro_nodelet.cpp
         src/ros/nodelets/imu_nodelet.cpp
         src/ros/nodelets/radar_nodelet.cpp
-        src/ros/nodelets/rio_frontend_nodelet.cpp
+        src/ros/nodelets/rio_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 
-add_executable(rio_frontend_node
-        src/ros/nodes/rio_frontend_node.cpp
+add_executable(rio_node
+        src/ros/nodes/rio_node.cpp
         )
-target_link_libraries(rio_frontend_node ${PROJECT_NAME})
+target_link_libraries(rio_node ${PROJECT_NAME})
+
+add_executable(rio_calibration_node
+        src/ros/nodes/rio_calibration_node.cpp
+)
+target_link_libraries(rio_calibration_node ${PROJECT_NAME})
 
 #########
 # TESTS #
