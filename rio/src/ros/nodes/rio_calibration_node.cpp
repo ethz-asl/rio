@@ -101,7 +101,9 @@ int main(int argc, char** argv) {
       OdometryMeasurement odometry_measurement;
       odometry_measurement.t = odom_msg->header.stamp.toSec();
       odometry_measurement.T_IB = {Rot3(q_IB), I_t_IB};
-      tf2::fromMsg(odom_msg->twist.twist.linear, odometry_measurement.I_v_IB);
+      Vector3 B_v_IB;
+      tf2::fromMsg(odom_msg->twist.twist.linear, B_v_IB);
+      odometry_measurement.I_v_IB = Rot3(q_IB).rotate(B_v_IB);
       odometry_measurements.push_back(odometry_measurement);
     } else if (msg.getTopic() == imu_topic) {
       sensor_msgs::ImuConstPtr imu_msg = msg.instantiate<sensor_msgs::Imu>();
@@ -172,10 +174,25 @@ int main(int argc, char** argv) {
   // Create nonlinear factor graph.
   NonlinearFactorGraph graph;
   Values values;
+  std::map<size_t, double> idx_stamp_map;
 
   // Add a radar factor for each radar measurement.
   size_t idx = 0;
   for (const auto& radar_measurement : radar_measurements) {
+    idx_stamp_map[idx] = radar_measurement.t;
+    // Initial value close to current index.
+    // Could find actual closest time, but this is good enough.
+    auto odom = std::lower_bound(
+        odometry_measurements.begin(), odometry_measurements.end(),
+        radar_measurement.t,
+        [](const OdometryMeasurement& m, double t) { return m.t < t; });
+    if (odom == odometry_measurements.end()) continue;
+    values.insert(X(idx), odom->T_IB);
+    values.insert(V(idx), odom->I_v_IB);
+    values.insert(B(idx), imuBias::ConstantBias());
+    values.insert(C(idx), Pose3());
+
+    // Radar factor.
     auto T_IB = Pose3_(X(idx));
     auto T_BR = Pose3_(C(idx));
     // Find the next IMU message to determine angular velocity.
