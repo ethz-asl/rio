@@ -87,6 +87,17 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  Vector3 init_B_t_BR;
+  if (!loadParam<Vector3>(nh_private, "B_t_BR", &init_B_t_BR)) return false;
+  Vector4 init_q_BR;
+  if (!loadParam<Vector4>(nh_private, "q_BR", &init_q_BR)) return false;
+  Pose3 init_T_BR(Rot3(init_q_BR(3), init_q_BR(0), init_q_BR(1), init_q_BR(2)),
+                  init_B_t_BR);
+  LOG(I, "Initial calibration:");
+  LOG(I, "B_t_BR [x, y, z]: " << init_T_BR.translation().transpose());
+  LOG(I, "q_BR [x, y, z, w]: "
+             << init_T_BR.rotation().toQuaternion().coeffs().transpose());
+
   // Load rosbag.
   rosbag::Bag bag;
   bag.open(bag_path, rosbag::bagmode::Read);
@@ -197,7 +208,7 @@ int main(int argc, char** argv) {
     values.insert(X(idx), odom->T_IB);
     values.insert(V(idx), odom->I_v_IB);
     values.insert(B(idx), imuBias::ConstantBias());
-    values.insert(C(idx), Pose3());
+    values.insert(C(idx), init_T_BR);
 
     // Radar factor.
     auto T_IB = Pose3_(X(idx));
