@@ -31,8 +31,8 @@ using gtsam::symbol_shorthand::X;
 
 struct ImuMeasurement {
   double t;
-  Vector3 a;
-  Vector3 b_omega_ib;
+  Vector3 B_a_IB;
+  Vector3 B_omega_IB;
 };
 
 struct RadarDetection {
@@ -80,6 +80,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  PreintegratedCombinedMeasurements imu_integrator;
+  if (!loadPreintegratedCombinedMeasurements(nh_private, &imu_integrator)) {
+    return 1;
+  }
+
   // Load rosbag.
   rosbag::Bag bag;
   bag.open(bag_path, rosbag::bagmode::Read);
@@ -109,8 +114,8 @@ int main(int argc, char** argv) {
       sensor_msgs::ImuConstPtr imu_msg = msg.instantiate<sensor_msgs::Imu>();
       ImuMeasurement imu_measurement;
       imu_measurement.t = imu_msg->header.stamp.toSec();
-      tf2::fromMsg(imu_msg->linear_acceleration, imu_measurement.a);
-      tf2::fromMsg(imu_msg->angular_velocity, imu_measurement.b_omega_ib);
+      tf2::fromMsg(imu_msg->linear_acceleration, imu_measurement.B_a_IB);
+      tf2::fromMsg(imu_msg->angular_velocity, imu_measurement.B_omega_IB);
       imu_raw_measurements.push_back(imu_measurement);
     } else if (msg.getTopic() == radar_topic) {
       sensor_msgs::PointCloud2Ptr radar_msg =
@@ -179,7 +184,6 @@ int main(int argc, char** argv) {
   // Add a radar factor for each radar measurement.
   size_t idx = 0;
   for (const auto& radar_measurement : radar_measurements) {
-    idx_stamp_map[idx] = radar_measurement.t;
     // Initial value close to current index.
     // Could find actual closest time, but this is good enough.
     auto odom = std::lower_bound(
@@ -187,6 +191,7 @@ int main(int argc, char** argv) {
         radar_measurement.t,
         [](const OdometryMeasurement& m, double t) { return m.t < t; });
     if (odom == odometry_measurements.end()) continue;
+    idx_stamp_map[idx] = radar_measurement.t;
     values.insert(X(idx), odom->T_IB);
     values.insert(V(idx), odom->I_v_IB);
     values.insert(B(idx), imuBias::ConstantBias());
@@ -204,7 +209,7 @@ int main(int argc, char** argv) {
         rotation(T_IB * T_BR),
         Vector3_(V(idx)) + rotate(rotation(T_IB),
                                   cross(correctGyroscope_(ConstantBias_(B(idx)),
-                                                          imu->b_omega_ib),
+                                                          imu->B_omega_IB),
                                         translation(T_BR))));
     idx++;
 
@@ -214,6 +219,30 @@ int main(int argc, char** argv) {
       auto factor = ExpressionFactor(radar_radial_velocity_noise_model, z, h);
       graph.add(factor);
     }
+  }
+
+  // Add IMU in between factors.
+  LOG(I, "Adding " << idx - 1 << " IMU factors.");
+  for (size_t i = 0; i < idx - 1; i++) {
+    auto imu_begin = std::lower_bound(
+        imu_raw_measurements.begin(), imu_raw_measurements.end(),
+        idx_stamp_map[i],
+        [](const ImuMeasurement& m, double t) { return m.t < t; });
+    imu_begin->t = idx_stamp_map[i];
+    auto imu_end = std::lower_bound(
+        imu_begin, imu_raw_measurements.end(), idx_stamp_map[i + 1],
+        [](const ImuMeasurement& m, double t) { return m.t < t; });
+    imu_end->t = idx_stamp_map[i + 1];
+    imu_integrator.resetIntegrationAndSetBias(
+        imuBias::ConstantBias(values.at<imuBias::ConstantBias>(B(i))));
+    while (imu_begin != imu_end) {
+      auto dt = std::next(imu_begin)->t - imu_begin->t;
+      imu_integrator.integrateMeasurement(imu_begin->B_a_IB,
+                                          imu_begin->B_omega_IB, dt);
+      imu_begin++;
+    }
+    graph.add(CombinedImuFactor(X(i), V(i), X(i + 1), V(i + 1), B(i), B(i + 1),
+                                imu_integrator));
   }
 
   return 0;
