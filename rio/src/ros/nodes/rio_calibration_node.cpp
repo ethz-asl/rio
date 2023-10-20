@@ -224,13 +224,13 @@ int main(int argc, char** argv) {
   }
 
   // Add calibration between constraints.
-  for (size_t i = 0; i < idx_stamp_map.size() - 1; i++) {
+  for (size_t i = 0; i < idx_stamp_map.size() - 2; i++) {
     graph.add(BetweenConstraint(Pose3(), C(i), C(i + 1)));
   }
 
   // Add IMU in between factors.
-  LOG(I, "Adding " << idx_stamp_map.size() - 1 << " IMU factors.");
-  for (size_t i = 0; i < idx_stamp_map.size() - 1; i++) {
+  LOG(I, "Adding " << idx_stamp_map.size() - 2 << " IMU factors.");
+  for (size_t i = 0; i < idx_stamp_map.size() - 2; i++) {
     auto imu_begin = std::lower_bound(
         imu_raw_measurements.begin(), imu_raw_measurements.end(),
         idx_stamp_map[i],
@@ -260,6 +260,18 @@ int main(int argc, char** argv) {
   LOG(I, "Error after optimization: " << optimizer.error());
 
   // Print results.
+  LOG(I, "Calibration results:");
+  LOG(I,
+      "B_t_BR [x, y, z]: " << result.at<Pose3>(C(0)).translation().transpose());
+  LOG(I, "q_BR [x, y, z, w]: " << result.at<Pose3>(C(0))
+                                      .rotation()
+                                      .toQuaternion()
+                                      .coeffs()
+                                      .transpose());
+  LOG(I, "IMU biases:");
+  LOG(I, "B_0: " << result.at<imuBias::ConstantBias>(B(0)));
+  LOG(I, "B_" << idx_stamp_map.size() - 2 << ": "
+              << result.at<imuBias::ConstantBias>(B(idx_stamp_map.size() - 2)));
 
   return 0;
 }
