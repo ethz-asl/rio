@@ -29,26 +29,26 @@
                                     <field>pose/pose/position/x</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>7</absolute_maximum>
-                                        <absolute_minimum>-30</absolute_minimum>
+                                        <absolute_maximum>80</absolute_maximum>
+                                        <absolute_minimum>-3</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>1</type>
                                     </scale>
-                                    <topic>/rio_frontend/odometry_navigation</topic>
+                                    <topic>/rio/odometry_navigation</topic>
                                     <type>nav_msgs/Odometry</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>pose/pose/position/y</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>1</absolute_maximum>
-                                        <absolute_minimum>-17</absolute_minimum>
+                                        <absolute_maximum>14</absolute_maximum>
+                                        <absolute_minimum>-26</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>1</type>
                                     </scale>
-                                    <topic>/rio_frontend/odometry_navigation</topic>
+                                    <topic>/rio/odometry_navigation</topic>
                                     <type>nav_msgs/Odometry</type>
                                 </y_axis>
                             </axes>
@@ -109,7 +109,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_gyro</topic>
+                                    <topic>/rio/bias_gyro</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </x_axis>
                                 <y_axis>
@@ -122,7 +122,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_gyro</topic>
+                                    <topic>/rio/bias_gyro</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </y_axis>
                             </axes>
@@ -160,7 +160,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_gyro</topic>
+                                    <topic>/rio/bias_gyro</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </x_axis>
                                 <y_axis>
@@ -173,7 +173,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_gyro</topic>
+                                    <topic>/rio/bias_gyro</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </y_axis>
                             </axes>
@@ -211,7 +211,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_gyro</topic>
+                                    <topic>/rio/bias_gyro</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </x_axis>
                                 <y_axis>
@@ -224,7 +224,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_gyro</topic>
+                                    <topic>/rio/bias_gyro</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </y_axis>
                             </axes>
@@ -285,7 +285,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/doppler_residual</topic>
+                                    <topic>/rio/doppler_residual</topic>
                                     <type>rio/DopplerResidual</type>
                                 </x_axis>
                                 <y_axis>
@@ -298,7 +298,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/doppler_residual</topic>
+                                    <topic>/rio/doppler_residual</topic>
                                     <type>rio/DopplerResidual</type>
                                 </y_axis>
                             </axes>
@@ -361,7 +361,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/odometry_navigation</topic>
+                                    <topic>/rio/odometry_navigation</topic>
                                     <type>nav_msgs/Odometry</type>
                                 </x_axis>
                                 <y_axis>
@@ -374,7 +374,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/odometry_navigation</topic>
+                                    <topic>/rio/odometry_navigation</topic>
                                     <type>nav_msgs/Odometry</type>
                                 </y_axis>
                             </axes>
@@ -435,7 +435,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_acc</topic>
+                                    <topic>/rio/bias_acc</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </x_axis>
                                 <y_axis>
@@ -448,7 +448,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_acc</topic>
+                                    <topic>/rio/bias_acc</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </y_axis>
                             </axes>
@@ -486,7 +486,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_acc</topic>
+                                    <topic>/rio/bias_acc</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </x_axis>
                                 <y_axis>
@@ -499,7 +499,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_acc</topic>
+                                    <topic>/rio/bias_acc</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </y_axis>
                             </axes>
@@ -537,7 +537,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_acc</topic>
+                                    <topic>/rio/bias_acc</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </x_axis>
                                 <y_axis>
@@ -550,7 +550,7 @@
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>0</type>
                                     </scale>
-                                    <topic>/rio_frontend/bias_acc</topic>
+                                    <topic>/rio/bias_acc</topic>
                                     <type>geometry_msgs/Vector3Stamped</type>
                                 </y_axis>
                             </axes>

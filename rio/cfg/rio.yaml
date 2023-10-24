@@ -9,10 +9,9 @@ prior_noise:
 
 noise:
     radar:
-        doppler: 0.1
+        doppler: 0.1 # sigma
         track: [0.1, 0.1, 0.1] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
-        robust_doppler: True
-        robust_doppler_k: 0.1
+        loss: 5 # 0: quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
 radar:
     track_age: 10 # track for n frames, i.e., 0 = only current frame, 1 = current and previous frame, etc.
 
@@ -26,7 +25,7 @@ imu:
     gyro_sigma: 1.0e-2
     integration_sigma: 1.0e-6
 
-    initial_bias_acc: [0.05, -0.15, 0.05]
+    initial_bias_acc: [-0.15, -0.21, 0.15]
     initial_bias_gyro: [0.0, 0.0, 0.0]
 
 isam2:

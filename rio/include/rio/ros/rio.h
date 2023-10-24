@@ -23,9 +23,9 @@
 // radar measurement callback: split preintegration to add radar factor, start
 // optimization.
 namespace rio {
-class RioFrontend {
+class Rio {
  public:
-  RioFrontend(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  Rio(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   bool init();
 
  private:
@@ -55,17 +55,12 @@ class RioFrontend {
   std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
 
   Optimization optimization_;
-  gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_T_IB_;
-  gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_I_v_IB_;
-  gtsam::noiseModel::Diagonal::shared_ptr prior_noise_model_imu_bias_;
-  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_doppler_;
-  gtsam::noiseModel::Diagonal::shared_ptr noise_model_radar_track_;
-  std::optional<gtsam::noiseModel::Robust::shared_ptr>
-      noise_model_robust_radar_doppler_;
+  gtsam::SharedNoiseModel prior_noise_model_I_T_IB_;
+  gtsam::SharedNoiseModel prior_noise_model_I_v_IB_;
+  gtsam::SharedNoiseModel prior_noise_model_imu_bias_;
+  gtsam::SharedNoiseModel noise_model_radar_doppler_;
+  gtsam::SharedNoiseModel noise_model_radar_track_;
   uint64_t idx_{0};
-
-  std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
-      const sensor_msgs::PointCloud2Ptr& msg) const;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_{tf_buffer_};
