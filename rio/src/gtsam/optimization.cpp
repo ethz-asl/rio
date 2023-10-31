@@ -98,10 +98,9 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
   tf2::fromMsg(state->imu->angular_velocity, B_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
     // See https://dongjing3309.github.io/files/gtsam-tutorial.pdf
-    // and adjoint-test.cpp for the derivation of the following.
     auto T_IB = Pose3_(X(idx));
-    // Note(rikba): For calibration replace constant B_T_BR_ with symbol.
     auto T_BR = Pose3_(propagation.B_T_BR_.value());
+    // R_v_IR = R_RI * (I_v_IB + R_IB * (B_omega_IB x B_t_BR))
     auto R_v_IR = unrotate(
         rotation(T_IB * T_BR),
         Vector3_(V(idx)) +
