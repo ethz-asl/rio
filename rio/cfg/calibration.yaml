@@ -1,4 +1,4 @@
-bag_path: '/home/brik/Desktop/2023-10-20-18-01-32.bag'
+bag_path: '/home/brik/Desktop/2023-10-31-10-40-15.bag'
 imu_topic: '/imu/data_raw'
 radar_topic: '/radar/cfar_detections'
 odometry_topic: '/rio/odometry_optimizer'

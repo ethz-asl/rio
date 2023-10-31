@@ -74,7 +74,7 @@
             <param name="queue_size" value="$(arg rio_queue_size)"/>
             <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
         </node-->
-        <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.115 -0.002 -0.018 0.705 0.705 -0.049 -0.049 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+        <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.0995907 -0.00207136 -0.0205103 0.698622  0.698198 -0.111786 -0.103792 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
     </group>
 
     <group if="$(arg imu_filter_on)">
