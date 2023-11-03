@@ -115,7 +115,8 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
               << R_p_RT.norm() << "m");
       continue;
     }
-    auto h = radialVelocity_(R_v_IR, Point3_(-R_p_RT));
+    Unit3_ R_p_TR_unit(Unit3(-R_p_RT));
+    auto h = radialVelocity_(R_v_IR, R_p_TR_unit);
     auto z = static_cast<double>(detection.velocity);
     auto factor = ExpressionFactor(noise_model, z, h);
     new_graph_.add(factor);
