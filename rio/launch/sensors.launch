@@ -33,6 +33,8 @@
 
     <arg name="lidar_on" default="false" />
 
+    <arg name="visualize" default="false"/>
+
     <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen" if="$(arg nodelet_manager_on)"/>
     <node pkg="nodelet" type="nodelet" name="baro" args="load rio::BaroNodelet $(arg nodelet_manager_name)" output="screen" if="$(arg baro_on)">
 		<param name="path" value="$(arg baro_path)"/>
@@ -89,6 +91,11 @@
         <node name="livox_lidar_publisher2" pkg="livox_ros_driver2" type="livox_ros_driver2_node" output="screen" args=""/>
         <node name="imu_to_lidar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.005 -0.001 0.101 0.0 1.0 0.0 0.0 '$(arg imu_frame_id)' livox_frame" />
         <node name="imu_to_prism_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.038 -0.001 0.170 0.0 0.0 0.0 1.0 '$(arg imu_frame_id)' mini_prism" />
+    </group>
+
+    <group if="$(arg visualize)">
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rio)/cfg/rviz.rviz"/>
+        <node pkg="rqt_multiplot" type="rqt_multiplot" name="rqt_multiplot" args="--multiplot-config $(find rio)/cfg/rio_multiplot.xml --multiplot-run-all"/>
     </group>
 
 </launch>

@@ -232,7 +232,8 @@ int main(int argc, char** argv) {
     idx++;
 
     for (const auto& detection : radar_measurement.detections) {
-      auto h = radialVelocity_(R_v_IR, Point3_(-detection.R_p_RT));
+      Unit3_ R_p_TR_unit(Unit3(-detection.R_p_RT));
+      auto h = radialVelocity_(R_v_IR, R_p_TR_unit);
       auto z = detection.v;
       auto factor = ExpressionFactor(radar_radial_velocity_noise_model, z, h);
       graph.add(factor);
