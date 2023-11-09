@@ -29,7 +29,7 @@ generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package( INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
                 LIBRARIES ${PROJECT_NAME} ${PROJECT_NAME}_nodelet
-                CATKIN_DEPENDS message_runtime roscpp lpp mav_sensors_drivers sensor_msgs std_msgs roslib tf2_eigen tf2_ros nodelet std_srvs
+                CATKIN_DEPENDS message_runtime roscpp lpp mav_sensors_drivers sensor_msgs std_msgs roslib tf2_eigen tf2_ros nodelet gtsam_catkin std_srvs
               )
 include_directories(include ${catkin_INCLUDE_DIRS})
 
@@ -38,6 +38,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 ###########
 
 add_compile_definitions(MODE_ROSLOG)
+add_compile_definitions(GTSAM_USE_BOOST_FEATURES)
 add_library(${PROJECT_NAME}
         src/common.cpp
         src/least_squares.cpp
@@ -53,7 +54,6 @@ add_library(${PROJECT_NAME}
         src/ros/rio.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} gtsam gtsam_unstable Eigen3::Eigen)
-target_compile_definitions(${PROJECT_NAME} PRIVATE GTSAM_ENABLE_DEBUG) 
 
 add_library(${PROJECT_NAME}_nodelet
         src/ros/nodelets/baro_nodelet.cpp
