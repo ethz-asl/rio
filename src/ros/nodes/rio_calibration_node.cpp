@@ -92,6 +92,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  SharedNoiseModel zero_velocity_prior_noise;
+  if (!loadNoiseZeroVelocityPrior(nh_private, &zero_velocity_prior_noise)) {
+    return 1;
+  }
+
   Vector3 init_B_t_BR;
   if (!loadParam<Vector3>(nh_private, "B_t_BR", &init_B_t_BR)) return false;
   Vector4 init_q_BR;
@@ -327,6 +332,11 @@ int main(int argc, char** argv) {
       BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(), loop_closure_noise_T));
   Vector3 delta_v_0 = Z_3x1;
   graph.add(BetweenConstraint(delta_v_0, V(0), V(last_idx)));
+
+  // Add zero velocity prior at start and end.
+  graph.add(PriorFactor<Vector3>(V(0), Z_3x1, zero_velocity_prior_noise));
+  graph.add(
+      PriorFactor<Vector3>(V(last_idx), Z_3x1, zero_velocity_prior_noise));
 
   // Solve.
   LOG(I, "Solving...");
