@@ -173,10 +173,61 @@ int main(int argc, char** argv) {
                    << imu_raw_measurements.size() << " IMU measurements and "
                    << radar_measurements.size() << " radar measurements.");
 
+  // Filter out empty detections.
+  for (auto it = radar_measurements.begin(); it != radar_measurements.end();) {
+    if (it->detections.empty()) {
+      it = radar_measurements.erase(it);
+      LOG(I, "Removed radar measurement with no detections at time "
+                 << std::setprecision(19) << it->t);
+    } else {
+      it++;
+    }
+  }
+
+  // Filter out zero velocity at start.
+  auto it_start =
+      std::find_if(radar_measurements.begin(), radar_measurements.end(),
+                   [](const RadarMeasurement& m) {
+                     return std::any_of(
+                         m.detections.begin(), m.detections.end(),
+                         [](const RadarDetection& det) { return det.v != 0; });
+                   });
+  LOG(I, "Removing " << std::distance(radar_measurements.begin(), it_start)
+                     << " radar measurements with zero velocity at start.");
+  radar_measurements.erase(
+      radar_measurements.begin(),
+      it_start != radar_measurements.begin() ? std::prev(it_start) : it_start);
+  LOG(W,
+      std::any_of(radar_measurements.begin()->detections.begin(),
+                  radar_measurements.begin()->detections.end(),
+                  [](const RadarDetection& det) { return det.v != 0; }),
+      "First radar measurement has non-zero velocity.");
+
+  // Filter out zero velocity at end.
+  auto it_end =
+      std::find_if(radar_measurements.rbegin(), radar_measurements.rend(),
+                   [](const RadarMeasurement& m) {
+                     return std::any_of(
+                         m.detections.begin(), m.detections.end(),
+                         [](const RadarDetection& det) { return det.v != 0; });
+                   });
+  LOG(I, "Removing " << std::distance(radar_measurements.rbegin(), it_end)
+                     << " radar measurements with zero velocity at end.");
+  radar_measurements.erase(
+      (it_end != radar_measurements.rbegin() ? std::prev(it_end) : it_end)
+          .base(),
+      radar_measurements.rbegin().base());
+  LOG(W,
+      std::any_of(radar_measurements.back().detections.begin(),
+                  radar_measurements.back().detections.end(),
+                  [](const RadarDetection& det) { return det.v != 0; }),
+      "Last radar measurement has non-zero velocity.");
+
   // Find the time at which we have all measurements.
   double t_start =
       std::max({odometry_measurements.front().t, imu_raw_measurements.front().t,
                 radar_measurements.front().t});
+  LOG(I, "Using t_start = " << std::setprecision(19) << t_start << ".");
   // Remove measurements before t_start.
   odometry_measurements.erase(
       odometry_measurements.begin(),
