@@ -301,27 +301,34 @@ int main(int argc, char** argv) {
   // Save rosbag.
   // nav_msgs::Odometry for state
   // Vector3Stamped for biases
-  std::string out_bag_path = bag_path.substr(0, bag_path.size() - 4) + "_calibrated.bag";
+  std::string out_bag_path =
+      bag_path.substr(0, bag_path.size() - 4) + "_calibrated.bag";
   rosbag::Bag out_bag;
   out_bag.open(out_bag_path, rosbag::bagmode::Write);
-  for (size_t i = 0; i < last_idx; ++i) 
-  {
+  for (size_t i = 0; i <= last_idx; ++i) {
     nav_msgs::Odometry odom_msg;
     odom_msg.header.stamp = ros::Time(idx_stamp_map[i]);
     odom_msg.header.frame_id = "odom";
     odom_msg.child_frame_id = "bmi088";
-    odom_msg.pose.pose.position = tf2::toMsg(result.at<Pose3>(X(i)).translation());
-    odom_msg.pose.pose.orientation = tf2::toMsg(result.at<Pose3>(X(i)).rotation().toQuaternion());
-    tf2::toMsg(result.at<Pose3>(X(i)).rotation().unrotate(result.at<Vector3>(V(i))), odom_msg.twist.twist.linear);
-    out_bag.write("/rio/odometry_navigation", ros::Time(idx_stamp_map[i]), odom_msg);
+    odom_msg.pose.pose.position =
+        tf2::toMsg(result.at<Pose3>(X(i)).translation());
+    odom_msg.pose.pose.orientation =
+        tf2::toMsg(result.at<Pose3>(X(i)).rotation().toQuaternion());
+    tf2::toMsg(
+        result.at<Pose3>(X(i)).rotation().unrotate(result.at<Vector3>(V(i))),
+        odom_msg.twist.twist.linear);
+    out_bag.write("/rio/odometry_navigation", ros::Time(idx_stamp_map[i]),
+                  odom_msg);
 
     geometry_msgs::Vector3Stamped bias_msg;
     bias_msg.header.stamp = ros::Time(idx_stamp_map[i]);
     bias_msg.header.frame_id = "bmi088";
-    tf2::toMsg(result.at<imuBias::ConstantBias>(B(i)).gyroscope(), bias_msg.vector);
+    tf2::toMsg(result.at<imuBias::ConstantBias>(B(i)).gyroscope(),
+               bias_msg.vector);
     out_bag.write("/rio/bias_gyro", ros::Time(idx_stamp_map[i]), bias_msg);
 
-    tf2::toMsg(result.at<imuBias::ConstantBias>(B(i)).accelerometer(), bias_msg.vector);
+    tf2::toMsg(result.at<imuBias::ConstantBias>(B(i)).accelerometer(),
+               bias_msg.vector);
     out_bag.write("/rio/bias_acc", ros::Time(idx_stamp_map[i]), bias_msg);
   }
 
