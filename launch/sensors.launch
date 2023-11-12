@@ -33,6 +33,9 @@
 
     <arg name="lidar_on" default="false" />
 
+    <arg name="cam_on" default="false" />
+    <arg name="cam_frame_id" default="cam" />
+
     <arg name="visualize" default="false"/>
 
     <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen" if="$(arg nodelet_manager_on)"/>
@@ -91,6 +94,10 @@
         <node name="livox_lidar_publisher2" pkg="livox_ros_driver2" type="livox_ros_driver2_node" output="screen" args=""/>
         <node name="imu_to_lidar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.005 -0.001 0.101 0.0 1.0 0.0 0.0 '$(arg imu_frame_id)' livox_frame" />
         <node name="imu_to_prism_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.038 -0.001 0.170 0.0 0.0 0.0 1.0 '$(arg imu_frame_id)' mini_prism" />
+    </group>
+
+    <group if="$(arg cam_on)">
+        <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
 
     <group if="$(arg visualize)">
