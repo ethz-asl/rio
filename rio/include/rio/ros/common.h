@@ -82,6 +82,9 @@ bool loadNoiseRadarTrack(const ros::NodeHandle& nh,
 bool loadNoiseLoopClosureT(const ros::NodeHandle& nh,
                            gtsam::SharedNoiseModel* noise);
 
+bool loadNoiseZeroVelocityPrior(const ros::NodeHandle& nh,
+                                gtsam::SharedNoiseModel* noise);
+
 std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
     const sensor_msgs::PointCloud2Ptr& msg);
 
