@@ -297,15 +297,16 @@ int main(int argc, char** argv) {
   }
 
   auto last_idx = std::prev(idx_stamp_map.end())->first;
+  LOG(I, "Added " << last_idx + 1 << " radar factors.");
 
   // Add calibration between constraints.
-  for (size_t i = 0; i < last_idx - 1; i++) {
+  for (size_t i = 0; i < last_idx; i++) {
     graph.add(BetweenConstraint(Pose3(), C(i), C(i + 1)));
   }
 
   // Add IMU in between factors.
-  LOG(I, "Adding " << last_idx - 1 << " IMU factors.");
-  for (size_t i = 0; i < last_idx - 1; i++) {
+  LOG(I, "Adding " << last_idx << " IMU factors.");
+  for (size_t i = 0; i < last_idx; i++) {
     auto imu_begin = std::lower_bound(
         imu_raw_measurements.begin(), imu_raw_measurements.end(),
         idx_stamp_map[i],
@@ -319,6 +320,10 @@ int main(int argc, char** argv) {
         imuBias::ConstantBias(values.at<imuBias::ConstantBias>(B(i))));
     while (imu_begin != imu_end) {
       auto dt = std::next(imu_begin)->t - imu_begin->t;
+      LOG(E, dt < 0.0,
+          "Negative dt: " << dt << " at time " << imu_begin->t
+                          << " for IMU measurement at time "
+                          << std::next(imu_begin)->t << ".");
       imu_integrator.integrateMeasurement(imu_begin->B_a_IB,
                                           imu_begin->B_omega_IB, dt);
       imu_begin++;
@@ -329,7 +334,8 @@ int main(int argc, char** argv) {
 
   // Add loop closure constraint.
   graph.add(
-      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(), loop_closure_noise_T));
+      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(),
+      loop_closure_noise_T));
   Vector3 delta_v_0 = Z_3x1;
   graph.add(BetweenConstraint(delta_v_0, V(0), V(last_idx)));
 
@@ -344,6 +350,7 @@ int main(int argc, char** argv) {
   LOG(I, "Error before optimization: " << optimizer.error());
   auto result = optimizer.optimize();
   LOG(I, "Error after optimization: " << optimizer.error());
+  LOG(I, "Number of iterations: " << optimizer.iterations());
 
   // Print results.
   LOG(I, "Calibration results:");
@@ -355,9 +362,7 @@ int main(int argc, char** argv) {
                                       .coeffs()
                                       .transpose());
   LOG(I, "IMU biases:");
-  LOG(I, "B_0: " << result.at<imuBias::ConstantBias>(B(0)));
-  LOG(I, "B_" << last_idx << ": "
-              << result.at<imuBias::ConstantBias>(B(last_idx)));
+  LOG(I, "B: " << result.at<imuBias::ConstantBias>(B(0)));
 
   // Save rosbag.
   // nav_msgs::Odometry for state
