@@ -224,3 +224,16 @@ bool rio::loadNoiseLoopClosureT(const ros::NodeHandle& nh,
       "Noise model loop closure T: ");
   return true;
 }
+
+bool rio::loadNoiseZeroVelocityPrior(const ros::NodeHandle& nh,
+                                     gtsam::SharedNoiseModel* noise) {
+  assert(noise);
+  double noise_zero_velocity_prior;
+  if (!loadParam<double>(nh, "noise/zero_velocity_prior",
+                         &noise_zero_velocity_prior))
+    return false;
+  *noise = noiseModel::Isotropic::Sigma(3, noise_zero_velocity_prior);
+  std::dynamic_pointer_cast<noiseModel::Isotropic>(*noise)->print(
+      "Noise model zero velocity prior: ");
+  return true;
+}
