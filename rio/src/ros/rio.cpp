@@ -245,8 +245,10 @@ std::deque<Propagation>::iterator Rio::splitPropagation(const ros::Time& t) {
     Propagation propagation_to_t, propagation_from_t;
     if (it->split(t, &idx_, &propagation_to_t, &propagation_from_t)) {
       *it = propagation_to_t;
+      auto distance = std::distance(propagation_.begin(), it);
       propagation_.insert(std::next(it), propagation_from_t);
-      return it;
+      // insert invalidates iterators, so we need to get the new iterator
+      return std::next(propagation_.begin(), distance);
     }
   }
 
