@@ -1,4 +1,4 @@
-bag_path: '/home/brik/Desktop/2023-10-31-10-40-15.bag'
+bag_path: '/home/brik/Desktop/2023-10-31-10-39-08.bag'
 imu_topic: '/imu/data_raw'
 radar_topic: '/radar/cfar_detections'
 odometry_topic: '/rio/odometry_optimizer'
@@ -10,3 +10,4 @@ noise:
   loop_closure:
     p: [0.01, 0.01, 0.005]
     R: [0.01, 0.01, 0.02]
+  zero_velocity_prior: 0.01

@@ -92,6 +92,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  SharedNoiseModel zero_velocity_prior_noise;
+  if (!loadNoiseZeroVelocityPrior(nh_private, &zero_velocity_prior_noise)) {
+    return 1;
+  }
+
   Vector3 init_B_t_BR;
   if (!loadParam<Vector3>(nh_private, "B_t_BR", &init_B_t_BR)) return false;
   Vector4 init_q_BR;
@@ -173,10 +178,61 @@ int main(int argc, char** argv) {
                    << imu_raw_measurements.size() << " IMU measurements and "
                    << radar_measurements.size() << " radar measurements.");
 
+  // Filter out empty detections.
+  for (auto it = radar_measurements.begin(); it != radar_measurements.end();) {
+    if (it->detections.empty()) {
+      it = radar_measurements.erase(it);
+      LOG(I, "Removed radar measurement with no detections at time "
+                 << std::setprecision(19) << it->t);
+    } else {
+      it++;
+    }
+  }
+
+  // Filter out zero velocity at start.
+  auto it_start =
+      std::find_if(radar_measurements.begin(), radar_measurements.end(),
+                   [](const RadarMeasurement& m) {
+                     return std::any_of(
+                         m.detections.begin(), m.detections.end(),
+                         [](const RadarDetection& det) { return det.v != 0; });
+                   });
+  LOG(I, "Removing " << std::distance(radar_measurements.begin(), it_start)
+                     << " radar measurements with zero velocity at start.");
+  radar_measurements.erase(
+      radar_measurements.begin(),
+      it_start != radar_measurements.begin() ? std::prev(it_start) : it_start);
+  LOG(W,
+      std::any_of(radar_measurements.begin()->detections.begin(),
+                  radar_measurements.begin()->detections.end(),
+                  [](const RadarDetection& det) { return det.v != 0; }),
+      "First radar measurement has non-zero velocity.");
+
+  // Filter out zero velocity at end.
+  auto it_end =
+      std::find_if(radar_measurements.rbegin(), radar_measurements.rend(),
+                   [](const RadarMeasurement& m) {
+                     return std::any_of(
+                         m.detections.begin(), m.detections.end(),
+                         [](const RadarDetection& det) { return det.v != 0; });
+                   });
+  LOG(I, "Removing " << std::distance(radar_measurements.rbegin(), it_end)
+                     << " radar measurements with zero velocity at end.");
+  radar_measurements.erase(
+      (it_end != radar_measurements.rbegin() ? std::prev(it_end) : it_end)
+          .base(),
+      radar_measurements.rbegin().base());
+  LOG(W,
+      std::any_of(radar_measurements.back().detections.begin(),
+                  radar_measurements.back().detections.end(),
+                  [](const RadarDetection& det) { return det.v != 0; }),
+      "Last radar measurement has non-zero velocity.");
+
   // Find the time at which we have all measurements.
   double t_start =
       std::max({odometry_measurements.front().t, imu_raw_measurements.front().t,
                 radar_measurements.front().t});
+  LOG(I, "Using t_start = " << std::setprecision(19) << t_start << ".");
   // Remove measurements before t_start.
   odometry_measurements.erase(
       odometry_measurements.begin(),
@@ -241,15 +297,16 @@ int main(int argc, char** argv) {
   }
 
   auto last_idx = std::prev(idx_stamp_map.end())->first;
+  LOG(I, "Added " << last_idx + 1 << " radar factors.");
 
   // Add calibration between constraints.
-  for (size_t i = 0; i < last_idx - 1; i++) {
+  for (size_t i = 0; i < last_idx; i++) {
     graph.add(BetweenConstraint(Pose3(), C(i), C(i + 1)));
   }
 
   // Add IMU in between factors.
-  LOG(I, "Adding " << last_idx - 1 << " IMU factors.");
-  for (size_t i = 0; i < last_idx - 1; i++) {
+  LOG(I, "Adding " << last_idx << " IMU factors.");
+  for (size_t i = 0; i < last_idx; i++) {
     auto imu_begin = std::lower_bound(
         imu_raw_measurements.begin(), imu_raw_measurements.end(),
         idx_stamp_map[i],
@@ -263,6 +320,10 @@ int main(int argc, char** argv) {
         imuBias::ConstantBias(values.at<imuBias::ConstantBias>(B(i))));
     while (imu_begin != imu_end) {
       auto dt = std::next(imu_begin)->t - imu_begin->t;
+      LOG(E, dt < 0.0,
+          "Negative dt: " << dt << " at time " << imu_begin->t
+                          << " for IMU measurement at time "
+                          << std::next(imu_begin)->t << ".");
       imu_integrator.integrateMeasurement(imu_begin->B_a_IB,
                                           imu_begin->B_omega_IB, dt);
       imu_begin++;
@@ -273,9 +334,15 @@ int main(int argc, char** argv) {
 
   // Add loop closure constraint.
   graph.add(
-      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(), loop_closure_noise_T));
+      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(),
+      loop_closure_noise_T));
   Vector3 delta_v_0 = Z_3x1;
   graph.add(BetweenConstraint(delta_v_0, V(0), V(last_idx)));
+
+  // Add zero velocity prior at start and end.
+  graph.add(PriorFactor<Vector3>(V(0), Z_3x1, zero_velocity_prior_noise));
+  graph.add(
+      PriorFactor<Vector3>(V(last_idx), Z_3x1, zero_velocity_prior_noise));
 
   // Solve.
   LOG(I, "Solving...");
@@ -283,6 +350,7 @@ int main(int argc, char** argv) {
   LOG(I, "Error before optimization: " << optimizer.error());
   auto result = optimizer.optimize();
   LOG(I, "Error after optimization: " << optimizer.error());
+  LOG(I, "Number of iterations: " << optimizer.iterations());
 
   // Print results.
   LOG(I, "Calibration results:");
@@ -294,9 +362,41 @@ int main(int argc, char** argv) {
                                       .coeffs()
                                       .transpose());
   LOG(I, "IMU biases:");
-  LOG(I, "B_0: " << result.at<imuBias::ConstantBias>(B(0)));
-  LOG(I, "B_" << last_idx << ": "
-              << result.at<imuBias::ConstantBias>(B(last_idx)));
+  LOG(I, "B: " << result.at<imuBias::ConstantBias>(B(0)));
+
+  // Save rosbag.
+  // nav_msgs::Odometry for state
+  // Vector3Stamped for biases
+  std::string out_bag_path =
+      bag_path.substr(0, bag_path.size() - 4) + "_calibrated.bag";
+  rosbag::Bag out_bag;
+  out_bag.open(out_bag_path, rosbag::bagmode::Write);
+  for (size_t i = 0; i <= last_idx; ++i) {
+    nav_msgs::Odometry odom_msg;
+    odom_msg.header.stamp = ros::Time(idx_stamp_map[i]);
+    odom_msg.header.frame_id = "odom";
+    odom_msg.child_frame_id = "bmi088";
+    odom_msg.pose.pose.position =
+        tf2::toMsg(result.at<Pose3>(X(i)).translation());
+    odom_msg.pose.pose.orientation =
+        tf2::toMsg(result.at<Pose3>(X(i)).rotation().toQuaternion());
+    tf2::toMsg(
+        result.at<Pose3>(X(i)).rotation().unrotate(result.at<Vector3>(V(i))),
+        odom_msg.twist.twist.linear);
+    out_bag.write("/rio/odometry_navigation", ros::Time(idx_stamp_map[i]),
+                  odom_msg);
+
+    geometry_msgs::Vector3Stamped bias_msg;
+    bias_msg.header.stamp = ros::Time(idx_stamp_map[i]);
+    bias_msg.header.frame_id = "bmi088";
+    tf2::toMsg(result.at<imuBias::ConstantBias>(B(i)).gyroscope(),
+               bias_msg.vector);
+    out_bag.write("/rio/bias_gyro", ros::Time(idx_stamp_map[i]), bias_msg);
+
+    tf2::toMsg(result.at<imuBias::ConstantBias>(B(i)).accelerometer(),
+               bias_msg.vector);
+    out_bag.write("/rio/bias_acc", ros::Time(idx_stamp_map[i]), bias_msg);
+  }
 
   return 0;
 }
