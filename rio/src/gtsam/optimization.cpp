@@ -340,6 +340,17 @@ void Optimization::solveThreaded(
   }
   gttoc_(optimize);
 
+  Values new_values;
+  gttic_(calculateEstimate);
+  try {
+    new_values = smoother_.calculateEstimate();
+  } catch (const std::exception& e) {
+    LOG(E, "Exception in calculateEstimate: " << e.what());
+    running_.store(false);
+    return;
+  }
+  gttoc_(calculateEstimate);
+
   // Update propagations.
   gttic_(cachePropagations);
   auto smallest_time = std::min_element(
@@ -353,15 +364,14 @@ void Optimization::solveThreaded(
 
   for (auto& propagation : propagations) {
     try {
-      State initial_state(propagation.getFirstState()->odom_frame_id,
-                          smoother_.calculateEstimate<gtsam::Pose3>(
-                              X(propagation.getFirstStateIdx())),
-                          smoother_.calculateEstimate<gtsam::Velocity3>(
-                              V(propagation.getFirstStateIdx())),
-                          propagation.getFirstState()->imu,
-                          propagation.getFirstState()->integrator);
+      State initial_state(
+          propagation.getFirstState()->odom_frame_id,
+          new_values.at<gtsam::Pose3>(X(propagation.getFirstStateIdx())),
+          new_values.at<gtsam::Velocity3>(V(propagation.getFirstStateIdx())),
+          propagation.getFirstState()->imu,
+          propagation.getFirstState()->integrator);
       initial_state.integrator.resetIntegrationAndSetBias(
-          smoother_.calculateEstimate<gtsam::imuBias::ConstantBias>(
+          new_values.at<gtsam::imuBias::ConstantBias>(
               B(propagation.getFirstStateIdx())));
 
       if (!propagation.repropagate(initial_state)) {
@@ -385,6 +395,10 @@ void Optimization::solveThreaded(
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
   updateTiming(optimize, "optimize",
+               propagations.back().getLatestState()->imu->header.stamp);
+
+  tictoc_getNode(calculateEstimate, calculateEstimate);
+  updateTiming(calculateEstimate, "calculateEstimate",
                propagations.back().getLatestState()->imu->header.stamp);
 
   tictoc_getNode(cachePropagations, cachePropagations);
