@@ -97,6 +97,9 @@
     </group>
 
     <group if="$(arg cam_on)">
+        <node name="cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+            <rosparam command="load" file="$(find rio)/cfg/cam.yaml"/>
+        </node>
         <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
 
