@@ -111,7 +111,11 @@
             <param name="sync_sink" value="true" />
             <remap from="camera/image_raw" to="$(arg cam_name)/image_raw" />
             <remap from="/set_camera_info" to="$(arg cam_name)/set_camera_info" />
-        </node>  
+        </node>
+        <node pkg="nodelet" type="nodelet" name="rectify" args="load image_proc/rectify cam_nodelet_manager" output="screen">
+          <remap from="image_mono" to="$(arg cam_name)/image_raw"/>
+          <remap from="image_rect" to="$(arg cam_name)/image_rect"/>
+        </node>
         <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
 
