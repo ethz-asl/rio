@@ -37,9 +37,9 @@
     <arg name="cam_frame_id" default="cam" />
     <arg name="cam_name" default="cam" />
     <arg name="cam_sensor_id" default="0" />
-    <arg name="cam_width" default="1280" />
-    <arg name="cam_height" default="720" />
-    <arg name="cam_fps" default="30" />
+    <arg name="cam_width" default="3280" />
+    <arg name="cam_height" default="2464" />
+    <arg name="cam_fps" default="5" />
 
     <arg name="visualize" default="false"/>
 
