@@ -35,6 +35,11 @@
 
     <arg name="cam_on" default="false" />
     <arg name="cam_frame_id" default="cam" />
+    <arg name="cam_name" default="cam" />
+    <arg name="cam_sensor_id" default="0" />
+    <arg name="cam_width" default="1280" />
+    <arg name="cam_height" default="720" />
+    <arg name="cam_fps" default="30" />
 
     <arg name="visualize" default="false"/>
 
@@ -97,8 +102,13 @@
     </group>
 
     <group if="$(arg cam_on)">
-        <node name="cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
-            <rosparam command="load" file="$(find rio)/cfg/cam.yaml"/>
+        <env name="GSCAM_CONFIG" value="nvarguscamerasrc sensor-id=$(arg cam_sensor_id) ! video/x-raw(memory:NVMM), width=(int)$(arg cam_width), height=(int)$(arg cam_height), format=(string)NV12, framerate=(fraction)$(arg cam_fps)/1 ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert"/>
+        <node pkg="gscam" type="gscam" name="$(arg cam_name)">
+            <param name="camera_name" value="$(arg cam_name)" />
+            <param name="frame_id" value="$(arg cam_frame_id)" />
+            <param name="sync_sink" value="true" />
+            <remap from="camera/image_raw" to="$(arg cam_name)/image_raw" />
+            <remap from="/set_camera_info" to="$(arg cam_name)/set_camera_info" />
         </node>
         <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
