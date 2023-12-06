@@ -102,14 +102,16 @@
     </group>
 
     <group if="$(arg cam_on)">
-        <env name="GSCAM_CONFIG" value="nvarguscamerasrc sensor-id=$(arg cam_sensor_id) ! video/x-raw(memory:NVMM), width=(int)$(arg cam_width), height=(int)$(arg cam_height), format=(string)NV12, framerate=(fraction)$(arg cam_fps)/1 ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert"/>
-        <node pkg="gscam" type="gscam" name="$(arg cam_name)">
+        <node pkg="nodelet" type="nodelet" name="cam_nodelet_manager" args="manager" output="screen"/>
+        <node pkg="nodelet" type="nodelet" name="GSCamNodelet" args="load gscam/GSCamNodelet cam_nodelet_manager" output="screen">
             <param name="camera_name" value="$(arg cam_name)" />
+            <param name="camera_info_url" value="$(find rio)/cfg/cam.yaml"/>
+            <param name="gscam_config" value="nvarguscamerasrc sensor-id=$(arg cam_sensor_id) ! video/x-raw(memory:NVMM), width=(int)$(arg cam_width), height=(int)$(arg cam_height), format=(string)NV12, framerate=(fraction)$(arg cam_fps)/1 ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert"/>
             <param name="frame_id" value="$(arg cam_frame_id)" />
             <param name="sync_sink" value="true" />
             <remap from="camera/image_raw" to="$(arg cam_name)/image_raw" />
             <remap from="/set_camera_info" to="$(arg cam_name)/set_camera_info" />
-        </node>
+        </node>  
         <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
 
