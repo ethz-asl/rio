@@ -37,9 +37,9 @@
     <arg name="cam_frame_id" default="cam" />
     <arg name="cam_name" default="cam" />
     <arg name="cam_sensor_id" default="0" />
-    <arg name="cam_width" default="3280" />
-    <arg name="cam_height" default="2464" />
-    <arg name="cam_fps" default="5" />
+    <arg name="cam_width" default="1640" />
+    <arg name="cam_height" default="1232" />
+    <arg name="cam_fps" default="30" />
 
     <arg name="visualize" default="false"/>
 
@@ -107,7 +107,7 @@
         <node pkg="nodelet" type="nodelet" name="GSCamNodelet" args="load gscam/GSCamNodelet cam_nodelet_manager" output="screen">
             <param name="camera_name" value="$(arg cam_name)" />
             <param name="camera_info_url" value="$(find rio)/cfg/cam.yaml"/>
-            <param name="gscam_config" value="nvarguscamerasrc sensor-id=$(arg cam_sensor_id) ! video/x-raw(memory:NVMM), width=(int)$(arg cam_width), height=(int)$(arg cam_height), format=(string)NV12, framerate=(fraction)$(arg cam_fps)/1 ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert"/>
+            <param name="gscam_config" value="nvarguscamerasrc sensor-id=$(arg cam_sensor_id) ! video/x-raw(memory:NVMM), width=(int)$(arg cam_width), height=(int)$(arg cam_height), format=(string)NV12, framerate=(fraction)$(arg cam_fps)/1 ! nvvidconv flip-method=0 ! video/x-raw, width=(int)820, height=(int)616, format=(string)BGRx ! videoconvert"/>
             <param name="frame_id" value="$(arg cam_frame_id)" />
             <param name="sync_sink" value="true" />
             <remap from="camera/image_raw" to="$(arg cam_name)/image_raw" />
