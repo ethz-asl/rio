@@ -106,7 +106,7 @@
         <node pkg="nodelet" type="nodelet" name="cam_nodelet_manager" args="manager" output="screen"/>
         <node pkg="nodelet" type="nodelet" name="GSCamNodelet" args="load gscam/GSCamNodelet cam_nodelet_manager" output="screen">
             <param name="camera_name" value="$(arg cam_name)" />
-            <param name="camera_info_url" value="$(find rio)/cfg/cam.yaml"/>
+            <param name="camera_info_url" value="file://$(find rio)/cfg/cam.yaml"/>
             <param name="gscam_config" value="nvarguscamerasrc sensor-id=$(arg cam_sensor_id) ! video/x-raw(memory:NVMM), width=(int)$(arg cam_width), height=(int)$(arg cam_height), format=(string)NV12, framerate=(fraction)$(arg cam_fps)/1 ! nvvidconv flip-method=0 ! video/x-raw, width=(int)820, height=(int)616, format=(string)BGRx ! videoconvert"/>
             <param name="frame_id" value="$(arg cam_frame_id)" />
             <param name="sync_sink" value="true" />
