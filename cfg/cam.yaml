@@ -8,8 +8,8 @@ camera_matrix:
 distortion_model: equidistant
 distortion_coefficients:
   rows: 1
-  cols: 5
-  data: [-0.02278305999560451, 0.00207699995799464, -0.0028279292631259913, 0.00039458479649574573, 0.0]
+  cols: 4
+  data: [-0.02278305999560451, 0.00207699995799464, -0.0028279292631259913, 0.00039458479649574573]
 rectification_matrix:
   rows: 3
   cols: 3
