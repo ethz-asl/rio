@@ -33,7 +33,7 @@
 
     <arg name="lidar_on" default="false" />
 
-    <arg name="cam_on" default="false" />
+    <arg name="cam_on" default="true" />
     <arg name="cam_frame_id" default="cam" />
     <arg name="cam_name" default="cam" />
     <arg name="cam_sensor_id" default="0" />
