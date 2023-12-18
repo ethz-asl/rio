@@ -18,7 +18,7 @@ struct State {
   typedef std::shared_ptr<State> Ptr;
   typedef std::shared_ptr<const State> ConstPtr;
 
-  State() = delete;
+  State() {};
   State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
         const gtsam::Rot3& R_IB, const gtsam::Vector3& I_v_IB,
         const sensor_msgs::ImuConstPtr& imu,
