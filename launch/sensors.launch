@@ -117,7 +117,7 @@
           <remap from="image_mono" to="$(arg cam_name)/image_raw"/>
           <remap from="image_rect" to="$(arg cam_name)/image_rect"/>
         </node>
-        <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
+        <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.0 0.7071068 0.7071068 0.0 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
 
     <group if="$(arg visualize)">
