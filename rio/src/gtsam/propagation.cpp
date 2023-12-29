@@ -34,25 +34,30 @@ bool Propagation::addImuMeasurement(const sensor_msgs::ImuConstPtr& msg) {
 }
 
 bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
-                        Propagation* propagation_to_t,
-                        Propagation* propagation_from_t) {
-  auto partition_iter =
-      std::partition(imu_measurements_.begin(), imu_measurements_.end(),
-                     [&t](const sensor_msgs::ImuConstPtr& imu) {
-                       return imu->header.stamp <= t;
-                     });
-  propagation_to_t->imu_measurements_ = std::vector<sensor_msgs::ImuConstPtr>(
-      imu_measurements_.begin(), partition_iter);
-  if (propagation_to_t->imu_measurements_.empty()) {
+                        Propagation* propagation_to_t) {
+
+  auto split_iter =
+      std::lower_bound(imu_measurements_.begin(), imu_measurements_.end(), t,
+                       [](const sensor_msgs::ImuConstPtr& imu, const auto& t) {
+                         return imu->header.stamp < t;
+                       });
+
+  propagation_to_t->imu_measurements_.reserve(
+      std::distance(imu_measurements_.begin(), split_iter));
+  propagation_to_t->imu_measurements_.insert(
+      propagation_to_t->imu_measurements_.end(), imu_measurements_.begin(),
+      split_iter);
+
+  imu_measurements_.erase(imu_measurements_.begin(), split_iter);
+
+  if (std::empty(propagation_to_t->imu_measurements_)) {
     LOG(W, "No IMU measurements in propagation to t, skipping split.");
     return false;
   }
-  propagation_from_t->imu_measurements_ = std::vector<sensor_msgs::ImuConstPtr>(
-      partition_iter, imu_measurements_.end());
 
   // LOG(I, "nr imu to t: " << propagation_to_t->imu_measurements_.size()
   //                        << " nr imu from t: "
-  //                        << propagation_from_t->imu_measurements_.size());
+  //                        << imu_measurements_.size());
 
   // repropagate because i updated prior with optimized states
   // TODO: not necessary if last state contains already optimized state
@@ -71,19 +76,17 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
   }
 
   propagation_to_t->graph_idx_ = *split_idx;
-  propagation_from_t->state_ = propagation_to_t->state_;
+  state_ = propagation_to_t->state_;
 
-  if (!propagation_from_t->imu_measurements_.empty() &&
-      t < propagation_from_t->imu_measurements_.front()->header.stamp) {
+  if (!imu_measurements_.empty() &&
+      t < imu_measurements_.front()->header.stamp) {
     sensor_msgs::Imu imu;
-    imu.header = propagation_from_t->imu_measurements_.front()->header;
+    imu.header = imu_measurements_.front()->header;
     imu.header.stamp = t;
-    imu.linear_acceleration =
-        propagation_from_t->imu_measurements_.front()->linear_acceleration;
-    imu.angular_velocity =
-        propagation_from_t->imu_measurements_.front()->angular_velocity;
-    propagation_from_t->imu_measurements_.insert(
-        propagation_from_t->imu_measurements_.begin(),
+    imu.linear_acceleration = imu_measurements_.front()->linear_acceleration;
+    imu.angular_velocity = imu_measurements_.front()->angular_velocity;
+    imu_measurements_.insert(
+        imu_measurements_.begin(),
         sensor_msgs::ImuConstPtr(new sensor_msgs::Imu(imu)));
   } else {
     sensor_msgs::Imu imu;
@@ -93,11 +96,11 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
         propagation_to_t->imu_measurements_.back()->linear_acceleration;
     imu.angular_velocity =
         propagation_to_t->imu_measurements_.back()->angular_velocity;
-    propagation_from_t->imu_measurements_.push_back(
+    imu_measurements_.push_back(
         sensor_msgs::ImuConstPtr(new sensor_msgs::Imu(imu)));
   }
 
-  propagation_from_t->repropagate();
+  repropagate();
 
   (*split_idx)++;
 

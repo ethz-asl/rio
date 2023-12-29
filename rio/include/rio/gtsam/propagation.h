@@ -27,7 +27,7 @@ class Propagation {
   bool addImuMeasurement(const sensor_msgs::ImuConstPtr& msg);
   bool addImuMeasurement(const sensor_msgs::Imu& msg);
   bool split(const ros::Time& t, uint64_t* split_idx,
-             Propagation* propagation_to_t, Propagation* propagation_from_t);
+             Propagation* propagation_to_t);
   void repropagate();
   void propagate_imu(const sensor_msgs::ImuConstPtr& msg, double dt,
                      gtsam::PreintegratedCombinedMeasurements& integrator);
@@ -78,7 +78,7 @@ class LinkedPropagations {
                    ros::Time t, uint64_t& idx) {
     propagation_new->prior = propagation_ref->prior;
     propagation_ref->prior = propagation_new;
-    return propagation_ref->split(t, &idx, propagation_new, propagation_ref);
+    return propagation_ref->split(t, &idx, propagation_new);
   }
 
   void remove(double t) {

@@ -216,24 +216,23 @@ bool Optimization::solve(const LinkedPropagations& linked_propagations) {
 }
 
 bool Optimization::getResult(LinkedPropagations& linked_propagations) {
-  if (thread_.joinable()) {
-    thread_.join();
-  } else {
-    return false;
+  if (!new_result_.load()) return false;
+  if (!running_.load()) {
+    if (thread_.joinable()) {
+      thread_.join();
+    } else {
+      LOG(W, "Optimization thread not joinable.");
+    }
   }
-
-  if (!new_result_) return false;
-
-  new_result_ = false;
+  // else: Optimization thread still running but new result
+  new_result_.store(false);
   {
     std::scoped_lock lock(values_mutex_);
     linked_propagations.head->prior->updateState(optimized_values_);
   }
-
   linked_propagations.head->state_ = linked_propagations.head->prior->state_;
 
   linked_propagations.head->repropagate();
-
   linked_propagations.remove(cutoff_time);
   return true;
 }
@@ -272,7 +271,7 @@ void Optimization::solveThreaded(
 
   gttoc_(cachePropagations);
 
-  new_result_ = true;
+  new_result_.store(true);
   running_.store(false);
 }
 
