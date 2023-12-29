@@ -136,22 +136,17 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   } else if (!linked_propagations_.head) {
     LOG(I, "Initializing states with initial state.");
     linked_propagations_.head = new Propagation(*initial_state_, idx_++);
-    std::scoped_lock lock(linked_propagations_.head->propagation_mutex_);
-    optimization_.addPriorFactor(*linked_propagations_.head, prior_noise_model_I_T_IB_,
-                                 prior_noise_model_I_v_IB_,
-                                 prior_noise_model_imu_bias_);
+    optimization_.addPriorFactor(
+        *linked_propagations_.head, prior_noise_model_I_T_IB_,
+        prior_noise_model_I_v_IB_, prior_noise_model_imu_bias_);
     auto prop = new Propagation(*initial_state_, idx_++);
     linked_propagations_.append(prop);
     return;
   }
 
-
-  std::scoped_lock lock(linked_propagations_.head->propagation_mutex_);
-
   // Get update from optimization.
   std::map<std::string, Timing> timing;
-  // auto new_result = optimization_.getResult(&propagation_, &timing);
-  auto new_result = optimization_.getResult();
+  auto new_result = optimization_.getResult(linked_propagations_);
 
   // Integrate.
   if (!linked_propagations_.head->addImuMeasurement(msg)) {
@@ -173,13 +168,16 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     geometry_msgs::Vector3Stamped bias_acc;
     tf2::toMsg(linked_propagations_.head->state_.getBias().accelerometer(),
                bias_acc.vector);
-    bias_acc.header = linked_propagations_.head->imu_measurements_.back()->header;
+
+    bias_acc.header =
+        linked_propagations_.head->imu_measurements_.back()->header;
     acc_bias_pub_.publish(bias_acc);
 
     geometry_msgs::Vector3Stamped bias_gyro;
     tf2::toMsg(linked_propagations_.head->state_.getBias().gyroscope(),
                bias_gyro.vector);
-    bias_gyro.header = linked_propagations_.head->imu_measurements_.back()->header;
+    bias_gyro.header =
+        linked_propagations_.head->imu_measurements_.back()->header;
     gyro_bias_pub_.publish(bias_gyro);
   }
 }
@@ -200,7 +198,7 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     return;
   }
   if (linked_propagations_.head->imu_measurements_.empty()) {
-    LOG(W, "No IMU measurements, skipping CFAR detections."); // only the case in the beginning
+    LOG(W, "No IMU measurements, skipping CFAR detections.");
     return;
   }
 
@@ -220,27 +218,29 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
                                           << ". Skipping CFAR detections.");
     return;
   }
-
-  auto propagation_split = linked_propagations_.getSplitPropagation(msg->header.stamp);
+  auto propagation_split =
+      linked_propagations_.getSplitPropagation(msg->header.stamp);
   if (!propagation_split) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
     LOG(W, "Split time: " << msg->header.stamp);
-    LOG(W, "Last IMU time: "
-               << linked_propagations_.head->imu_measurements_.back()->header.stamp);
+    LOG(W, "Last IMU time: " << linked_propagations_.head->imu_measurements_
+                                    .back()
+                                    ->header.stamp);
     return;
   }
 
   Propagation* new_propagation = new Propagation();
-  // if (idx_ > 2) { //todo
-  if (optimization_.optimized_values_.size() > 0) {
+  {
     std::scoped_lock lock(optimization_.values_mutex_);
-    linked_propagations_.updateState(propagation_split->prior, optimization_.optimized_values_);
+    if (optimization_.optimized_values_.size() > 0) {
+      propagation_split->prior->updateState(optimization_.optimized_values_);
+    }
   }
-  new_propagation->state_ = propagation_split->prior->getState();
 
-  // new_propagation->integrators_.push_back(propagation_split->integrators_.back().);
+  new_propagation->state_ = propagation_split->prior->state_;
 
-  if (!linked_propagations_.insertPrior(new_propagation, propagation_split, msg->header.stamp, idx_)) {
+  if (!linked_propagations_.insertPrior(new_propagation, propagation_split,
+                                        msg->header.stamp, idx_)) {
     LOG(W, "Failed to insert prior, skipping CFAR detections.");
     return;
   }
@@ -264,19 +264,3 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     doppler_residual_pub_.publish(residual_msg);
   }
 }
-
-// std::deque<Propagation>::iterator Rio::splitPropagation(const ros::Time& t) {
-  // auto it = propagation_.begin();
-  // for (; it != propagation_.end(); ++it) {
-  //   Propagation propagation_to_t, propagation_from_t;
-  //   if (it->split(t, &idx_, &propagation_to_t, &propagation_from_t)) {
-  //     *it = propagation_to_t;
-  //     auto distance = std::distance(propagation_.begin(), it);
-  //     propagation_.insert(std::next(it), propagation_from_t);
-  //     // insert invalidates iterators, so we need to get the new iterator
-  //     return std::next(propagation_.begin(), distance);
-  //   }
-  // }
-
-  // return it;
-// }

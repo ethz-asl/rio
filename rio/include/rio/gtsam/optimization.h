@@ -23,12 +23,8 @@ class Optimization {
   bool solve(const LinkedPropagations& linked_propagations);
   bool getResult(std::deque<Propagation>* propagation,
                  std::map<std::string, Timing>* timing);
-  inline bool getResult() {
-    std::scoped_lock lock(result_mutex_);
-    auto result = new_result_;
-    new_result_ = false;
-    return result;
-  }
+
+  bool getResult(LinkedPropagations& linked_propagations);
 
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
@@ -46,12 +42,12 @@ class Optimization {
   std::mutex values_mutex_;
   gtsam::Values optimized_values_;
 
+  double cutoff_time;
+
  private:
   void solveThreaded(const gtsam::NonlinearFactorGraph graph,
                      const gtsam::Values values,
-                     const gtsam::FixedLagSmoother::KeyTimestampMap stamps,
-                     LinkedPropagations linked_propagations);
-                    //  std::shared_ptr<LinkedPropagations> linked_propagations);
+                     const gtsam::FixedLagSmoother::KeyTimestampMap stamps);
 
   template <typename T>
   void addFactor(const Propagation& propagation,
@@ -70,15 +66,10 @@ class Optimization {
   gtsam::Values new_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap new_timestamps_;
 
-  // Variables that should not be accessed while thread is running.
-  // Mutex lock!
   std::map<std::string, Timing> timing_;
-  bool new_result_{false};
-  // std::deque<Propagation> propagations_;
-
+  std::atomic<bool> new_result_{false};
   std::atomic<bool> running_{false};
   std::thread thread_;
-  std::mutex result_mutex_;
 
   // The smoother must not be changed while the thread is running.
   gtsam::IncrementalFixedLagSmoother smoother_;

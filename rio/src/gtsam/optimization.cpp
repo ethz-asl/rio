@@ -25,8 +25,8 @@ template <>
 void Optimization::addFactor<PriorFactor<Pose3>>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  auto idx = propagation.getGraphIdx();
-  auto state = propagation.getState();
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
   new_values_.insert(X(idx), state.getPose());
   new_timestamps_[X(idx)] = state.imu->header.stamp.toSec();
   new_graph_.add(PriorFactor<Pose3>(X(idx), state.getPose(), noise_model));
@@ -36,8 +36,8 @@ template <>
 void Optimization::addFactor<PriorFactor<Vector3>>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  auto idx = propagation.getGraphIdx();
-  auto state = propagation.getState();
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
   new_values_.insert(V(idx), state.I_v_IB);
   new_timestamps_[V(idx)] = state.imu->header.stamp.toSec();
   new_graph_.add(PriorFactor<Vector3>(V(idx), state.I_v_IB, noise_model));
@@ -47,53 +47,32 @@ template <>
 void Optimization::addFactor<PriorFactor<imuBias::ConstantBias>>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  auto idx = propagation.getGraphIdx();
-  auto state = propagation.getState();
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
   new_values_.insert(B(idx), state.getBias());
   new_timestamps_[B(idx)] = state.imu->header.stamp.toSec();
-  new_graph_.add(PriorFactor<imuBias::ConstantBias>(B(idx), state.getBias(),
-                                                    noise_model));
+  new_graph_.add(
+      PriorFactor<imuBias::ConstantBias>(B(idx), state.getBias(), noise_model));
 }
 
 template <>
 void Optimization::addFactor<CombinedImuFactor>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  std::scoped_lock lock(propagation.propagation_mutex_, propagation.prior->propagation_mutex_);
-  auto first_idx = propagation.prior->getGraphIdx();
-  auto second_idx = propagation.getGraphIdx();
-  auto second_state = propagation.getState();
-  // if (!second_idx.has_value()) {
-  //   LOG(D, "Propagation has no last state index, skipping adding IMU factor.");
-  //   return;
-  // }
-  new_graph_.add(CombinedImuFactor(
-      X(first_idx), V(first_idx), X(second_idx), V(second_idx),
-      B(first_idx), B(second_idx), second_state.integrator));
+  auto first_idx = propagation.prior->graph_idx_;
+  auto second_idx = propagation.graph_idx_;
+  auto second_state = propagation.state_;
+
+  new_graph_.add(CombinedImuFactor(X(first_idx), V(first_idx), X(second_idx),
+                                   V(second_idx), B(first_idx), B(second_idx),
+                                   second_state.integrator));
 }
 
 void Optimization::addDopplerFactors(const Propagation& propagation,
                                      const gtsam::SharedNoiseModel& noise_model,
                                      std::vector<Vector1>* doppler_residuals) {
-  // if (!propagation.getLastStateIdx().has_value()) {
-  //   LOG(E,
-  //       "Propagation has no last state index, skipping adding Doppler "
-  //       "factor.");
-  //   return;
-  // }
-  // if (!propagation.cfar_detections_.has_value()) {
-  //   LOG(I,
-  //       "Propagation has no CFAR detections, skipping adding Doppler factor.");
-  //   return;
-  // }
-  // if (!propagation.B_T_BR_.has_value()) {
-  //   LOG(D,
-  //       "Propagation has no B_t_BR, skipping adding Doppler "
-  //       "factor.");
-  //   return;
-  // }
-  auto idx = propagation.getGraphIdx();
-  auto state = propagation.getState();
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
   Vector3 B_omega_IB;
   tf2::fromMsg(state.imu->angular_velocity, B_omega_IB);
   for (const auto& detection : propagation.cfar_detections_.value()) {
@@ -134,28 +113,21 @@ template <>
 void Optimization::addFactor<BearingRangeFactor<Pose3, Point3>>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  // if (!propagation.getLastStateIdx().has_value()) {
-  //   LOG(E,
-  //       "Propagation has no last state index, skipping adding bearing "
-  //       "range factor.");
-  //   return;
-  // }
-  // if (!propagation.cfar_tracks_.has_value()) {
-  //   LOG(I,
-  //       "Propagation has no CFAR tracks, skipping adding bearing "
-  //       "range factor.");
-  //   return;
-  // }
-  // if (!propagation.B_T_BR_.has_value()) {
-  //   LOG(D,
-  //       "Propagation has no B_t_BR, skipping adding bearing "
-  //       "range factor.");
-  //   return;
-  // }
-  auto idx = propagation.getGraphIdx();
-  auto state = propagation.getState();
-  auto I_T_IR = state.getPose().compose(
-      propagation.B_T_BR_.value());
+  if (!propagation.cfar_tracks_.has_value()) {
+    LOG(I,
+        "Propagation has no CFAR tracks, skipping adding bearing "
+        "range factor.");
+    return;
+  }
+  if (!propagation.B_T_BR_.has_value()) {
+    LOG(D,
+        "Propagation has no B_t_BR, skipping adding bearing "
+        "range factor.");
+    return;
+  }
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
+  auto I_T_IR = state.getPose().compose(propagation.B_T_BR_.value());
   for (const auto& track : propagation.cfar_tracks_.value()) {
     // Landmark in sensor frame.
     Point3 R_p_RT = track->getR_p_RT();
@@ -213,36 +185,29 @@ void Optimization::addRadarFactor(
   addFactor<BearingRangeFactor<Pose3, Point3>>(propagation_to_radar,
                                                noise_model_radar_track);
 
-  // Add initial state at split_state.
-  // if (propagation_to_radar.getLastStateIdx().has_value()) {
-    auto idx = propagation_to_radar.getGraphIdx();
-    auto state = propagation_to_radar.getState();
-    new_values_.insert(X(idx), state.getPose());
-    new_timestamps_[X(idx)] = state.imu->header.stamp.toSec();
-    new_values_.insert(V(idx), state.I_v_IB);
-    new_timestamps_[V(idx)] = state.imu->header.stamp.toSec();
-    new_values_.insert(B(idx), state.getBias());
-    new_timestamps_[B(idx)] = state.imu->header.stamp.toSec();
-  // } else {
-  //   LOG(E, "Propagation to radar has no last state index.");
-  // }
+  auto idx = propagation_to_radar.graph_idx_;
+  auto state = propagation_to_radar.state_;
+  new_values_.insert(X(idx), state.getPose());
+  new_timestamps_[X(idx)] = state.imu->header.stamp.toSec();
+  new_values_.insert(V(idx), state.I_v_IB);
+  new_timestamps_[V(idx)] = state.imu->header.stamp.toSec();
+  new_values_.insert(B(idx), state.getBias());
+  new_timestamps_[B(idx)] = state.imu->header.stamp.toSec();
 }
 
 bool Optimization::solve(const LinkedPropagations& linked_propagations) {
   if (running_.load()) {
-    LOG(D, "Optimization thread still running.");
+    LOG(W, "Optimization thread still running.");
     return false;
   }
   if (thread_.joinable()) {
-    LOG(D, "Optimization thread not joined, get result first.");
+    LOG(W, "Optimization thread not joined, get result first.");
     return false;
   }
 
   running_.store(true);
-  // auto shared_linked_propagations = std::make_shared<LinkedPropagations>(linked_propagations); //todo
   thread_ = std::thread(&Optimization::solveThreaded, this, new_graph_,
-                        new_values_, new_timestamps_, std::ref(linked_propagations));
-                        // new_values_, new_timestamps_, shared_linked_propagations);
+                        new_values_, new_timestamps_);
 
   new_graph_.resize(0);
   new_values_.clear();
@@ -250,90 +215,32 @@ bool Optimization::solve(const LinkedPropagations& linked_propagations) {
   return true;
 }
 
-bool Optimization::getResult(std::deque<Propagation>* propagation,
-                             std::map<std::string, Timing>* timing) {
-  // if (running_.load()) {
-  //   LOG(D, "Optimization thread still running.");
-  //   return false;
-  // }
-  // if (thread_.joinable()) {
-  //   thread_.join();
-  // } else {
-  //   LOG(D, "Optimization thread is still running, skipping result.");
-  //   return false;
-  // }
-  // std::lock_guard<std::mutex> lock(mutex_);
-  // if (!new_result_) {
-  //   LOG(W, "No new result.");
-  //   return false;
-  // }
-  // new_result_ = false;
+bool Optimization::getResult(LinkedPropagations& linked_propagations) {
+  if (thread_.joinable()) {
+    thread_.join();
+  } else {
+    return false;
+  }
 
-  // // Pop all propagations previous to the current propagation result, i.e.,
-  // // states that have been marginalized out.
-  // gttic_(deqeueCleanup);
-  // while (!propagation->empty() &&
-  //        propagation->front().getFirstStateIdx() !=
-  //            propagations_.front().getFirstStateIdx()) {
-  //   propagation->pop_front();
-  // }
-  // gttoc_(deqeueCleanup);
+  if (!new_result_) return false;
 
-  // // Replace all propagations that have been updated with the new result.
-  // gttic_(copyCachedPropagations);
-  // std::set<std::deque<Propagation>::iterator> updated;
-  // for (auto it = propagation->begin(); it != propagation->end(); ++it) {
-  //   auto result_it = std::find_if(
-  //       propagations_.begin(), propagations_.end(), [it](const auto& p) {
-  //         return p.getFirstStateIdx() == it->getFirstStateIdx() &&
-  //                p.getLastStateIdx().has_value() &&
-  //                it->getLastStateIdx().has_value() &&
-  //                p.getLastStateIdx().value() == it->getLastStateIdx().value();
-  //       });
-  //   if (result_it != propagations_.end()) {
-  //     *it = *result_it;
-  //     updated.insert(it);
-  //     if (result_it == propagations_.begin())
-  //       propagations_.pop_front();  // Cleanup.
-  //   }
-  // }
-  // gttoc_(copyCachedPropagations);
+  new_result_ = false;
+  {
+    std::scoped_lock lock(values_mutex_);
+    linked_propagations.head->prior->updateState(optimized_values_);
+  }
 
-  // // Repropagate all remaining propagations.
-  // gttic_(repropagateNewPropagations);
-  // for (auto it = propagation->begin(); it != propagation->end(); ++it) {
-  //   if (updated.count(it) > 0) continue;
-  //   if (it == propagation->begin()) {
-  //     LOG(E, "First propagation not updated, skipping.");
-  //     continue;
-  //   }
-  //   if (!it->repropagate(*(std::prev(it)->getLatestState()))) {
-  //     LOG(E, "Failed to repropagate.");
-  //     continue;
-  //   }
-  // }
-  // gttoc_(repropagateNewPropagations);
+  linked_propagations.head->state_ = linked_propagations.head->prior->state_;
 
-  // tictoc_finishedIteration_();
-  // tictoc_getNode(deqeueCleanup, deqeueCleanup);
-  // updateTiming(deqeueCleanup, "deqeueCleanup",
-  //              timing_["optimize"].header.stamp);
-  // tictoc_getNode(copyCachedPropagations, copyCachedPropagations);
-  // updateTiming(copyCachedPropagations, "copyCachedPropagations",
-  //              timing_["optimize"].header.stamp);
-  // tictoc_getNode(repropagateNewPropagations, repropagateNewPropagations);
-  // updateTiming(repropagateNewPropagations, "repropagateNewPropagations",
-  //              timing_["optimize"].header.stamp);
+  linked_propagations.head->repropagate();
 
-  // if (timing) *timing = timing_;
+  linked_propagations.remove(cutoff_time);
   return true;
 }
 
 void Optimization::solveThreaded(
     const gtsam::NonlinearFactorGraph graph, const gtsam::Values values,
-    const gtsam::FixedLagSmoother::KeyTimestampMap stamps,
-    LinkedPropagations linked_propagations) {
-    // std::shared_ptr<LinkedPropagations> linked_propagations) {
+    const gtsam::FixedLagSmoother::KeyTimestampMap stamps) {
   gttic_(optimize);
   try {
     smoother_.update(graph, values, stamps);
@@ -357,75 +264,15 @@ void Optimization::solveThreaded(
 
   // Update propagations.
   gttic_(cachePropagations);
-  auto smallest_time = std::min_element(
-      smoother_.timestamps().begin(), smoother_.timestamps().end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  // while (!propagations.empty() &&
-  //        propagations.front().getFirstState()->imu->header.stamp.toSec() <
-  //            smallest_time->second) {
-  //   propagations.pop_front();
-  // }
-  linked_propagations.remove(smallest_time->second);
+  cutoff_time =
+      std::min_element(
+          smoother_.timestamps().begin(), smoother_.timestamps().end(),
+          [](const auto& a, const auto& b) { return a.second < b.second; })
+          ->second;
 
-  {
-    std::scoped_lock lock(values_mutex_);
-    linked_propagations.updateState(linked_propagations.head->prior, optimized_values_);
-  }
-  linked_propagations.head->state_ = linked_propagations.head->prior->state_;
-  linked_propagations.head->repropagate();
-  
-
-
-
-  // for (auto propagation = linked_propagations.head ; propagation != nullptr;
-  //      propagation = propagation->prior) {
-  //   try {
-  //     State initial_state(
-  //         propagation.getFirstState()->odom_frame_id,
-  //         new_values.at<gtsam::Pose3>(X(propagation.getFirstStateIdx())),
-  //         new_values.at<gtsam::Velocity3>(V(propagation.getFirstStateIdx())),
-  //         propagation.getFirstState()->imu,
-  //         propagation.getFirstState()->integrator);
-  //     initial_state.integrator.resetIntegrationAndSetBias(
-  //         new_values.at<gtsam::imuBias::ConstantBias>(
-  //             B(propagation.getFirstStateIdx())));
-
-  //     if (!propagation.repropagate(initial_state)) {
-  //       LOG(E, "Failed to repropagate.");
-  //       running_.store(false);
-  //       return;
-  //     }
-  //   } catch (const std::exception& e) {
-  //     LOG(E, "Exception in caching new values at idx: "
-  //                << propagation.getFirstStateIdx() << " Error: " <<
-  //                e.what());
-  //     running_.store(false);
-  //     return;
-  //   }
-  // }
   gttoc_(cachePropagations);
 
-  // Update member variables.
-  // std::lock_guard<std::mutex> lock(mutex_);
-  // propagations_ = propagations;
-
-  // tictoc_finishedIteration_();
-  // tictoc_getNode(optimize, optimize);
-  // updateTiming(optimize, "optimize",
-  //              propagations.back().getLatestState()->imu->header.stamp);
-
-  // tictoc_getNode(calculateEstimate, calculateEstimate);
-  // updateTiming(calculateEstimate, "calculateEstimate",
-  //              propagations.back().getLatestState()->imu->header.stamp);
-
-  // tictoc_getNode(cachePropagations, cachePropagations);
-  // updateTiming(cachePropagations, "cachePropagations",
-  //              propagations.back().getLatestState()->imu->header.stamp);
-
-  {
-    std::scoped_lock lock(result_mutex_);
-    new_result_ = true;
-  }
+  new_result_ = true;
   running_.store(false);
 }
 
