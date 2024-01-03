@@ -43,6 +43,10 @@ class Optimization {
   gtsam::Values optimized_values_;
 
   double cutoff_time;
+  std::map<std::string, Timing> timing_;
+  void updateTiming(
+      const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
+      const std::string& label, const ros::Time& stamp);
 
  private:
   void solveThreaded(const gtsam::NonlinearFactorGraph graph,
@@ -58,15 +62,11 @@ class Optimization {
       const gtsam::SharedNoiseModel& noise_model = nullptr,
       std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
 
-  void updateTiming(
-      const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,
-      const std::string& label, const ros::Time& stamp);
 
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;
   gtsam::FixedLagSmoother::KeyTimestampMap new_timestamps_;
 
-  std::map<std::string, Timing> timing_;
   std::atomic<bool> new_result_{false};
   std::atomic<bool> running_{false};
   std::thread thread_;

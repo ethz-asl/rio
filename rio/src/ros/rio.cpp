@@ -145,7 +145,6 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
 
   // Get update from optimization.
-  std::map<std::string, Timing> timing;
   auto new_result = optimization_.getResult(linked_propagations_);
 
   // Integrate.
@@ -158,12 +157,13 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   odom_navigation_pub_.publish(new_odometry);
 
   if (new_result) {
+  gttic_(imuRawCallback);
     odom_optimizer_pub_.publish(new_odometry);
 
     tf_broadcaster_.sendTransform(
         linked_propagations_.head->state_.getTransform());
 
-    for (const auto& time : timing) timing_pub_.publish(time.second);
+    for (const auto& time : optimization_.timing_) timing_pub_.publish(time.second);
 
     geometry_msgs::Vector3Stamped bias_acc;
     tf2::toMsg(linked_propagations_.head->state_.getBias().accelerometer(),
@@ -179,6 +179,11 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     bias_gyro.header =
         linked_propagations_.head->imu_measurements_.back()->header;
     gyro_bias_pub_.publish(bias_gyro);
+  gttoc_(imuRawCallback);
+  tictoc_finishedIteration_();
+  tictoc_getNode(imuRawCallback, imuRawCallback);
+  if (optimization_.timing_.find("optimize") != optimization_.timing_.end())
+    optimization_.updateTiming(imuRawCallback, "imuRawCallback", optimization_.timing_["optimize"].header.stamp);
   }
 }
 
@@ -192,6 +197,7 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
 }
 
 void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
+  gttic_(cfarDetectionsCallback);
   LOG_FIRST(I, 1, "Received first CFAR detections.");
   if (!linked_propagations_.head) {
     LOG(W, "No propagation, skipping CFAR detections.");
@@ -255,6 +261,12 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
                                noise_model_radar_doppler_,
                                noise_model_radar_track_, &doppler_residuals);
 
+  gttoc_(cfarDetectionsCallback);
+  tictoc_finishedIteration_();
+  tictoc_getNode(cfarDetectionsCallback, cfarDetectionsCallback);
+  if (optimization_.timing_.find("optimize") != optimization_.timing_.end())
+    optimization_.updateTiming(cfarDetectionsCallback, "cfarDetectionsCallback", optimization_.timing_["optimize"].header.stamp);
+  
   optimization_.solve(linked_propagations_);
 
   for (const auto& residual : doppler_residuals) {

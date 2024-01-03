@@ -106,7 +106,7 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
       x.insert(B(idx), state.getBias());
       doppler_residuals->emplace_back(factor.unwhitenedError(x));
     }
-  }
+  }  
 }
 
 template <>
@@ -166,6 +166,7 @@ void Optimization::addRadarFactor(
     const gtsam::SharedNoiseModel& noise_model_radar_doppler,
     const gtsam::SharedNoiseModel& noise_model_radar_track,
     std::vector<Vector1>* doppler_residuals) {
+  gttic_(addRadarFactor);
   // TODO(rikba): Remove possible IMU factor between prev_state and next_state.
 
   // Add IMU factor from prev_state to split_state.
@@ -193,6 +194,11 @@ void Optimization::addRadarFactor(
   new_timestamps_[V(idx)] = state.imu->header.stamp.toSec();
   new_values_.insert(B(idx), state.getBias());
   new_timestamps_[B(idx)] = state.imu->header.stamp.toSec();
+  gttoc_(addRadarFactor);
+  tictoc_finishedIteration_();
+  tictoc_getNode(addRadarFactor, addRadarFactor);
+  if (timing_.find("optimize") != timing_.end())
+    updateTiming(addRadarFactor, "addRadarFactor", timing_["optimize"].header.stamp);
 }
 
 bool Optimization::solve(const LinkedPropagations& linked_propagations) {
@@ -216,15 +222,15 @@ bool Optimization::solve(const LinkedPropagations& linked_propagations) {
 }
 
 bool Optimization::getResult(LinkedPropagations& linked_propagations) {
-  if (!new_result_.load()) return false;
   if (!running_.load()) {
     if (thread_.joinable()) {
       thread_.join();
-    } else {
-      LOG(W, "Optimization thread not joinable.");
     }
-  }
-  // else: Optimization thread still running but new result
+  } else
+    return false;
+
+  if (!new_result_.load()) return false;
+  gttic_(getResult);
   new_result_.store(false);
   {
     std::scoped_lock lock(values_mutex_);
@@ -234,6 +240,11 @@ bool Optimization::getResult(LinkedPropagations& linked_propagations) {
 
   linked_propagations.head->repropagate();
   linked_propagations.remove(cutoff_time);
+
+  gttoc_(getResult);
+  tictoc_finishedIteration_();
+  tictoc_getNode(getResult, getResult);
+  updateTiming(getResult, "getResult", timing_["optimize"].header.stamp);
   return true;
 }
 
@@ -262,14 +273,17 @@ void Optimization::solveThreaded(
   gttoc_(calculateEstimate);
 
   // Update propagations.
-  gttic_(cachePropagations);
   cutoff_time =
       std::min_element(
           smoother_.timestamps().begin(), smoother_.timestamps().end(),
           [](const auto& a, const auto& b) { return a.second < b.second; })
           ->second;
-
-  gttoc_(cachePropagations);
+  
+  tictoc_finishedIteration_();
+  tictoc_getNode(optimize, optimize);
+  updateTiming(optimize, "optimize", timing_["optimize"].header.stamp);
+  tictoc_getNode(calculateEstimate, calculateEstimate);
+  updateTiming(calculateEstimate, "calculateEstimate", timing_["optimize"].header.stamp);
 
   new_result_.store(true);
   running_.store(false);
