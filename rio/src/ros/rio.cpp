@@ -139,8 +139,11 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     optimization_.addPriorFactor(
         *linked_propagations_.head, prior_noise_model_I_T_IB_,
         prior_noise_model_I_v_IB_, prior_noise_model_imu_bias_);
-    auto prop = new Propagation(*initial_state_, idx_++);
-    linked_propagations_.append(prop);
+
+    auto newhead = new Propagation(*initial_state_, idx_++);
+    newhead->prior = linked_propagations_.head;
+    linked_propagations_.head = newhead;
+    linked_propagations_.head->imu_measurements_.push_back(msg);
     return;
   }
 
@@ -157,13 +160,16 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   odom_navigation_pub_.publish(new_odometry);
 
   if (new_result) {
-  gttic_(imuRawCallback);
+    // cant start imuRawCallback timer above because threaded solving which also
+    // is timed with gttic...
+    gttic_(imuRawCallback);
     odom_optimizer_pub_.publish(new_odometry);
 
     tf_broadcaster_.sendTransform(
         linked_propagations_.head->state_.getTransform());
 
-    for (const auto& time : optimization_.timing_) timing_pub_.publish(time.second);
+    for (const auto& time : optimization_.timing_)
+      timing_pub_.publish(time.second);
 
     geometry_msgs::Vector3Stamped bias_acc;
     tf2::toMsg(linked_propagations_.head->state_.getBias().accelerometer(),
@@ -179,21 +185,25 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     bias_gyro.header =
         linked_propagations_.head->imu_measurements_.back()->header;
     gyro_bias_pub_.publish(bias_gyro);
-  gttoc_(imuRawCallback);
-  tictoc_finishedIteration_();
-  tictoc_getNode(imuRawCallback, imuRawCallback);
-  if (optimization_.timing_.find("optimize") != optimization_.timing_.end())
-    optimization_.updateTiming(imuRawCallback, "imuRawCallback", optimization_.timing_["optimize"].header.stamp);
+    gttoc_(imuRawCallback);
+    tictoc_finishedIteration_();
+    tictoc_getNode(imuRawCallback, imuRawCallback);
+    if (optimization_.timing_.find("optimize") != optimization_.timing_.end())
+      optimization_.updateTiming(
+          imuRawCallback, "imuRawCallback",
+          optimization_.timing_["optimize"].header.stamp);
   }
 }
 
 void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
-  Eigen::Quaterniond q_IB;
-  tf2::fromMsg(msg->orientation, q_IB);
-  initial_state_ = std::make_shared<State>(
-      initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
-      initial_state_->I_v_IB, msg, initial_state_->integrator);
+  if (!initial_state_->imu) {
+    Eigen::Quaterniond q_IB;
+    tf2::fromMsg(msg->orientation, q_IB);
+    initial_state_ = std::make_shared<State>(
+        initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
+        initial_state_->I_v_IB, msg, initial_state_->integrator);
+  }
 }
 
 void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
@@ -203,11 +213,6 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     LOG(W, "No propagation, skipping CFAR detections.");
     return;
   }
-  if (linked_propagations_.head->imu_measurements_.empty()) {
-    LOG(W, "No IMU measurements, skipping CFAR detections.");
-    return;
-  }
-
   Pose3 B_T_BR;
   try {
     auto R_T_RB_tf = tf_buffer_.lookupTransform(
@@ -228,10 +233,6 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
       linked_propagations_.getSplitPropagation(msg->header.stamp);
   if (!propagation_split) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
-    LOG(W, "Split time: " << msg->header.stamp);
-    LOG(W, "Last IMU time: " << linked_propagations_.head->imu_measurements_
-                                    .back()
-                                    ->header.stamp);
     return;
   }
 
@@ -265,8 +266,9 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
   tictoc_finishedIteration_();
   tictoc_getNode(cfarDetectionsCallback, cfarDetectionsCallback);
   if (optimization_.timing_.find("optimize") != optimization_.timing_.end())
-    optimization_.updateTiming(cfarDetectionsCallback, "cfarDetectionsCallback", optimization_.timing_["optimize"].header.stamp);
-  
+    optimization_.updateTiming(cfarDetectionsCallback, "cfarDetectionsCallback",
+                               optimization_.timing_["optimize"].header.stamp);
+
   optimization_.solve(linked_propagations_);
 
   for (const auto& residual : doppler_residuals) {

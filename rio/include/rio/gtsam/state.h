@@ -23,9 +23,6 @@ struct State {
         const gtsam::Rot3& R_IB, const gtsam::Vector3& I_v_IB,
         const sensor_msgs::ImuConstPtr& imu,
         const gtsam::PreintegratedCombinedMeasurements& integrator);
-  State(const std::string& odom_frame_id, const gtsam::Pose3& I_T_IB,
-        const gtsam::Vector3& I_v_IB, const sensor_msgs::ImuConstPtr& imu,
-        const gtsam::PreintegratedCombinedMeasurements& integrator);
 
   bool operator==(const State& other) const;
   inline bool operator!=(const State& other) const { return !(*this == other); }

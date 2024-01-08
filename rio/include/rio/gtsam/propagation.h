@@ -44,12 +44,6 @@ class Propagation {
   std::vector<sensor_msgs::ImuConstPtr> imu_measurements_;
   u_int64_t graph_idx_{0};
 
- private:
-  // Vector of IMU measurements and preintegration up to this IMU.
-  std::vector<State::ConstPtr> states_;
-
-  uint64_t first_state_idx_{0};
-  std::optional<uint64_t> last_state_idx_;
 };
 
 class LinkedPropagations {
@@ -58,20 +52,15 @@ class LinkedPropagations {
   Propagation* head;
   LinkedPropagations() : head(nullptr) {}
 
-  void append(Propagation* new_propagation) {
-    new_propagation->prior = head;
-    head = new_propagation;
-  }
-
   Propagation* getSplitPropagation(ros::Time t) {
     Propagation* current = head;
-    while (current) {
+    while (current->prior) {
       if (current->prior->state_.imu->header.stamp < t) {
         return current;
       }
       current = current->prior;
     }
-    return current;
+    return nullptr;
   }
 
   bool insertPrior(Propagation* propagation_new, Propagation* propagation_ref,
@@ -89,6 +78,11 @@ class LinkedPropagations {
         break;
       }
       current = current->prior;
+    }
+
+    // ensure that head always has an existing prior
+    if (current == head) {
+      current = head->prior;
     }
 
     if (current->prior) {

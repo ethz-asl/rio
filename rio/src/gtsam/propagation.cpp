@@ -35,15 +35,12 @@ bool Propagation::addImuMeasurement(const sensor_msgs::ImuConstPtr& msg) {
 
 bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
                         Propagation* propagation_to_t) {
-
   auto split_iter =
       std::lower_bound(imu_measurements_.begin(), imu_measurements_.end(), t,
                        [](const sensor_msgs::ImuConstPtr& imu, const auto& t) {
                          return imu->header.stamp < t;
                        });
 
-  propagation_to_t->imu_measurements_.reserve(
-      std::distance(imu_measurements_.begin(), split_iter));
   propagation_to_t->imu_measurements_.insert(
       propagation_to_t->imu_measurements_.end(), imu_measurements_.begin(),
       split_iter);
@@ -51,7 +48,9 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
   imu_measurements_.erase(imu_measurements_.begin(), split_iter);
 
   if (std::empty(propagation_to_t->imu_measurements_)) {
-    LOG(W, "No IMU measurements in propagation to t, skipping split.");
+    LOG(E,
+        "No IMU measurements in propagation to t, skipping split. This should "
+        "not happen.");
     return false;
   }
 
@@ -91,7 +90,7 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
   } else {
     sensor_msgs::Imu imu;
     imu.header = propagation_to_t->imu_measurements_.back()->header;
-    imu.header.stamp = ros::Time(t.toSec() + 0.0001);
+    imu.header.stamp = ros::Time(t.toSec() + 1e-5);
     imu.linear_acceleration =
         propagation_to_t->imu_measurements_.back()->linear_acceleration;
     imu.angular_velocity =
@@ -111,6 +110,10 @@ void Propagation::repropagate() {
   for (auto it = imu_measurements_.begin() + 1; it != imu_measurements_.end();
        ++it) {
     auto dt = ((*it)->header.stamp - (*(it - 1))->header.stamp).toSec();
+    if (dt <= 0) {
+      LOG(W, "dt <= 0, skipping IMU integration. dt: " << dt);
+      continue;
+    }
     propagate_imu(*it, dt, state_.integrator);
   }
   predict_state(imu_measurements_.back());

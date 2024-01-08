@@ -17,12 +17,6 @@ State::State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
       imu(imu),
       integrator(integrator) {}
 
-State::State(const std::string& odom_frame_id, const gtsam::Pose3& I_T_IB,
-             const gtsam::Vector3& I_v_IB, const sensor_msgs::ImuConstPtr& imu,
-             const gtsam::PreintegratedCombinedMeasurements& integrator)
-    : State(odom_frame_id, I_T_IB.translation(), I_T_IB.rotation(), I_v_IB, imu,
-            integrator) {}
-
 nav_msgs::Odometry State::getOdometry() const {
   nav_msgs::Odometry odom;
   odom.header.stamp = imu->header.stamp;
