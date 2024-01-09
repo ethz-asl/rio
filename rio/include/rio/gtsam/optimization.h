@@ -41,6 +41,7 @@ class Optimization {
 
   std::mutex values_mutex_;
   gtsam::Values optimized_values_;
+  std::atomic<bool> smoother_failed_{false};
 
   double cutoff_time;
   std::map<std::string, Timing> timing_;
@@ -62,6 +63,7 @@ class Optimization {
       const gtsam::SharedNoiseModel& noise_model = nullptr,
       std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
 
+  void resetSmoother();
 
   gtsam::NonlinearFactorGraph new_graph_;
   gtsam::Values new_values_;

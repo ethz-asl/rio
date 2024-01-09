@@ -256,7 +256,8 @@ void Optimization::solveThreaded(
     smoother_.update(graph, values, stamps);
   } catch (const std::exception& e) {
     LOG(E, "Exception in update: " << e.what());
-    running_.store(false);
+    resetSmoother();
+    gttoc_(optimize);
     return;
   }
   gttoc_(optimize);
@@ -267,7 +268,8 @@ void Optimization::solveThreaded(
     optimized_values_ = smoother_.calculateEstimate();
   } catch (const std::exception& e) {
     LOG(E, "Exception in calculateEstimate: " << e.what());
-    running_.store(false);
+    resetSmoother();
+    gttoc_(calculateEstimate);
     return;
   }
   gttoc_(calculateEstimate);
@@ -287,6 +289,16 @@ void Optimization::solveThreaded(
 
   new_result_.store(true);
   running_.store(false);
+}
+
+void Optimization::resetSmoother(){
+    ISAM2Params parameters = smoother_.params();
+    double smoother_lag = smoother_.smootherLag();
+    smoother_ = IncrementalFixedLagSmoother(smoother_lag, parameters);
+    std::scoped_lock lock(values_mutex_);
+    optimized_values_ = gtsam::Values();
+    running_.store(false);
+    smoother_failed_.store(true);
 }
 
 void Optimization::updateTiming(

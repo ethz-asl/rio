@@ -133,7 +133,12 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   if (initial_state_->imu == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (!linked_propagations_.head) {
+  } else if (optimization_.smoother_failed_.load()) {
+    initial_state_ = std::make_shared<State>(linked_propagations_.head->state_);
+    linked_propagations_.remove(std::numeric_limits<double>::infinity());
+    optimization_.smoother_failed_.store(false);
+  }
+  if (!linked_propagations_.head) {
     LOG(I, "Initializing states with initial state.");
     linked_propagations_.head = new Propagation(*initial_state_, idx_++);
     optimization_.addPriorFactor(

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <gtsam/inference/Symbol.h>
+#include <log++.h>
 #include <mav_sensors_drivers/sensor_types/Radar.h>
 #include <tf2_eigen/tf2_eigen.h>
 
@@ -38,7 +39,7 @@ class Propagation {
   std::optional<std::vector<mav_sensors::Radar::CfarDetection>>
       cfar_detections_;
   std::optional<std::vector<Track::Ptr>> cfar_tracks_;
-  Propagation* prior;
+  Propagation* prior{nullptr};
 
   State state_;
   std::vector<sensor_msgs::ImuConstPtr> imu_measurements_;
@@ -81,7 +82,8 @@ class LinkedPropagations {
     }
 
     // ensure that head always has an existing prior
-    if (current == head) {
+    // except if t is set to infinity
+    if (current == head && t != std::numeric_limits<double>::infinity()) {
       current = head->prior;
     }
 
@@ -95,6 +97,11 @@ class LinkedPropagations {
         delete to_delete;
         to_delete = priorProp;
       }
+    }
+
+    if (t == std::numeric_limits<double>::infinity()) {
+      delete head;
+      head = nullptr;
     }
   }
 };
