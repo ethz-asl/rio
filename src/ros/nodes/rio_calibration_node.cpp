@@ -6,6 +6,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/expressions.h>
@@ -89,11 +90,6 @@ int main(int argc, char** argv) {
 
   SharedNoiseModel loop_closure_noise_T;
   if (!loadNoiseLoopClosureT(nh_private, &loop_closure_noise_T)) {
-    return 1;
-  }
-
-  SharedNoiseModel zero_velocity_prior_noise;
-  if (!loadNoiseZeroVelocityPrior(nh_private, &zero_velocity_prior_noise)) {
     return 1;
   }
 
@@ -301,7 +297,7 @@ int main(int argc, char** argv) {
 
   // Add calibration between constraints.
   for (size_t i = 0; i < last_idx; i++) {
-    graph.add(BetweenConstraint(Pose3(), C(i), C(i + 1)));
+    graph.add(NonlinearEquality2<Pose3>(C(i), C(i + 1)));
   }
 
   // Add IMU in between factors.
@@ -334,15 +330,11 @@ int main(int argc, char** argv) {
 
   // Add loop closure constraint.
   graph.add(
-      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(),
-      loop_closure_noise_T));
-  Vector3 delta_v_0 = Z_3x1;
-  graph.add(BetweenConstraint(delta_v_0, V(0), V(last_idx)));
+      BetweenFactor<Pose3>(X(0), X(last_idx), Pose3(), loop_closure_noise_T));
 
-  // Add zero velocity prior at start and end.
-  graph.add(PriorFactor<Vector3>(V(0), Z_3x1, zero_velocity_prior_noise));
-  graph.add(
-      PriorFactor<Vector3>(V(last_idx), Z_3x1, zero_velocity_prior_noise));
+  // Add zero velocity constraint at start and end.
+  graph.add(NonlinearEquality1<Vector3>(Z_3x1, V(0)));
+  graph.add(NonlinearEquality1<Vector3>(Z_3x1, V(last_idx)));
 
   // Solve.
   LOG(I, "Solving...");

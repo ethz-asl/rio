@@ -10,4 +10,3 @@ noise:
   loop_closure:
     p: [0.01, 0.01, 0.005]
     R: [0.01, 0.01, 0.02]
-  zero_velocity_prior: 0.01
