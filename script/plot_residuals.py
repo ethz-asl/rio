@@ -50,14 +50,14 @@ def geman_mcclure_influence(x, c):
 def geman_mcclure_weight(x, c):
     return c ** 4 / (c ** 2 + x ** 2) ** 2
 
-# Plot welsh loss rho, influence and weight function
-def welsh_loss(x, c):
+# Plot welsch loss rho, influence and weight function
+def welsch_loss(x, c):
     return 0.5 * c ** 2 * (1 - np.exp(-(x / c) ** 2))
 
-def welsh_influence(x, c):
+def welsch_influence(x, c):
     return x * np.exp(-(x / c) ** 2)
 
-def welsh_weight(x, c):
+def welsch_weight(x, c):
     return np.exp(-(x / c) ** 2)
 
 # Plot tukey loss rho, influence and weight function
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     c_huber = 1.345
     c_cauchy = 2.3849
     c_geman_mcclure = 3.0
-    c_welsh = 2.9846
+    c_welsch = 2.9846
     c_tukey = 4.6851
     c_dcs = 1.0
     ax_right = ax.twinx()
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     ax_right.plot(x, huber_weight(x, c_huber), label=r'\textrm{Huber}', linestyle='solid', marker='s',markevery=30, linewidth=0.5)
     ax_right.plot(x, cauchy_weight(x, c_cauchy), label=r'\textrm{Cauchy}', linestyle='solid', marker='^',markevery=30, linewidth=0.5)
     #ax_right.plot(x, geman_mcclure_weight(x, c_geman_mcclure), label=r'\textrm{GMC}', linestyle='solid', marker='+',markevery=30, linewidth=0.5)
-    ax_right.plot(x, welsh_weight(x, c_welsh), label=r'\textrm{Welsh}', linestyle='solid', marker='+',markevery=5, linewidth=0.5)
+    ax_right.plot(x, welsch_weight(x, c_welsch), label=r'\textrm{Welsch}', linestyle='solid', marker='+',markevery=5, linewidth=0.5)
     #ax_right.plot(x, tukey_weight(x, c_tukey), label=r'\textrm{Tukey}$_{%.4f}$' % c_tukey, linestyle='dotted', marker='x',markevery=5)
     #ax_right.plot(x, dcs_weight(x, c_dcs), label=r'\textrm{DCS}$_{%.4f}$' % c_dcs, linestyle='dashdot')#, marker='|',markevery=5)
     ax_right.legend(loc='upper right',prop={'size': 8})
