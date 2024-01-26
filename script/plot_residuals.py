@@ -90,18 +90,24 @@ if __name__ == '__main__':
     duration = 10 # window size
     for topic, msg, t in bag.read_messages(topics=['/rio/doppler_residual'], start_time=Time(start), end_time=Time(start+duration)):
         residuals.append(msg.residual)
+
+    # Read 
+    start = 1705256217.0
+    residuals_free = []
+    for topic, msg, t in bag.read_messages(topics=['/rio/doppler_residual'], start_time=Time(start), end_time=Time(start+duration)):
+        residuals_free.append(msg.residual)
     
     sigma = 0.05
     residuals = np.abs(np.array(residuals)) / sigma
-    # exponential residuals
-    #residuals = np.exp(np.abs(residuals))
+    residuals_free = np.abs(np.array(residuals_free)) / sigma
 
     # Plot residuals
     fig, ax = plt.subplots(figsize=(3.5, 2))
     ax.loglog()
     #ax.hist([residuals for residuals in residuals if abs(residuals) <= 5], density=True, bins=50, color='lightblue', alpha=1.0)
     #ax.set_xscale('log')
-    counts, bins, bars = ax.hist(residuals, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, color='lightblue')
+    counts, bins, bars = ax.hist(residuals, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, alpha=0.5, label=r'\textrm{Street Car}')
+    counts_free, bins_free, bars_free = ax.hist(residuals_free, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, alpha=0.5, label=r'\textrm{No Moving Object}')
     ax.set_xlabel(r'$\displaystyle \lVert r_{D^{i,m}} \rVert / \sigma_D$')
     ax.set_ylabel(r'\textrm{Probability Density}')
     ax.grid()
@@ -117,9 +123,11 @@ if __name__ == '__main__':
     ax_right = ax.twinx()
     ax_right.set_ylim(0, 1.05)
 
-    ax.plot(x, 2*stats.norm.pdf(x), label='$\displaystyle \mathcal{N}(0,1)$', color='blue')
+    ax.plot(x, 2*stats.norm.pdf(x), label='$\displaystyle \mathcal{N}(0,1)$')
     ax.set_ylim(min(counts[np.where(counts > 0)]), max(counts))
     ax_right.set_ylabel(r'$\displaystyle \rho \left( \lVert r_{D^{i,m}} \rVert / \sigma_D \right)$')
+    next(ax_right._get_lines.prop_cycler)
+    next(ax_right._get_lines.prop_cycler)
     next(ax_right._get_lines.prop_cycler)
     ax_right.plot(x, fair_weight(x, c_fair), label=r'\textrm{Fair}', linestyle='solid', marker='o',markevery=30, linewidth=0.5)
     ax_right.plot(x, huber_weight(x, c_huber), label=r'\textrm{Huber}', linestyle='solid', marker='s',markevery=30, linewidth=0.5)
@@ -131,5 +139,5 @@ if __name__ == '__main__':
     ax_right.legend(loc='upper right',prop={'size': 8})
     ax.legend(loc='lower left',prop={'size': 8})
     #plt.show()
-    plt.savefig(f'/home/brik/Desktop/paper_analysis/robust_loss.pdf', bbox_inches='tight')
+    plt.savefig(f'/home/brik/Desktop/paper_analysis/residuals_doppler.pdf', bbox_inches='tight')
     
