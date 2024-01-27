@@ -11,6 +11,12 @@ import scipy.stats as stats
 
 
 # fair loss rho, influence and weight function
+def quadratic_loss(x):
+    return 0.5 * x ** 2
+
+def quadratic_weight(x):
+    return np.ones_like(x)
+
 def fair_loss(x, c):
     return c ** 2 * (np.abs(x) / c - np.log(1 + np.abs(x) / c))
 
@@ -102,12 +108,12 @@ if __name__ == '__main__':
     residuals_free = np.abs(np.array(residuals_free)) / sigma
 
     # Plot residuals
-    fig, ax = plt.subplots(figsize=(3.5, 2))
+    fig, ax = plt.subplots(figsize=(3.5, 2.7))
     ax.loglog()
     #ax.hist([residuals for residuals in residuals if abs(residuals) <= 5], density=True, bins=50, color='lightblue', alpha=1.0)
     #ax.set_xscale('log')
-    counts, bins, bars = ax.hist(residuals, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, alpha=0.5, label=r'\textrm{Streetcar}')
-    counts_free, bins_free, bars_free = ax.hist(residuals_free, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, alpha=0.5, label=r'\textrm{Static Scene}')
+    counts, bins, bars = ax.hist(residuals, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, alpha=0.5, label=r'$\textrm{Streetcar}$')
+    counts_free, bins_free, bars_free = ax.hist(residuals_free, density=True, bins=np.logspace(np.log10(0.1),np.log10(max(residuals)), 50), log=False, alpha=0.5, label=r'$\textrm{Static Scene}$')
     ax.set_xlabel(r'$\displaystyle \lVert r_{D^{i,m}} \rVert / \sigma_D$')
     ax.set_ylabel(r'\textrm{Probability Density}')
     ax.grid()
@@ -129,6 +135,7 @@ if __name__ == '__main__':
     next(ax_right._get_lines.prop_cycler)
     next(ax_right._get_lines.prop_cycler)
     next(ax_right._get_lines.prop_cycler)
+    ax_right.plot(x, quadratic_weight(x), label=r'\textrm{Quadratic}', linestyle='solid', marker='*',markevery=30, linewidth=0.5)
     ax_right.plot(x, fair_weight(x, c_fair), label=r'\textrm{Fair}', linestyle='solid', marker='o',markevery=30, linewidth=0.5)
     ax_right.plot(x, huber_weight(x, c_huber), label=r'\textrm{Huber}', linestyle='solid', marker='s',markevery=30, linewidth=0.5)
     ax_right.plot(x, cauchy_weight(x, c_cauchy), label=r'\textrm{Cauchy}', linestyle='solid', marker='^',markevery=30, linewidth=0.5)
@@ -137,6 +144,8 @@ if __name__ == '__main__':
     #ax_right.plot(x, tukey_weight(x, c_tukey), label=r'\textrm{Tukey}$_{%.4f}$' % c_tukey, linestyle='dotted', marker='x',markevery=5)
     #ax_right.plot(x, dcs_weight(x, c_dcs), label=r'\textrm{DCS}$_{%.4f}$' % c_dcs, linestyle='dashdot')#, marker='|',markevery=5)
     ax_right.legend(loc='upper right',prop={'size': 8})
+    ax_right.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3),
+          ncol=3, fancybox=False, shadow=False, prop={'size': 8})
     ax.legend(loc='lower left',prop={'size': 8})
     #plt.show()
     plt.tight_layout()
