@@ -58,7 +58,8 @@ bool Rio::init() {
 
   initial_state_ = std::make_shared<State>(
       odom_frame_id, initial_state_->I_p_IB, initial_state_->R_IB,
-      initial_state_->I_v_IB, initial_state_->imu, integrator);
+      initial_state_->I_v_IB, initial_state_->imu, integrator,
+      initial_state_->baro_height_bias);
 
   // Prior noise pose.
   if (!loadPriorNoisePose(nh_private_, &prior_noise_model_I_T_IB_))
@@ -152,16 +153,9 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   if (initial_state_->imu == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
-  } else if (baro_active_ && !baro_height_bias_.has_value()) {
-    LOG_TIMED(W, 1.0,
-              "Baro height bias not initialized, skipping IMU integration.");
-    return;
   } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
     propagation_.emplace_back(initial_state_, idx_++);
-    if (baro_active_) {
-      propagation_.back().baro_height_ = baro_height_bias_.value();
-    }
     optimization_.addPriorFactor(propagation_.back(), prior_noise_model_I_T_IB_,
                                  prior_noise_model_I_v_IB_,
                                  prior_noise_model_imu_bias_,
@@ -208,9 +202,16 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
   tf2::fromMsg(msg->orientation, q_IB);
-  initial_state_ = std::make_shared<State>(
-      initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
-      initial_state_->I_v_IB, msg, initial_state_->integrator);
+  if (baro_active_ && baro_height_bias_.has_value()) {
+    initial_state_ = std::make_shared<State>(
+        initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
+        initial_state_->I_v_IB, msg, initial_state_->integrator,
+        (Vector1() << baro_height_bias_.value()).finished());
+  } else if (!baro_active_) {
+    initial_state_ = std::make_shared<State>(
+        initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
+        initial_state_->I_v_IB, msg, initial_state_->integrator);
+  }
 }
 
 void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
@@ -256,6 +257,34 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
                                noise_model_radar_doppler_,
                                noise_model_radar_track_, &doppler_residuals);
 
+  Vector1 baro_residual;
+  if (baro_active_) {
+    // Find baro measurement closest to radar measurement.
+    auto baro_it = std::lower_bound(
+        baro_height_bias_history_.begin(), baro_height_bias_history_.end(),
+        std::make_pair(msg->header.stamp.toSec(), 0.0),
+        [](const std::pair<double, double>& a,
+           const std::pair<double, double>& b) { return a.first < b.first; });
+    if (baro_it != baro_height_bias_history_.begin() &&
+        baro_it != baro_height_bias_history_.end()) {
+      auto baro_it_prev = std::prev(baro_it);
+      if (std::abs(baro_it_prev->first - msg->header.stamp.toSec()) <
+          std::abs(baro_it->first - msg->header.stamp.toSec())) {
+        baro_it = baro_it_prev;
+      }
+    }
+    if (baro_it != baro_height_bias_history_.end()) {
+      split_it->baro_height_ = baro_it->second;
+      optimization_.addBaroFactor(*split_it, noise_model_baro_height_,
+                                  noise_model_baro_height_bias_,
+                                  &baro_residual);
+      DopplerResidual baro_residual_msg;
+      baro_residual_msg.header = msg->header;
+      baro_residual_msg.residual = baro_residual[0];
+      baro_residual_pub_.publish(baro_residual_msg);
+    }
+  }
+
   optimization_.solve(propagation_);
 
   for (const auto& residual : doppler_residuals) {
@@ -279,10 +308,19 @@ void Rio::pressureCallback(const sensor_msgs::FluidPressurePtr& msg) {
     return;
   }
   if (propagation_.empty()) {
-    LOG(W, "No propagation, skipping pressure measurement.");
+    LOG_TIMED(W, 1.0, "No propagation, skipping pressure measurement.");
     return;
   }
 
+  // Store baro stamp and pressure in buffer. Factor will be added with radar
+  // factor.
+  // TODO(rikba): Properly add baro factor add correct IMU stamp.
+  baro_height_bias_history_.emplace_back(msg->header.stamp.toSec(),
+                                         msg->fluid_pressure);
+  if (baro_height_bias_history_.front().first <
+      propagation_.front().getFirstState()->imu->header.stamp.toSec()) {
+    baro_height_bias_history_.pop_front();
+  }
   // auto split_it = splitPropagation(msg->header.stamp);
   // if (split_it == propagation_.end()) {
   //   LOG(W, "Failed to split propagation, skipping pressure measurement.");

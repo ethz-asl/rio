@@ -7,9 +7,9 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <mav_sensors_drivers/sensor_types/Radar.h>
 #include <ros/ros.h>
+#include <sensor_msgs/FluidPressure.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/FluidPressure.h>
 #include <std_msgs/Header.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -76,7 +76,8 @@ class Rio {
 
   Tracker tracker_;
 
-  bool baro_active_ {false};
+  bool baro_active_{false};
   std::optional<double> baro_height_bias_;
+  std::deque<std::pair<double, double>> baro_height_bias_history_;
 };
 }  // namespace rio

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
@@ -22,10 +23,12 @@ struct State {
   State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
         const gtsam::Rot3& R_IB, const gtsam::Vector3& I_v_IB,
         const sensor_msgs::ImuConstPtr& imu,
-        const gtsam::PreintegratedCombinedMeasurements& integrator);
+        const gtsam::PreintegratedCombinedMeasurements& integrator,
+        const std::optional<gtsam::Vector1>& baro_height_bias = std::nullopt);
   State(const std::string& odom_frame_id, const gtsam::Pose3& I_T_IB,
         const gtsam::Vector3& I_v_IB, const sensor_msgs::ImuConstPtr& imu,
-        const gtsam::PreintegratedCombinedMeasurements& integrator);
+        const gtsam::PreintegratedCombinedMeasurements& integrator,
+        const std::optional<gtsam::Vector1>& baro_height_bias = std::nullopt);
 
   bool operator==(const State& other) const;
   inline bool operator!=(const State& other) const { return !(*this == other); }
@@ -38,6 +41,8 @@ struct State {
   gtsam::Vector3 I_v_IB;
   sensor_msgs::ImuConstPtr imu;
   gtsam::PreintegratedCombinedMeasurements integrator;
+
+  std::optional<gtsam::Vector1> baro_height_bias;
 
   nav_msgs::Odometry getOdometry() const;
   geometry_msgs::TransformStamped getTransform() const;

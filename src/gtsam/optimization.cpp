@@ -6,6 +6,7 @@
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/expressions.h>
 #include <log++.h>
 #include <tf2_eigen/tf2_eigen.h>
@@ -17,9 +18,8 @@ using namespace gtsam;
 typedef BearingRange<Pose3, Point3> BearingRange3D;
 
 using gtsam::symbol_shorthand::B;
-using gtsam::symbol_shorthand::D;  // Baro height bias.
 using gtsam::symbol_shorthand::L;
-using gtsam::symbol_shorthand::P;  // Baro height.
+using gtsam::symbol_shorthand::P;  // Baro height bias.
 using gtsam::symbol_shorthand::V;
 using gtsam::symbol_shorthand::X;
 
@@ -61,20 +61,18 @@ template <>
 void Optimization::addFactor<PriorFactor<Vector1>>(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model) {
-  if (!propagation.baro_height_.has_value()) {
+  auto idx = propagation.getFirstStateIdx();
+  auto state = propagation.getFirstState();
+  if (!state->baro_height_bias.has_value()) {
     LOG(I,
-        "Propagation has no baro height, skipping adding baro height bias "
+        "Propagation has no baro height bias, skipping adding baro height bias "
         "prior factor.");
     return;
   }
-  auto idx = propagation.getFirstStateIdx();
-  auto state = propagation.getFirstState();
-  new_values_.insert(
-      D(idx), (Vector1() << propagation.baro_height_.value()).finished());
-  new_timestamps_[D(idx)] = state->imu->header.stamp.toSec();
-  new_graph_.add(PriorFactor<Vector1>(
-      D(idx), (Vector1() << propagation.baro_height_.value()).finished(),
-      noise_model));
+  new_values_.insert(P(idx), state->baro_height_bias.value());
+  new_timestamps_[P(idx)] = state->imu->header.stamp.toSec();
+  new_graph_.add(PriorFactor<Vector1>(P(idx), state->baro_height_bias.value(),
+                                      noise_model));
 }
 
 template <>
@@ -249,6 +247,46 @@ void Optimization::addRadarFactor(
   } else {
     LOG(E, "Propagation to radar has no last state index.");
   }
+}
+
+void Optimization::addBaroFactor(
+    const Propagation& propagation_to_baro,
+    const gtsam::SharedNoiseModel& noise_model_baro_height,
+    const gtsam::SharedNoiseModel& noise_model_baro_height_bias,
+    gtsam::Vector1* baro_residual) {
+  if (!propagation_to_baro.getLastStateIdx().has_value()) {
+    LOG(E, "Propagation has no last state index, skipping adding baro factor.");
+    return;
+  }
+  if (!propagation_to_baro.baro_height_.has_value()) {
+    LOG(I, "Propagation has no baro height, skipping adding baro factor.");
+    return;
+  }
+  auto idx1 = propagation_to_baro.getFirstStateIdx();
+  auto idx2 = propagation_to_baro.getLastStateIdx().value();
+  auto state = propagation_to_baro.getLatestState();
+  if (!state->baro_height_bias.has_value()) {
+    LOG(I, "Propagation has no baro height bias, skipping adding baro factor.");
+    return;
+  }
+  auto h = dot(Point3_(Point3(0, 0, 1)), translation(Pose3_(X(idx2)))) +
+           Double_(P(idx2));
+  auto z = propagation_to_baro.baro_height_.value();
+  auto factor = ExpressionFactor(noise_model_baro_height, z, h);
+  new_graph_.add(factor);
+
+  if (baro_residual) {
+    Values x;
+    x.insert(X(idx2), state->getPose());
+    x.insert(P(idx2), state->baro_height_bias.value());
+    *baro_residual = factor.unwhitenedError(x);
+  }
+
+  new_values_.insert(P(idx2), state->baro_height_bias.value());
+  new_timestamps_[P(idx2)] = state->imu->header.stamp.toSec();
+  auto baro_bias_factor = BetweenFactor<Vector1>(P(idx1), P(idx2), Z_1x1,
+                                                 noise_model_baro_height_bias);
+  new_graph_.add(baro_bias_factor);
 }
 
 bool Optimization::solve(const std::deque<Propagation>& propagations) {
