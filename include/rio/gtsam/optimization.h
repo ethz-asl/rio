@@ -27,8 +27,7 @@ class Optimization {
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
                       const gtsam::SharedNoiseModel& noise_model_I_v_IB,
-                      const gtsam::SharedNoiseModel& noise_model_imu_bias,
-                      const gtsam::SharedNoiseModel& noise_model_baro_height_bias);
+                      const gtsam::SharedNoiseModel& noise_model_imu_bias);
   void addRadarFactor(const Propagation& propagation_to_radar,
                       const Propagation& propagation_from_radar,
                       const gtsam::SharedNoiseModel& noise_model_radar_doppler,
@@ -38,9 +37,6 @@ class Optimization {
       const Propagation& propagation_to_baro,
       const gtsam::SharedNoiseModel& noise_model_baro_height,
       gtsam::Vector1* baro_residual = nullptr);
-  void addBaroBiasFactor(
-      const Propagation& propagation_to_baro,
-      const gtsam::SharedNoiseModel& noise_model_baro_height_bias);
 
   inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
     smoother_ = smoother;

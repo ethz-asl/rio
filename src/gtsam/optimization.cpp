@@ -19,7 +19,6 @@ typedef BearingRange<Pose3, Point3> BearingRange3D;
 
 using gtsam::symbol_shorthand::B;
 using gtsam::symbol_shorthand::L;
-using gtsam::symbol_shorthand::P;  // Baro height bias.
 using gtsam::symbol_shorthand::V;
 using gtsam::symbol_shorthand::X;
 
@@ -55,24 +54,6 @@ void Optimization::addFactor<PriorFactor<imuBias::ConstantBias>>(
   new_timestamps_[B(idx)] = state->imu->header.stamp.toSec();
   new_graph_.add(PriorFactor<imuBias::ConstantBias>(B(idx), state->getBias(),
                                                     noise_model));
-}
-
-template <>
-void Optimization::addFactor<PriorFactor<double>>(
-    const Propagation& propagation,
-    const gtsam::SharedNoiseModel& noise_model) {
-  auto idx = propagation.getFirstStateIdx();
-  auto state = propagation.getFirstState();
-  if (!state->baro_height_bias.has_value()) {
-    LOG(I,
-        "Propagation has no baro height bias, skipping adding baro height bias "
-        "prior factor.");
-    return;
-  }
-  new_values_.insert(P(idx), state->baro_height_bias.value());
-  new_timestamps_[P(idx)] = state->imu->header.stamp.toSec();
-  new_graph_.add(PriorFactor<double>(P(idx), state->baro_height_bias.value(),
-                                     noise_model));
 }
 
 template <>
@@ -201,13 +182,11 @@ void Optimization::addPriorFactor(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model_I_T_IB,
     const gtsam::SharedNoiseModel& noise_model_I_v_IB,
-    const gtsam::SharedNoiseModel& noise_model_imu_bias,
-    const gtsam::SharedNoiseModel& noise_model_baro_height_bias) {
+    const gtsam::SharedNoiseModel& noise_model_imu_bias) {
   addFactor<PriorFactor<Pose3>>(propagation, noise_model_I_T_IB);
   addFactor<PriorFactor<Vector3>>(propagation, noise_model_I_v_IB);
   addFactor<PriorFactor<imuBias::ConstantBias>>(propagation,
                                                 noise_model_imu_bias);
-  addFactor<PriorFactor<double>>(propagation, noise_model_baro_height_bias);
 }
 
 void Optimization::addRadarFactor(
@@ -268,7 +247,7 @@ void Optimization::addBaroFactor(
     return;
   }
   auto h = dot(Point3_(Point3(0, 0, 1)), translation(Pose3_(X(idx)))) +
-           Double_(P(idx));
+           Double_(state->baro_height_bias.value());
   auto z = propagation_to_baro.baro_height_.value();
   auto factor = ExpressionFactor(noise_model_baro_height, z, h);
   new_graph_.add(factor);
@@ -276,28 +255,8 @@ void Optimization::addBaroFactor(
   if (baro_residual) {
     Values x;
     x.insert(X(idx), state->getPose());
-    x.insert(P(idx), state->baro_height_bias.value());
     *baro_residual = factor.unwhitenedError(x);
   }
-}
-
-void Optimization::addBaroBiasFactor(
-    const Propagation& propagation_to_baro,
-    const gtsam::SharedNoiseModel& noise_model_baro_height_bias) {
-  if (!propagation_to_baro.getLastStateIdx().has_value()) {
-    LOG(E,
-        "Propagation has no last state index, skipping adding baro bias "
-        "factor.");
-    return;
-  }
-  auto idx1 = propagation_to_baro.getFirstStateIdx();
-  auto idx2 = propagation_to_baro.getLastStateIdx().value();
-  auto state = propagation_to_baro.getLatestState();
-  new_values_.insert(P(idx2), state->baro_height_bias.value());
-  new_timestamps_[P(idx2)] = state->imu->header.stamp.toSec();
-  auto baro_bias_factor = BetweenFactor<double>(P(idx1), P(idx2), 0.0,
-                                                noise_model_baro_height_bias);
-  new_graph_.add(baro_bias_factor);
 }
 
 bool Optimization::solve(const std::deque<Propagation>& propagations) {
@@ -442,16 +401,11 @@ void Optimization::solveThreaded(
           new_values.at<gtsam::Pose3>(X(propagation.getFirstStateIdx())),
           new_values.at<gtsam::Velocity3>(V(propagation.getFirstStateIdx())),
           propagation.getFirstState()->imu,
-          propagation.getFirstState()->integrator);
+          propagation.getFirstState()->integrator,
+          propagation.getFirstState()->baro_height_bias);
       initial_state.integrator.resetIntegrationAndSetBias(
           new_values.at<gtsam::imuBias::ConstantBias>(
               B(propagation.getFirstStateIdx())));
-      try {
-        auto baro_bias =
-            new_values.at<double>(P(propagation.getFirstStateIdx()));
-        initial_state.baro_height_bias = baro_bias;
-      } catch (const std::exception& e) {
-      }
 
       if (!propagation.repropagate(initial_state)) {
         LOG(E, "Failed to repropagate.");

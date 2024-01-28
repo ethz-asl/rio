@@ -320,29 +320,3 @@ bool rio::loadNoiseBaroHeight(const ros::NodeHandle& nh,
   }
   return true;
 }
-
-bool rio::loadNoiseBaroHeightBias(const ros::NodeHandle& nh,
-                                  gtsam::SharedNoiseModel* noise) {
-  assert(noise);
-  double noise_baro_height_bias = 0.0;
-  if (!loadParam<double>(nh, "noise/baro/height_bias", &noise_baro_height_bias))
-    return false;
-  *noise = noiseModel::Diagonal::Sigmas(
-      (Vector1() << noise_baro_height_bias).finished());
-  std::dynamic_pointer_cast<noiseModel::Diagonal>(*noise)->print(
-      "prior_noise_model_baro_height_bias: ");
-  return true;
-}
-
-bool rio::loadPriorNoiseBaroHeightBias(const ros::NodeHandle& nh,
-                                       gtsam::SharedNoiseModel* noise) {
-  assert(noise);
-  double prior_noise_baro_height_bias = 0.0;
-  if (!loadParam<double>(nh, "prior_noise/b_b", &prior_noise_baro_height_bias))
-    return false;
-  *noise = noiseModel::Diagonal::Sigmas(
-      (Vector1() << prior_noise_baro_height_bias).finished());
-  std::dynamic_pointer_cast<noiseModel::Diagonal>(*noise)->print(
-      "prior_noise_model_baro_height_bias: ");
-  return true;
-}

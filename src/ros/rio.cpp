@@ -42,8 +42,6 @@ bool Rio::init() {
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_acc", 100);
   gyro_bias_pub_ =
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
-  baro_bias_pub_ = nh_private_.advertise<geometry_msgs::Vector3Stamped>(
-      "bias_baro_height", 100);
   doppler_residual_pub_ =
       nh_private_.advertise<rio::DopplerResidual>("doppler_residual", 100);
   baro_residual_pub_ =
@@ -75,11 +73,6 @@ bool Rio::init() {
   if (!loadPriorNoiseImuBias(nh_private_, &prior_noise_model_imu_bias_))
     return false;
 
-  // Prior noise baro height bias.
-  if (!loadPriorNoiseBaroHeightBias(nh_private_,
-                                    &prior_noise_model_baro_height_bias_))
-    return false;
-
   // Noise Radar doppler.
   if (!loadNoiseRadarRadialVelocity(nh_private_, &noise_model_radar_doppler_))
     return false;
@@ -92,10 +85,6 @@ bool Rio::init() {
 
   // Noise Baro height.
   if (!loadNoiseBaroHeight(nh_private_, &noise_model_baro_height_))
-    return false;
-
-  // Noise Baro height bias.
-  if (!loadNoiseBaroHeightBias(nh_private_, &noise_model_baro_height_bias_))
     return false;
 
   // Radar tracker.
@@ -160,8 +149,7 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     propagation_.emplace_back(initial_state_, idx_++);
     optimization_.addPriorFactor(propagation_.back(), prior_noise_model_I_T_IB_,
                                  prior_noise_model_I_v_IB_,
-                                 prior_noise_model_imu_bias_,
-                                 prior_noise_model_baro_height_bias_);
+                                 prior_noise_model_imu_bias_);
     return;
   }
 
@@ -197,14 +185,6 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
                bias_gyro.vector);
     bias_gyro.header = propagation_.back().getLatestState()->imu->header;
     gyro_bias_pub_.publish(bias_gyro);
-
-    if (propagation_.back().getLatestState()->baro_height_bias.has_value()) {
-      geometry_msgs::Vector3Stamped baro_bias;
-      baro_bias.vector.z =
-          propagation_.back().getLatestState()->baro_height_bias.value();
-      baro_bias.header = propagation_.back().getLatestState()->imu->header;
-      baro_bias_pub_.publish(baro_bias);
-    }
   }
 }
 
@@ -270,8 +250,6 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
 
   Vector1 baro_residual;
   if (baro_active_) {
-    // Always add baro bias factor.
-    optimization_.addBaroBiasFactor(*split_it, noise_model_baro_height_bias_);
     // Find baro measurement closest to radar measurement.
     auto baro_it = std::lower_bound(
         baro_height_bias_history_.begin(), baro_height_bias_history_.end(),

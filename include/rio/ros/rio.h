@@ -48,7 +48,6 @@ class Rio {
   ros::Publisher timing_pub_;
   ros::Publisher acc_bias_pub_;
   ros::Publisher gyro_bias_pub_;
-  ros::Publisher baro_bias_pub_;
   ros::Publisher doppler_residual_pub_;
   ros::Publisher baro_residual_pub_;
 
@@ -64,11 +63,9 @@ class Rio {
   gtsam::SharedNoiseModel prior_noise_model_I_T_IB_;
   gtsam::SharedNoiseModel prior_noise_model_I_v_IB_;
   gtsam::SharedNoiseModel prior_noise_model_imu_bias_;
-  gtsam::SharedNoiseModel prior_noise_model_baro_height_bias_;
   gtsam::SharedNoiseModel noise_model_radar_doppler_;
   gtsam::SharedNoiseModel noise_model_radar_track_;
   gtsam::SharedNoiseModel noise_model_baro_height_;
-  gtsam::SharedNoiseModel noise_model_baro_height_bias_;
   uint64_t idx_{0};
 
   tf2_ros::Buffer tf_buffer_;

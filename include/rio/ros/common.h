@@ -88,12 +88,6 @@ bool loadNoiseZeroVelocityPrior(const ros::NodeHandle& nh,
 bool loadNoiseBaroHeight(const ros::NodeHandle& nh,
                          gtsam::SharedNoiseModel* noise);
 
-bool loadNoiseBaroHeightBias(const ros::NodeHandle& nh,
-                             gtsam::SharedNoiseModel* noise);
-
-bool loadPriorNoiseBaroHeightBias(const ros::NodeHandle& nh,
-                                  gtsam::SharedNoiseModel* noise);
-
 std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
     const sensor_msgs::PointCloud2Ptr& msg);
 
