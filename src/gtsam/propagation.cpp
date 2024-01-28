@@ -63,7 +63,8 @@ bool Propagation::addImuMeasurement(const sensor_msgs::ImuConstPtr& msg) {
       integrator.predict(states_.front()->getNavState(), integrator.biasHat());
   states_.push_back(std::make_shared<State>(
       states_.back()->odom_frame_id, prediction.pose().translation(),
-      prediction.pose().rotation(), prediction.velocity(), msg, integrator));
+      prediction.pose().rotation(), prediction.velocity(), msg, integrator,
+      states_.back()->baro_height_bias));
   return true;
 }
 
@@ -119,12 +120,14 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
 
   // Regenerate propagation from t.
   if (t < (*state_1)->imu->header.stamp) {
-    State initial_state = {propagation_to_t->getLatestState()->odom_frame_id,
-                           propagation_to_t->getLatestState()->I_p_IB,
-                           propagation_to_t->getLatestState()->R_IB,
-                           propagation_to_t->getLatestState()->I_v_IB,
-                           propagation_to_t->getLatestState()->imu,
-                           propagation_to_t->getLatestState()->integrator};
+    State initial_state = {
+        propagation_to_t->getLatestState()->odom_frame_id,
+        propagation_to_t->getLatestState()->I_p_IB,
+        propagation_to_t->getLatestState()->R_IB,
+        propagation_to_t->getLatestState()->I_v_IB,
+        propagation_to_t->getLatestState()->imu,
+        propagation_to_t->getLatestState()->integrator,
+        propagation_to_t->getLatestState()->baro_height_bias};
     initial_state.integrator.resetIntegrationAndSetBias(
         propagation_to_t->getLatestState()->integrator.biasHat());
     *propagation_from_t =

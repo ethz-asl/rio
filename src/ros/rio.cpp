@@ -206,11 +206,12 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
     initial_state_ = std::make_shared<State>(
         initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
         initial_state_->I_v_IB, msg, initial_state_->integrator,
-        (Vector1() << baro_height_bias_.value()).finished());
+        baro_height_bias_.value());
   } else if (!baro_active_) {
     initial_state_ = std::make_shared<State>(
         initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
-        initial_state_->I_v_IB, msg, initial_state_->integrator);
+        initial_state_->I_v_IB, msg, initial_state_->integrator,
+        initial_state_->baro_height_bias);
   }
 }
 
@@ -259,6 +260,8 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
 
   Vector1 baro_residual;
   if (baro_active_) {
+    // Always add baro bias factor.
+    optimization_.addBaroBiasFactor(*split_it, noise_model_baro_height_bias_);
     // Find baro measurement closest to radar measurement.
     auto baro_it = std::lower_bound(
         baro_height_bias_history_.begin(), baro_height_bias_history_.end(),
@@ -276,12 +279,14 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     if (baro_it != baro_height_bias_history_.end()) {
       split_it->baro_height_ = baro_it->second;
       optimization_.addBaroFactor(*split_it, noise_model_baro_height_,
-                                  noise_model_baro_height_bias_,
                                   &baro_residual);
       DopplerResidual baro_residual_msg;
       baro_residual_msg.header = msg->header;
       baro_residual_msg.residual = baro_residual[0];
       baro_residual_pub_.publish(baro_residual_msg);
+    } else {
+      LOG(W, "Failed to find baro measurement with stamp before or at "
+                 << msg->header.stamp << ". Skipping baro factor.");
     }
   }
 

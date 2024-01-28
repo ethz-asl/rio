@@ -10,7 +10,7 @@ State::State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
              const gtsam::Rot3& R_IB, const gtsam::Vector3& I_v_IB,
              const sensor_msgs::ImuConstPtr& imu,
              const gtsam::PreintegratedCombinedMeasurements& integrator,
-             const std::optional<gtsam::Vector1>& baro_height_bias)
+             const std::optional<double>& baro_height_bias)
     : odom_frame_id(odom_frame_id),
       I_p_IB(I_p_IB),
       R_IB(R_IB),
@@ -22,7 +22,7 @@ State::State(const std::string& odom_frame_id, const gtsam::Point3& I_p_IB,
 State::State(const std::string& odom_frame_id, const gtsam::Pose3& I_T_IB,
              const gtsam::Vector3& I_v_IB, const sensor_msgs::ImuConstPtr& imu,
              const gtsam::PreintegratedCombinedMeasurements& integrator,
-             const std::optional<gtsam::Vector1>& baro_height_bias)
+             const std::optional<double>& baro_height_bias)
     : State(odom_frame_id, I_T_IB.translation(), I_T_IB.rotation(), I_v_IB, imu,
             integrator, baro_height_bias) {}
 

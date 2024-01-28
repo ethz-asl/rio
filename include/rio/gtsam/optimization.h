@@ -37,8 +37,10 @@ class Optimization {
   void addBaroFactor(
       const Propagation& propagation_to_baro,
       const gtsam::SharedNoiseModel& noise_model_baro_height,
-      const gtsam::SharedNoiseModel& noise_model_baro_height_bias,
       gtsam::Vector1* baro_residual = nullptr);
+  void addBaroBiasFactor(
+      const Propagation& propagation_to_baro,
+      const gtsam::SharedNoiseModel& noise_model_baro_height_bias);
 
   inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
     smoother_ = smoother;
