@@ -17,7 +17,9 @@ using namespace gtsam;
 typedef BearingRange<Pose3, Point3> BearingRange3D;
 
 using gtsam::symbol_shorthand::B;
+using gtsam::symbol_shorthand::D;  // Baro height bias.
 using gtsam::symbol_shorthand::L;
+using gtsam::symbol_shorthand::P;  // Baro height.
 using gtsam::symbol_shorthand::V;
 using gtsam::symbol_shorthand::X;
 
@@ -53,6 +55,25 @@ void Optimization::addFactor<PriorFactor<imuBias::ConstantBias>>(
   new_timestamps_[B(idx)] = state->imu->header.stamp.toSec();
   new_graph_.add(PriorFactor<imuBias::ConstantBias>(B(idx), state->getBias(),
                                                     noise_model));
+}
+
+template <>
+void Optimization::addFactor<PriorFactor<Vector1>>(
+    const Propagation& propagation,
+    const gtsam::SharedNoiseModel& noise_model) {
+  if (!propagation.baro_height_.has_value()) {
+    LOG(I,
+        "Propagation has no baro height, skipping adding baro height bias "
+        "prior factor.");
+    return;
+  }
+  auto idx = propagation.getFirstStateIdx();
+  auto state = propagation.getFirstState();
+  new_values_.insert(D(idx), propagation.baro_height_.value());
+  new_timestamps_[D(idx)] = state->imu->header.stamp.toSec();
+  new_graph_.add(PriorFactor<Vector1>(
+      D(idx), (Vector1() << propagation.baro_height_.value()).finished(),
+      noise_model));
 }
 
 template <>
@@ -181,11 +202,13 @@ void Optimization::addPriorFactor(
     const Propagation& propagation,
     const gtsam::SharedNoiseModel& noise_model_I_T_IB,
     const gtsam::SharedNoiseModel& noise_model_I_v_IB,
-    const gtsam::SharedNoiseModel& noise_model_imu_bias) {
+    const gtsam::SharedNoiseModel& noise_model_imu_bias,
+    const gtsam::SharedNoiseModel& noise_model_baro_height_bias) {
   addFactor<PriorFactor<Pose3>>(propagation, noise_model_I_T_IB);
   addFactor<PriorFactor<Vector3>>(propagation, noise_model_I_v_IB);
   addFactor<PriorFactor<imuBias::ConstantBias>>(propagation,
                                                 noise_model_imu_bias);
+  addFactor<PriorFactor<Vector1>>(propagation, noise_model_baro_height_bias);
 }
 
 void Optimization::addRadarFactor(

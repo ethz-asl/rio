@@ -40,6 +40,7 @@ class Propagation {
   std::optional<std::vector<mav_sensors::Radar::CfarDetection>>
       cfar_detections_;
   std::optional<std::vector<Track::Ptr>> cfar_tracks_;
+  std::optional<double> baro_height_;
 
  private:
   // Vector of IMU measurements and preintegration up to this IMU.

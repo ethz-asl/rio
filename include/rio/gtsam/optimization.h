@@ -7,9 +7,9 @@
 #include <thread>
 #include <utility>
 
+#include <gtsam/nonlinear/FixedLagSmoother.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/FixedLagSmoother.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
 #include "rio/Timing.h"
@@ -27,12 +27,19 @@ class Optimization {
   void addPriorFactor(const Propagation& propagation,
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
                       const gtsam::SharedNoiseModel& noise_model_I_v_IB,
-                      const gtsam::SharedNoiseModel& noise_model_imu_bias);
+                      const gtsam::SharedNoiseModel& noise_model_imu_bias,
+                      const gtsam::SharedNoiseModel& noise_model_baro_height_bias);
   void addRadarFactor(const Propagation& propagation_to_radar,
                       const Propagation& propagation_from_radar,
                       const gtsam::SharedNoiseModel& noise_model_radar_doppler,
                       const gtsam::SharedNoiseModel& noise_model_radar_track,
                       std::vector<gtsam::Vector1>* doppler_residuals = nullptr);
+  void addBaroFactor(
+      const Propagation& propagation_to_baro,
+      const Propagation& propagation_from_baro,
+      const gtsam::SharedNoiseModel& noise_model_baro_height,
+      const gtsam::SharedNoiseModel& noise_model_baro_height_bias,
+      gtsam::Vector1* baro_residual = nullptr);
   inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
     smoother_ = smoother;
   }

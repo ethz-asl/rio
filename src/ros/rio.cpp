@@ -42,6 +42,8 @@ bool Rio::init() {
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
   doppler_residual_pub_ =
       nh_private_.advertise<rio::DopplerResidual>("doppler_residual", 100);
+  baro_residual_pub_ =
+      nh_private_.advertise<rio::DopplerResidual>("baro_residual", 100);
 
   // IMU integration
   PreintegratedCombinedMeasurements integrator;
@@ -68,12 +70,25 @@ bool Rio::init() {
   if (!loadPriorNoiseImuBias(nh_private_, &prior_noise_model_imu_bias_))
     return false;
 
+  // Prior noise baro height bias.
+  if (!loadPriorNoiseBaroHeightBias(nh_private_,
+                                    &prior_noise_model_baro_height_bias_))
+    return false;
+
   // Noise Radar doppler.
   if (!loadNoiseRadarRadialVelocity(nh_private_, &noise_model_radar_doppler_))
     return false;
 
   // Noise Radar track.
   if (!loadNoiseRadarTrack(nh_private_, &noise_model_radar_track_))
+    return false;
+
+  // Noise Baro height.
+  if (!loadNoiseBaroHeight(nh_private_, &noise_model_baro_height_))
+    return false;
+
+  // Noise Baro height bias.
+  if (!loadNoiseBaroHeightBias(nh_private_, &noise_model_baro_height_bias_))
     return false;
 
   // Radar tracker.
@@ -133,12 +148,20 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   if (initial_state_->imu == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
     return;
+  } else if (baro_active_ && !baro_height_bias_.has_value()) {
+    LOG_TIMED(W, 1.0,
+              "Baro height bias not initialized, skipping IMU integration.");
+    return;
   } else if (propagation_.empty()) {
     LOG(I, "Initializing states with initial state.");
     propagation_.emplace_back(initial_state_, idx_++);
+    if (baro_active_) {
+      propagation_.back().baro_height_ = baro_height_bias_.value();
+    }
     optimization_.addPriorFactor(propagation_.back(), prior_noise_model_I_T_IB_,
                                  prior_noise_model_I_v_IB_,
-                                 prior_noise_model_imu_bias_);
+                                 prior_noise_model_imu_bias_,
+                                 prior_noise_model_baro_height_bias_);
     return;
   }
 
@@ -237,6 +260,44 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     residual_msg.residual = residual[0];
     doppler_residual_pub_.publish(residual_msg);
   }
+}
+
+void Rio::pressureCallback(const sensor_msgs::FluidPressurePtr& msg) {
+  LOG_FIRST(I, 1, "Received first pressure measurement.");
+  if (!baro_active_) {
+    LOG(I, 1, "Baro not active, skipping pressure measurements.");
+    return;
+  }
+  if (!baro_height_bias_.has_value()) {
+    baro_height_bias_ = computeBaroHeight(msg->fluid_pressure);
+    LOG(I, 1,
+        "Initializing baro height to " << baro_height_bias_.value() << "m");
+    return;
+  }
+  if (propagation_.empty()) {
+    LOG(W, "No propagation, skipping pressure measurement.");
+    return;
+  }
+
+  auto split_it = splitPropagation(msg->header.stamp);
+  if (split_it == propagation_.end()) {
+    LOG(W, "Failed to split propagation, skipping pressure measurement.");
+    LOG(W, "Split time: " << msg->header.stamp);
+    LOG(W, "Last IMU time: "
+               << propagation_.back().getLatestState()->imu->header.stamp);
+    return;
+  }
+
+  split_it->baro_height_ = computeBaroHeight(msg->fluid_pressure);
+  Vector1 baro_residual;
+  // optimization_.addBaroFactor(*split_it, *std::next(split_it),
+  //                             noise_model_baro_height_,
+  //                             noise_model_baro_height_bias_, &baro_residual);
+
+  DopplerResidual residual_msg;
+  residual_msg.header = msg->header;
+  residual_msg.residual = baro_residual[0];
+  baro_residual_pub_.publish(residual_msg);
 }
 
 std::deque<Propagation>::iterator Rio::splitPropagation(const ros::Time& t) {

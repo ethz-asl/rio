@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <optional>
 #include <vector>
 
 #include <gtsam/linear/NoiseModel.h>
@@ -8,6 +9,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/FluidPressure.h>
 #include <std_msgs/Header.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -38,6 +40,7 @@ class Rio {
   void imuRawCallback(const sensor_msgs::ImuConstPtr& msg);
   void imuFilterCallback(const sensor_msgs::ImuConstPtr& msg);
   void cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg);
+  void pressureCallback(const sensor_msgs::FluidPressurePtr& msg);
 
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
@@ -45,6 +48,7 @@ class Rio {
   ros::Publisher acc_bias_pub_;
   ros::Publisher gyro_bias_pub_;
   ros::Publisher doppler_residual_pub_;
+  ros::Publisher baro_residual_pub_;
 
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
@@ -58,8 +62,11 @@ class Rio {
   gtsam::SharedNoiseModel prior_noise_model_I_T_IB_;
   gtsam::SharedNoiseModel prior_noise_model_I_v_IB_;
   gtsam::SharedNoiseModel prior_noise_model_imu_bias_;
+  gtsam::SharedNoiseModel prior_noise_model_baro_height_bias_;
   gtsam::SharedNoiseModel noise_model_radar_doppler_;
   gtsam::SharedNoiseModel noise_model_radar_track_;
+  gtsam::SharedNoiseModel noise_model_baro_height_;
+  gtsam::SharedNoiseModel noise_model_baro_height_bias_;
   uint64_t idx_{0};
 
   tf2_ros::Buffer tf_buffer_;
@@ -67,5 +74,8 @@ class Rio {
   tf2_ros::TransformBroadcaster tf_broadcaster_;
 
   Tracker tracker_;
+
+  bool baro_active_;
+  std::optional<double> baro_height_bias_;
 };
 }  // namespace rio
