@@ -451,8 +451,6 @@ void Optimization::solveThreaded(
             new_values.at<double>(P(propagation.getFirstStateIdx()));
         initial_state.baro_height_bias = baro_bias;
       } catch (const std::exception& e) {
-        // TODO(rikba): Remove this warning.
-        LOG(I, "No baro bias at idx: " << propagation.getFirstStateIdx());
       }
 
       if (!propagation.repropagate(initial_state)) {
