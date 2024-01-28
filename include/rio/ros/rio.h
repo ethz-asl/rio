@@ -75,7 +75,7 @@ class Rio {
 
   Tracker tracker_;
 
-  bool baro_active_;
+  bool baro_active_ {false};
   std::optional<double> baro_height_bias_;
 };
 }  // namespace rio

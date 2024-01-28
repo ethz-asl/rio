@@ -83,6 +83,8 @@ bool Rio::init() {
   if (!loadNoiseRadarTrack(nh_private_, &noise_model_radar_track_))
     return false;
 
+  if (!loadParam<bool>(nh_private_, "baro/active", &baro_active_)) return false;
+
   // Noise Baro height.
   if (!loadNoiseBaroHeight(nh_private_, &noise_model_baro_height_))
     return false;
