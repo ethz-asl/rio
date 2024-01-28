@@ -42,6 +42,8 @@ bool Rio::init() {
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_acc", 100);
   gyro_bias_pub_ =
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
+  baro_bias_pub_ = nh_private_.advertise<geometry_msgs::Vector3Stamped>(
+      "bias_baro_height", 100);
   doppler_residual_pub_ =
       nh_private_.advertise<rio::DopplerResidual>("doppler_residual", 100);
   baro_residual_pub_ =
@@ -195,6 +197,14 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
                bias_gyro.vector);
     bias_gyro.header = propagation_.back().getLatestState()->imu->header;
     gyro_bias_pub_.publish(bias_gyro);
+
+    if (propagation_.back().getLatestState()->baro_height_bias.has_value()) {
+      geometry_msgs::Vector3Stamped baro_bias;
+      baro_bias.vector.z =
+          propagation_.back().getLatestState()->baro_height_bias.value();
+      baro_bias.header = propagation_.back().getLatestState()->imu->header;
+      baro_bias_pub_.publish(baro_bias);
+    }
   }
 }
 
@@ -277,7 +287,7 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
       }
     }
     if (baro_it != baro_height_bias_history_.end()) {
-      split_it->baro_height_ = baro_it->second;
+      split_it->baro_height_ = computeBaroHeight(baro_it->second);
       optimization_.addBaroFactor(*split_it, noise_model_baro_height_,
                                   &baro_residual);
       DopplerResidual baro_residual_msg;
@@ -303,13 +313,12 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
 void Rio::pressureCallback(const sensor_msgs::FluidPressurePtr& msg) {
   LOG_FIRST(I, 1, "Received first pressure measurement.");
   if (!baro_active_) {
-    LOG(I, 1, "Baro not active, skipping pressure measurements.");
+    LOG_FIRST(I, 1, "Baro not active, skipping pressure measurements.");
     return;
   }
   if (!baro_height_bias_.has_value()) {
     baro_height_bias_ = computeBaroHeight(msg->fluid_pressure);
-    LOG(I, 1,
-        "Initializing baro height to " << baro_height_bias_.value() << "m");
+    LOG(I, "Initializing baro height to " << baro_height_bias_.value() << "m");
     return;
   }
   if (propagation_.empty()) {

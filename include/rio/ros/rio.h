@@ -48,6 +48,7 @@ class Rio {
   ros::Publisher timing_pub_;
   ros::Publisher acc_bias_pub_;
   ros::Publisher gyro_bias_pub_;
+  ros::Publisher baro_bias_pub_;
   ros::Publisher doppler_residual_pub_;
   ros::Publisher baro_residual_pub_;
 
