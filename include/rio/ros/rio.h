@@ -37,6 +37,7 @@ class Rio {
   ros::Subscriber imu_raw_sub_;
   ros::Subscriber imu_filter_sub_;
   ros::Subscriber radar_cfar_sub_;
+  ros::Subscriber baro_sub_;
   void imuRawCallback(const sensor_msgs::ImuConstPtr& msg);
   void imuFilterCallback(const sensor_msgs::ImuConstPtr& msg);
   void cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg);

@@ -29,6 +29,8 @@ bool Rio::init() {
       nh_.subscribe("imu/data", queue_size, &Rio::imuFilterCallback, this);
   radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
                                   &Rio::cfarDetectionsCallback, this);
+  baro_sub_ =
+      nh_.subscribe("baro/pressure", queue_size, &Rio::pressureCallback, this);
 
   // Publishers
   odom_navigation_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
@@ -281,25 +283,25 @@ void Rio::pressureCallback(const sensor_msgs::FluidPressurePtr& msg) {
     return;
   }
 
-  auto split_it = splitPropagation(msg->header.stamp);
-  if (split_it == propagation_.end()) {
-    LOG(W, "Failed to split propagation, skipping pressure measurement.");
-    LOG(W, "Split time: " << msg->header.stamp);
-    LOG(W, "Last IMU time: "
-               << propagation_.back().getLatestState()->imu->header.stamp);
-    return;
-  }
+  // auto split_it = splitPropagation(msg->header.stamp);
+  // if (split_it == propagation_.end()) {
+  //   LOG(W, "Failed to split propagation, skipping pressure measurement.");
+  //   LOG(W, "Split time: " << msg->header.stamp);
+  //   LOG(W, "Last IMU time: "
+  //              << propagation_.back().getLatestState()->imu->header.stamp);
+  //   return;
+  // }
 
-  split_it->baro_height_ = computeBaroHeight(msg->fluid_pressure);
-  Vector1 baro_residual;
+  // split_it->baro_height_ = computeBaroHeight(msg->fluid_pressure);
+  // Vector1 baro_residual;
   // optimization_.addBaroFactor(*split_it, *std::next(split_it),
   //                             noise_model_baro_height_,
   //                             noise_model_baro_height_bias_, &baro_residual);
 
-  DopplerResidual residual_msg;
-  residual_msg.header = msg->header;
-  residual_msg.residual = baro_residual[0];
-  baro_residual_pub_.publish(residual_msg);
+  // DopplerResidual residual_msg;
+  // residual_msg.header = msg->header;
+  // residual_msg.residual = baro_residual[0];
+  // baro_residual_pub_.publish(residual_msg);
 }
 
 std::deque<Propagation>::iterator Rio::splitPropagation(const ros::Time& t) {

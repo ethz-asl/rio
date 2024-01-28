@@ -69,7 +69,8 @@ void Optimization::addFactor<PriorFactor<Vector1>>(
   }
   auto idx = propagation.getFirstStateIdx();
   auto state = propagation.getFirstState();
-  new_values_.insert(D(idx), propagation.baro_height_.value());
+  new_values_.insert(
+      D(idx), (Vector1() << propagation.baro_height_.value()).finished());
   new_timestamps_[D(idx)] = state->imu->header.stamp.toSec();
   new_graph_.add(PriorFactor<Vector1>(
       D(idx), (Vector1() << propagation.baro_height_.value()).finished(),
