@@ -13,8 +13,8 @@ noise:
         track: [0.1, 0.1, 0.1] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
         loss: 5 # 0: quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
     baro:
-        height: 0.78 # RMS/sqrt(dt) (BMP390 0.11m sigma, dt=0.02)
-        loss: 0 # 0: quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
+        height: 0.2 # RMS/sqrt(dt) (BMP390 0.11m sigma, dt=0.02)
+        loss: 1 # 0: quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
 radar:
     track_age: 10 # track for n frames, i.e., 0 = only current frame, 1 = current and previous frame, etc.
 
