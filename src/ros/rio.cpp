@@ -264,6 +264,11 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
         baro_it = baro_it_prev;
       }
     }
+    if (baro_it == baro_height_bias_history_.end() &&
+        baro_height_bias_history_.back().first >
+            split_it->getFirstState()->imu->header.stamp.toSec()) {
+      baro_it = std::prev(baro_it);
+    }
     if (baro_it != baro_height_bias_history_.end()) {
       split_it->baro_height_ = computeBaroHeight(baro_it->second);
       optimization_.addBaroFactor(*split_it, noise_model_baro_height_,
@@ -326,7 +331,8 @@ void Rio::pressureCallback(const sensor_msgs::FluidPressurePtr& msg) {
   // Vector1 baro_residual;
   // optimization_.addBaroFactor(*split_it, *std::next(split_it),
   //                             noise_model_baro_height_,
-  //                             noise_model_baro_height_bias_, &baro_residual);
+  //                             noise_model_baro_height_bias_,
+  //                             &baro_residual);
 
   // DopplerResidual residual_msg;
   // residual_msg.header = msg->header;
