@@ -27,8 +27,8 @@ imu:
     bias_acc_int_sigma: 1.0e-6
     bias_omega_int_sigma: 1.0e-6
 
-    acc_sigma: 1.0e-1
-    gyro_sigma: 1.0e-2
+    acc_sigma: 4.0e-1
+    gyro_sigma: 2.0e-2
     integration_sigma: 1.0e-6
 
     initial_bias_acc: [-0.15, -0.21, 0.15]
