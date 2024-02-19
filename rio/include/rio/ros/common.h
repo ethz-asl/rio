@@ -27,7 +27,7 @@ inline bool loadParam<gtsam::Vector3>(const ros::NodeHandle& nh,
                                       gtsam::Vector3* value) {
   std::vector<double> vec;
   if (!loadParam<std::vector<double>>(nh, name, &vec)) return false;
-  if (vec.size() != value->size()) {
+  if (static_cast<long int>(vec.size()) != value->size()) {
     LOG(F, "Expected " << value->size() << " elements for " << name.c_str()
                        << ", got " << vec.size() << ".");
     return false;
@@ -42,7 +42,7 @@ inline bool loadParam<gtsam::Vector4>(const ros::NodeHandle& nh,
                                       gtsam::Vector4* value) {
   std::vector<double> vec;
   if (!loadParam<std::vector<double>>(nh, name, &vec)) return false;
-  if (vec.size() != value->size()) {
+  if (static_cast<long int>(vec.size()) != value->size()) {
     LOG(F, "Expected " << value->size() << " elements for " << name.c_str()
                        << ", got " << vec.size() << ".");
     return false;
@@ -84,6 +84,11 @@ bool loadNoiseLoopClosureT(const ros::NodeHandle& nh,
 
 bool loadNoiseZeroVelocityPrior(const ros::NodeHandle& nh,
                                 gtsam::SharedNoiseModel* noise);
+
+bool loadNoiseBaroHeight(const ros::NodeHandle& nh,
+                         gtsam::SharedNoiseModel* noise);
+
+double computeBaroHeight(double pressure);
 
 std::vector<mav_sensors::Radar::CfarDetection> parseRadarMsg(
     const sensor_msgs::PointCloud2Ptr& msg);

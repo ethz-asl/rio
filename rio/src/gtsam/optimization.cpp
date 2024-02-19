@@ -106,7 +106,7 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
       x.insert(B(idx), state.getBias());
       doppler_residuals->emplace_back(factor.unwhitenedError(x));
     }
-  }  
+  }
 }
 
 template <>
@@ -198,7 +198,28 @@ void Optimization::addRadarFactor(
   tictoc_finishedIteration_();
   tictoc_getNode(addRadarFactor, addRadarFactor);
   if (timing_.find("optimize") != timing_.end())
-    updateTiming(addRadarFactor, "addRadarFactor", timing_["optimize"].header.stamp);
+    updateTiming(addRadarFactor, "addRadarFactor",
+                 timing_["optimize"].header.stamp);
+}
+
+void Optimization::addBaroFactor(
+    const Propagation& propagation, const double baro_height,
+    const double baro_height_offset,
+    const gtsam::SharedNoiseModel& noise_model_baro_height,
+    gtsam::Vector1* baro_residual) {
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
+  auto h = dot(Point3_(Point3(0, 0, 1)), translation(Pose3_(X(idx)))) +
+           Double_(baro_height_offset);
+
+  auto factor = ExpressionFactor(noise_model_baro_height, baro_height, h);
+  new_graph_.add(factor);
+
+  if (baro_residual) {
+    Values x;
+    x.insert(X(idx), state.getPose());
+    *baro_residual = factor.unwhitenedError(x);
+  }
 }
 
 bool Optimization::solve(const LinkedPropagations& linked_propagations) {
@@ -280,25 +301,25 @@ void Optimization::solveThreaded(
           smoother_.timestamps().begin(), smoother_.timestamps().end(),
           [](const auto& a, const auto& b) { return a.second < b.second; })
           ->second;
-  
   tictoc_finishedIteration_();
   tictoc_getNode(optimize, optimize);
   updateTiming(optimize, "optimize", timing_["optimize"].header.stamp);
   tictoc_getNode(calculateEstimate, calculateEstimate);
-  updateTiming(calculateEstimate, "calculateEstimate", timing_["optimize"].header.stamp);
+  updateTiming(calculateEstimate, "calculateEstimate",
+               timing_["optimize"].header.stamp);
 
   new_result_.store(true);
   running_.store(false);
 }
 
-void Optimization::resetSmoother(){
-    ISAM2Params parameters = smoother_.params();
-    double smoother_lag = smoother_.smootherLag();
-    smoother_ = IncrementalFixedLagSmoother(smoother_lag, parameters);
-    std::scoped_lock lock(values_mutex_);
-    optimized_values_ = gtsam::Values();
-    running_.store(false);
-    smoother_failed_.store(true);
+void Optimization::resetSmoother() {
+  ISAM2Params parameters = smoother_.params();
+  double smoother_lag = smoother_.smootherLag();
+  smoother_ = IncrementalFixedLagSmoother(smoother_lag, parameters);
+  std::scoped_lock lock(values_mutex_);
+  optimized_values_ = gtsam::Values();
+  running_.store(false);
+  smoother_failed_.store(true);
 }
 
 void Optimization::updateTiming(

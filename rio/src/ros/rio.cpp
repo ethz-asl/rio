@@ -30,6 +30,12 @@ bool Rio::init() {
   radar_cfar_sub_ = nh_.subscribe("radar/cfar_detections", queue_size,
                                   &Rio::cfarDetectionsCallback, this);
 
+  if (!loadParam<bool>(nh_private_, "baro/active", &baro_active_)) return false;
+  if (baro_active_) {
+    baro_sub_ =
+        nh_.subscribe("baro/pressure", queue_size, &Rio::baroCallback, this);
+  }
+
   // Publishers
   odom_navigation_pub_ = nh_private_.advertise<nav_msgs::Odometry>(
       "odometry_navigation", queue_size);
@@ -42,6 +48,8 @@ bool Rio::init() {
       nh_private_.advertise<geometry_msgs::Vector3Stamped>("bias_gyro", 100);
   doppler_residual_pub_ =
       nh_private_.advertise<rio::DopplerResidual>("doppler_residual", 100);
+  baro_residual_pub_ =
+      nh_private_.advertise<rio::DopplerResidual>("baro_residual", 100);
 
   // IMU integration
   PreintegratedCombinedMeasurements integrator;
@@ -80,6 +88,9 @@ bool Rio::init() {
   int track_age;
   if (!loadParam<int>(nh_private_, "radar/track_age", &track_age)) return false;
   tracker_ = Tracker(track_age);
+
+  if (!loadNoiseBaroHeight(nh_private_, &noise_model_baro_height_))
+    return false;
 
   // iSAM2 smoother.
   ISAM2Params parameters;
@@ -125,6 +136,16 @@ bool Rio::init() {
   optimization_.setSmoother({smoother_lag, parameters});
 
   return true;
+}
+
+void Rio::baroCallback(const sensor_msgs::FluidPressureConstPtr& msg) {
+  LOG_FIRST(I, 1, "Received first barometer message.");
+  baro_buffer_.push_back(
+      std::make_pair(msg->header.stamp.toSec(), msg->fluid_pressure));
+  while (!baro_buffer_.empty() &&
+         baro_buffer_.front().first < optimization_.cutoff_time) {
+    baro_buffer_.pop_front();
+  }
 }
 
 void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
@@ -213,9 +234,11 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
 
 void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
   gttic_(cfarDetectionsCallback);
-  LOG_FIRST(I, 1, "Received first CFAR detections.");
-  if (!linked_propagations_.head) {
-    LOG(W, "No propagation, skipping CFAR detections.");
+  if (msg->header.stamp.toSec() == 0) {
+    LOG(W, "Received CFAR detections with t=0, skipping...");
+    return;
+  }
+  if (initial_state_->imu == nullptr) {
     return;
   }
   Pose3 B_T_BR;
@@ -237,7 +260,8 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
   auto propagation_split =
       linked_propagations_.getSplitPropagation(msg->header.stamp);
   if (!propagation_split) {
-    LOG(W, "Failed to split propagation, skipping CFAR detections.");
+    LOG(W, "Failed to split propagation, skipping CFAR detections. t_msg: "
+               << msg->header.stamp.toSec());
     return;
   }
 
@@ -266,6 +290,57 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
   optimization_.addRadarFactor(*new_propagation, *propagation_split,
                                noise_model_radar_doppler_,
                                noise_model_radar_track_, &doppler_residuals);
+
+  Vector1 baro_residual;
+  if (baro_active_ && !baro_buffer_.empty()) {
+    if (baro_height_offset_ == 0.0) {
+      double baro_sum = std::accumulate(
+          baro_buffer_.begin(), baro_buffer_.end(), 0.0,
+          [](double accumulator, const std::pair<double, double>& entry) {
+            return accumulator + entry.second;
+          });
+      baro_height_offset_ = computeBaroHeight(
+          baro_sum / static_cast<double>(baro_buffer_.size()));
+      LOG(I, "Baro height offset: " << baro_height_offset_);
+    }
+
+    // get latest baro measurement which is smaller than the radar measurement
+    // start from back
+    auto baro_it = std::lower_bound(
+        baro_buffer_.rbegin(), baro_buffer_.rend(),
+        std::make_pair(msg->header.stamp.toSec(), 0.0),
+        [](const std::pair<double, double>& a,
+           const std::pair<double, double>& b) { return a.first > b.first; });
+
+    if (baro_it == baro_buffer_.rend()) {
+      baro_it = std::prev(baro_it);
+    }
+
+    if (std::prev(baro_it) != baro_buffer_.rbegin() - 1) {
+      auto baro_it_prev = std::prev(baro_it);
+      if (baro_it_prev->first - msg->header.stamp.toSec() <
+          msg->header.stamp.toSec() - baro_it->first) {
+        baro_it = baro_it_prev;
+      }
+    } else if (baro_it->first <
+               new_propagation->prior->state_.imu->header.stamp.toSec()) {
+      LOG(W, "No close baro measurement found, skipping baro factor.");
+      baro_it == baro_buffer_.rend();
+    }
+    if (baro_it != baro_buffer_.rend()) {
+      auto baro_height = computeBaroHeight(baro_it->second);
+      optimization_.addBaroFactor(*new_propagation, baro_height,
+                                  baro_height_offset_, noise_model_baro_height_,
+                                  &baro_residual);
+      DopplerResidual baro_residual_msg;
+      baro_residual_msg.header = msg->header;
+      baro_residual_msg.residual = baro_residual[0];
+      baro_residual_pub_.publish(baro_residual_msg);
+    } else {
+      LOG(W, "Failed to find baro measurement with stamp before or at "
+                 << msg->header.stamp << ". Skipping baro factor.");
+    }
+  }
 
   gttoc_(cfarDetectionsCallback);
   tictoc_finishedIteration_();

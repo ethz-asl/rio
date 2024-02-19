@@ -38,12 +38,16 @@ class Optimization {
   inline void setSmoother(const gtsam::IncrementalFixedLagSmoother& smoother) {
     smoother_ = smoother;
   }
+  void addBaroFactor(const Propagation& propagation, const double baro_height,
+                     const double baro_height_offset,
+                     const gtsam::SharedNoiseModel& noise_model_baro_height,
+                     gtsam::Vector1* baro_residual);
 
   std::mutex values_mutex_;
   gtsam::Values optimized_values_;
   std::atomic<bool> smoother_failed_{false};
 
-  double cutoff_time;
+  double cutoff_time{0.0};
   std::map<std::string, Timing> timing_;
   void updateTiming(
       const std::shared_ptr<const ::gtsam::internal::TimingOutline>& variable,

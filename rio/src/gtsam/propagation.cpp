@@ -38,7 +38,7 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
   auto split_iter =
       std::lower_bound(imu_measurements_.begin(), imu_measurements_.end(), t,
                        [](const sensor_msgs::ImuConstPtr& imu, const auto& t) {
-                         return imu->header.stamp < t;
+                         return imu->header.stamp <= t;
                        });
 
   propagation_to_t->imu_measurements_.insert(

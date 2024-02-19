@@ -85,7 +85,7 @@
             <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
         </node-->
 
-        <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.114043 0.00856102 -0.0240718 0.699648  0.692707 -0.127326 -0.115103 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+        <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.122 0.000 -0.025 0.6762096 0.6762096 -0.206738  -0.206738 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
     </group>
 
     <group if="$(arg imu_filter_on)">

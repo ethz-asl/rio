@@ -6,6 +6,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <mav_sensors_drivers/sensor_types/Radar.h>
 #include <ros/ros.h>
+#include <sensor_msgs/FluidPressure.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
@@ -35,9 +36,11 @@ class Rio {
   ros::Subscriber imu_raw_sub_;
   ros::Subscriber imu_filter_sub_;
   ros::Subscriber radar_cfar_sub_;
+  ros::Subscriber baro_sub_;
   void imuRawCallback(const sensor_msgs::ImuConstPtr& msg);
   void imuFilterCallback(const sensor_msgs::ImuConstPtr& msg);
   void cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg);
+  void baroCallback(const sensor_msgs::FluidPressureConstPtr& msg);
 
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
@@ -45,6 +48,7 @@ class Rio {
   ros::Publisher acc_bias_pub_;
   ros::Publisher gyro_bias_pub_;
   ros::Publisher doppler_residual_pub_;
+  ros::Publisher baro_residual_pub_;
 
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
@@ -54,6 +58,10 @@ class Rio {
 
   LinkedPropagations linked_propagations_;
 
+  bool baro_active_{false};
+  double baro_height_offset_{0.0};
+  std::deque<std::pair<double, double>> baro_buffer_;
+
   // std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
 
   Optimization optimization_;
@@ -62,6 +70,7 @@ class Rio {
   gtsam::SharedNoiseModel prior_noise_model_imu_bias_;
   gtsam::SharedNoiseModel noise_model_radar_doppler_;
   gtsam::SharedNoiseModel noise_model_radar_track_;
+  gtsam::SharedNoiseModel noise_model_baro_height_;
   uint64_t idx_{0};
 
   tf2_ros::Buffer tf_buffer_;

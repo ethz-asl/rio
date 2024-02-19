@@ -209,6 +209,12 @@ std::vector<mav_sensors::Radar::CfarDetection> rio::parseRadarMsg(
   return detections;
 }
 
+double rio::computeBaroHeight(double pressure) {
+  // https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
+  return (288.08 * std::pow(pressure / 101290.0, 1.0 / 5.256) - 273.1 - 15.04) /
+         (-0.00649);
+}
+
 bool rio::loadNoiseLoopClosureT(const ros::NodeHandle& nh,
                                 gtsam::SharedNoiseModel* noise) {
   assert(noise);
@@ -235,5 +241,82 @@ bool rio::loadNoiseZeroVelocityPrior(const ros::NodeHandle& nh,
   *noise = noiseModel::Isotropic::Sigma(3, noise_zero_velocity_prior);
   std::dynamic_pointer_cast<noiseModel::Isotropic>(*noise)->print(
       "Noise model zero velocity prior: ");
+  return true;
+}
+
+bool rio::loadNoiseBaroHeight(const ros::NodeHandle& nh,
+                              gtsam::SharedNoiseModel* noise) {
+  assert(noise);
+  double noise_baro_height = 0.0;
+  if (!loadParam<double>(nh, "noise/baro/height", &noise_baro_height))
+    return false;
+  auto baro_gaussian_noise =
+      noiseModel::Diagonal::Sigmas((Vector1() << noise_baro_height).finished());
+  baro_gaussian_noise->print("baro_height_gaussian_noise: ");
+  int baro_height_loss = 0;
+  if (!loadParam<int>(nh, "noise/baro/loss", &baro_height_loss)) return false;
+  // Select robust loss function. Spread is chosen by c times the standard
+  // deviation. c according to Zhang 2012, Parameter Estimation Techniques: A
+  // Tutorial with Application to Conic Fitting
+  switch (baro_height_loss) {
+    case 0: {
+      *noise = baro_gaussian_noise;
+      std::dynamic_pointer_cast<noiseModel::Diagonal>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    case 1: {
+      const double c = 1.3998;
+      *noise = noiseModel::Robust::Create(
+          noiseModel::mEstimator::Fair::Create(c), baro_gaussian_noise);
+      std::dynamic_pointer_cast<noiseModel::Robust>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    case 2: {
+      const double k = 1.345;
+      *noise = noiseModel::Robust::Create(
+          noiseModel::mEstimator::Huber::Create(k), baro_gaussian_noise);
+      std::dynamic_pointer_cast<noiseModel::Robust>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    case 3: {
+      const double c = 2.3849;
+      *noise = noiseModel::Robust::Create(
+          noiseModel::mEstimator::Cauchy::Create(c), baro_gaussian_noise);
+      std::dynamic_pointer_cast<noiseModel::Robust>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    case 4: {
+      const double c = 1.0;
+      *noise = noiseModel::Robust::Create(
+          noiseModel::mEstimator::GemanMcClure::Create(c), baro_gaussian_noise);
+      std::dynamic_pointer_cast<noiseModel::Robust>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    case 5: {
+      const double c = 2.9846;
+      *noise = noiseModel::Robust::Create(
+          noiseModel::mEstimator::Welsch::Create(c), baro_gaussian_noise);
+      std::dynamic_pointer_cast<noiseModel::Robust>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    case 6: {
+      const double c = 4.6851;
+      *noise = noiseModel::Robust::Create(
+          noiseModel::mEstimator::Tukey::Create(c), baro_gaussian_noise);
+      std::dynamic_pointer_cast<noiseModel::Robust>(*noise)->print(
+          "Noise model baro height: ");
+      break;
+    }
+    default: {
+      LOG(F, "Unknown baro height loss function: " << baro_gaussian_noise);
+      return false;
+    }
+  }
   return true;
 }
