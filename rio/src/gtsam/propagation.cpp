@@ -150,3 +150,54 @@ void Propagation::updateState(gtsam::Values& values) {
     LOG(W, "Could not update state: " << e.what());
   }
 }
+
+Propagation* LinkedPropagations::getSplitPropagation(ros::Time t) {
+  Propagation* current = head;
+  while (current->prior) {
+    if (current->prior->state_.imu->header.stamp < t) {
+      return current;
+    }
+    current = current->prior;
+  }
+  return nullptr;
+}
+
+bool LinkedPropagations::insertPrior(Propagation* propagation_new,
+                                     Propagation* propagation_ref, ros::Time t,
+                                     uint64_t& idx) {
+  propagation_new->prior = propagation_ref->prior;
+  propagation_ref->prior = propagation_new;
+  return propagation_ref->split(t, &idx, propagation_new);
+}
+
+void LinkedPropagations::remove(double t) {
+  Propagation* current = head;
+  while (current->prior) {
+    if (current->prior->state_.imu->header.stamp.toSec() < t) {
+      break;
+    }
+    current = current->prior;
+  }
+
+  // ensure that head always has an existing prior
+  // except if t is set to infinity
+  if (current == head && t != std::numeric_limits<double>::infinity()) {
+    current = head->prior;
+  }
+
+  if (current->prior) {
+    auto to_delete = current->prior;
+    current->prior = nullptr;
+    Propagation* priorProp = nullptr;
+    while (to_delete) {
+      priorProp = to_delete->prior;
+      delete to_delete;
+      to_delete = priorProp;
+    }
+  }
+
+  if (t == std::numeric_limits<double>::infinity()) {
+    delete head;
+    head = nullptr;
+  }
+}

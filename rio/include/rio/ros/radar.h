@@ -18,5 +18,6 @@ class Radar : public BaseSensor {
  public:
   Radar(const ros::NodeHandle& nh_private);
   ~Radar();
+  bool publish_least_squares_velocity_{false};
 };
 }  // namespace rio

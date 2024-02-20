@@ -24,6 +24,7 @@
     <arg name="radar_trigger_delay" default="500" />
     <arg name="radar_trigger_gpio" default="443" />
     <arg name="radar_trigger_gpio_name" default="PR.00" />
+    <arg name="radar_pub_least_squares" default="true" />
 
     <arg name="rio_on" default="true" />
     <arg name="rio_queue_size" default="1" />
@@ -69,6 +70,7 @@
             <param name="trigger_delay" type="string" value="$(arg radar_trigger_delay)"/>
             <param name="trigger_gpio" type="string" value="$(arg radar_trigger_gpio)"/>
             <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
+            <param name="pub_least_squares" type="string" value="$(arg radar_pub_least_squares)"/>
         </node>
     </group>
 
@@ -117,7 +119,7 @@
           <remap from="image_mono" to="$(arg cam_name)/image_raw"/>
           <remap from="image_rect" to="$(arg cam_name)/image_rect"/>
         </node>
-        <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.5 0.5 0.5 -0.5 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
+        <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.0 0.7071068 0.7071068 0.0 '$(arg radar_frame_id)' '$(arg cam_frame_id)'" />
     </group>
 
     <group if="$(arg visualize)">

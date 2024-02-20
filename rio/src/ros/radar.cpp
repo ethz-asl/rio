@@ -46,6 +46,10 @@ bool Radar::openSensor() {
     return false;
   }
 
+  if (!nh_private_.getParam("pub_least_squares",
+                            publish_least_squares_velocity_)) {
+    LOG(I, "Failed to read pub least squares boolean, defaulting to false.");
+  }
   LOG(I, "Opening radar on path_cfg: " << path_cfg.c_str()
                                        << " path_data: " << path_data.c_str());
 
@@ -190,16 +194,19 @@ void Radar::readSensor() {
 
   // RANSAC least squares fit to estimate linear velocity.
   Eigen::Vector3d velocity;
-  if (rio::leastSquares(std::get<ms::Radar>(measurement), &velocity)) {
-    LOG_FIRST(I, 1, "Publishing first radar least squares velocity estimate.");
-    // Publish least squares velocity estimate.
-    geometry_msgs::Vector3Stamped msg_velocity;
-    msg_velocity.header.stamp =
-        rio::toRosTime(std::get<ms::Radar>(measurement).unix_stamp_ns);
-    msg_velocity.header.frame_id = frame_id_;
-    tf2::toMsg(velocity, msg_velocity.vector);
-    ls_vel_pub_.publish(msg_velocity);
-  } else {
-    LOG(D, "Least squares failed.");
+  if (publish_least_squares_velocity_) {
+    if (rio::leastSquares(std::get<ms::Radar>(measurement), &velocity)) {
+      LOG_FIRST(I, 1,
+                "Publishing first radar least squares velocity estimate.");
+      // Publish least squares velocity estimate.
+      geometry_msgs::Vector3Stamped msg_velocity;
+      msg_velocity.header.stamp =
+          rio::toRosTime(std::get<ms::Radar>(measurement).unix_stamp_ns);
+      msg_velocity.header.frame_id = frame_id_;
+      tf2::toMsg(velocity, msg_velocity.vector);
+      ls_vel_pub_.publish(msg_velocity);
+    } else {
+      LOG(D, "Least squares failed.");
+    }
   }
 }
