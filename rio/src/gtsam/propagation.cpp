@@ -18,6 +18,11 @@ bool Propagation::addImuMeasurement(const sensor_msgs::Imu& msg) {
 bool Propagation::addImuMeasurement(const sensor_msgs::ImuConstPtr& msg) {
   auto dt = (msg->header.stamp - state_.imu->header.stamp).toSec();
   if (dt < 0) {
+    if (prior->imu_measurements_.back()->header.stamp.toSec() >
+        msg->header.stamp.toSec()) {
+      prior->imu_measurements_.push_back(msg);
+      return true;
+    }
     LOG(W, "Negative dt, skipping IMU integration.");
     return false;
   }
