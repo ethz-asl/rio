@@ -291,6 +291,12 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
                                noise_model_radar_doppler_,
                                noise_model_radar_track_, &doppler_residuals);
 
+  if (new_propagation->graph_idx_ < 30) {
+    optimization_.addPriorFactor(
+        *new_propagation, *initial_state_, prior_noise_model_I_T_IB_,
+        prior_noise_model_I_v_IB_);
+  }
+
   Vector1 baro_residual;
   if (baro_active_ && !baro_buffer_.empty()) {
     if (baro_height_offset_ == 0.0) {

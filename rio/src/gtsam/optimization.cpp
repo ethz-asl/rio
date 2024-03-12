@@ -75,6 +75,7 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
   auto state = propagation.state_;
   Vector3 B_omega_IB;
   tf2::fromMsg(state.imu->angular_velocity, B_omega_IB);
+  double doppler_sum = 0;
   for (const auto& detection : propagation.cfar_detections_.value()) {
     // See https://dongjing3309.github.io/files/gtsam-tutorial.pdf
     auto T_IB = Pose3_(X(idx));
@@ -106,6 +107,16 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
       x.insert(B(idx), state.getBias());
       doppler_residuals->emplace_back(factor.unwhitenedError(x));
     }
+    doppler_sum += abs(static_cast<double>(detection.velocity));
+  }
+
+  if (doppler_sum == 0 && state.I_v_IB.norm() < 0.15) {
+    // TODO: put this into a yaml file
+    auto nm = noiseModel::Diagonal::Sigmas(Vector3(0.03, 0.03, 0.03));
+    new_graph_.add(PriorFactor<Vector3>(V(idx), Vector3(0, 0, 0), nm));
+  } else if (doppler_sum == 0) {
+    LOG(W, "zero doppler sum, but velocity is not zero: " << state.I_v_IB.norm()
+                                                          << " m/s");
   }
 }
 
@@ -158,6 +169,18 @@ void Optimization::addPriorFactor(
   addFactor<PriorFactor<Vector3>>(propagation, noise_model_I_v_IB);
   addFactor<PriorFactor<imuBias::ConstantBias>>(propagation,
                                                 noise_model_imu_bias);
+}
+
+void Optimization::addPriorFactor(
+    const Propagation& propagation, const State& initial_state,
+    const gtsam::SharedNoiseModel& noise_model_I_T_IB,
+    const gtsam::SharedNoiseModel& noise_model_I_v_IB) {
+  auto idx = propagation.graph_idx_;
+  auto state = propagation.state_;
+  new_graph_.add(
+      PriorFactor<Pose3>(X(idx), initial_state.getPose(), noise_model_I_T_IB));
+  new_graph_.add(
+      PriorFactor<Vector3>(V(idx), initial_state.I_v_IB, noise_model_I_v_IB));
 }
 
 void Optimization::addRadarFactor(

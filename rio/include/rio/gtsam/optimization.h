@@ -30,6 +30,10 @@ class Optimization {
                       const gtsam::SharedNoiseModel& noise_model_I_T_IB,
                       const gtsam::SharedNoiseModel& noise_model_I_v_IB,
                       const gtsam::SharedNoiseModel& noise_model_imu_bias);
+  void addPriorFactor(const Propagation& propagation,
+                      const State& initial_state,
+                      const gtsam::SharedNoiseModel& noise_model_I_T_IB,
+                      const gtsam::SharedNoiseModel& noise_model_I_v_IB);
   void addRadarFactor(const Propagation& propagation_to_radar,
                       const Propagation& propagation_from_radar,
                       const gtsam::SharedNoiseModel& noise_model_radar_doppler,
