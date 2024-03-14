@@ -62,6 +62,10 @@ class Rio {
   double baro_height_offset_{0.0};
   std::deque<std::pair<double, double>> baro_buffer_;
 
+  gtsam::Vector3 accumulated_imu_;
+  int accumulated_imu_count_{0};
+  int imu_initialization_limit_;
+
   // std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
 
   Optimization optimization_;

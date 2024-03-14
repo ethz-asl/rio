@@ -59,6 +59,7 @@ bool Rio::init() {
   // Initial state.
   std::string odom_frame_id = initial_state_->odom_frame_id;
   loadParam<std::string>(nh_private_, "odom_frame_id", &odom_frame_id);
+  loadParam<int>(nh_private_, "imu/frequency", &imu_initialization_limit_);
 
   initial_state_ = std::make_shared<State>(
       odom_frame_id, initial_state_->I_p_IB, initial_state_->R_IB,
@@ -152,7 +153,23 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
   if (initial_state_->imu == nullptr) {
-    LOG_TIMED(W, 1.0, "Initial state not complete, skipping IMU integration.");
+    LOG_TIMED(W, 1.0, "Initial state not complete, acummulating measurements.");
+    accumulated_imu_ += Vector3(msg->linear_acceleration.x,
+                              msg->linear_acceleration.y,
+                              msg->linear_acceleration.z);
+    accumulated_imu_count_++;
+    if (accumulated_imu_count_ == imu_initialization_limit_) {
+      accumulated_imu_ /= imu_initialization_limit_;
+      double roll = atan2(accumulated_imu_.y(), accumulated_imu_.z());
+      double pitch = atan2(-accumulated_imu_.x(),
+                           sqrt(accumulated_imu_.y() * accumulated_imu_.y() +
+                                accumulated_imu_.z() * accumulated_imu_.z()));
+      Eigen::Quaterniond q_IB = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+                                Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+      initial_state_ = std::make_shared<State>(
+          initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
+          initial_state_->I_v_IB, msg, initial_state_->integrator);
+    }
     return;
   } else if (optimization_.smoother_failed_.load()) {
     initial_state_ = std::make_shared<State>(linked_propagations_.head->state_);
@@ -222,7 +239,7 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
 }
 
 void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
-  LOG_FIRST(I, 1, "Received first filtered IMU message.");
+  LOG_FIRST(I, 1, "Madgwick filter on, use to set initial orientation.");
   if (!initial_state_->imu) {
     Eigen::Quaterniond q_IB;
     tf2::fromMsg(msg->orientation, q_IB);
