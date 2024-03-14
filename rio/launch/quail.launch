@@ -1,0 +1,58 @@
+<launch>
+    <arg name="nodelet_manager_on" default="true" />
+    <arg name="nodelet_manager_name" default="rio_nodelet_manager" />
+
+    <arg name="imu_frame_id" default="imu" />
+  
+    <arg name="radar_on" default="true" />
+    <arg name="radar_path_cfg" default="/dev/ttyUSB0" />
+    <arg name="radar_path_data" default="/dev/ttyUSB1" />
+    <arg name="radar_frame_id" default="awr1843aop" />
+    <arg name="radar_poll_rate" default="8.0" />
+    <arg name="radar_cfg" default="$(find mav_sensors_demo)/cfg/radar/xwr18xx_AOP_profile_best_velocity_resolution.cfg" />
+    <arg name="radar_trigger" default="true" />
+    <arg name="radar_trigger_delay" default="500" />
+    <arg name="radar_trigger_gpio" default="443" />
+    <arg name="radar_trigger_gpio_name" default="PR.00" />
+    <arg name="radar_pub_least_squares" default="true" />
+
+    <arg name="rio_on" default="true" />
+    <arg name="rio_queue_size" default="1" />
+    <arg name="rio_odom_frame_id" default="odom" />
+
+    <arg name="visualize" default="false"/>
+    <arg name="config" value="$(find rio)/cfg/rio_quail.yaml"/>
+
+    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen" if="$(arg nodelet_manager_on)"/>
+
+    <group if="$(arg radar_on)">
+        <node pkg="nodelet" type="nodelet" name="radar" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="screen">
+            <param name="path_cfg" value="$(arg radar_path_cfg)"/>
+            <param name="path_data" value="$(arg radar_path_data)"/>
+            <param name="frame_id" value="$(arg radar_frame_id)"/>
+            <param name="poll_rate" value="$(arg radar_poll_rate)"/>
+            <param name="radar_cfg" value="$(arg radar_cfg)"/>
+            <param name="trigger" type="string" value="$(arg radar_trigger)"/>
+            <param name="trigger_delay" type="string" value="$(arg radar_trigger_delay)"/>
+            <param name="trigger_gpio" type="string" value="$(arg radar_trigger_gpio)"/>
+            <param name="trigger_gpio_name" type="string" value="$(arg radar_trigger_gpio_name)"/>
+            <param name="pub_least_squares" type="string" value="$(arg radar_pub_least_squares)"/>
+        </node>
+    </group>
+
+    <group if="$(arg rio_on)">
+        <node pkg="nodelet" type="nodelet" name="rio" args="load rio::RioNodelet $(arg nodelet_manager_name)" output="screen">
+			<rosparam file="$(arg config)" />
+            <param name="queue_size" value="$(arg rio_queue_size)"/>
+            <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
+        </node>
+
+    <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.146 0.012 -0.04  0.679928  0.694139 -0.168416 -0.165847 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+    </group>
+
+    <group if="$(arg visualize)">
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rio)/cfg/rviz.rviz"/>
+        <node pkg="rqt_multiplot" type="rqt_multiplot" name="rqt_multiplot" args="--multiplot-config $(find rio)/cfg/rio_multiplot.xml --multiplot-run-all"/>
+    </group>
+
+</launch>
