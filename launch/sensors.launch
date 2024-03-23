@@ -22,8 +22,8 @@
     <arg name="radar_cfg" default="$(find mav_sensors_demo)/cfg/radar/xwr18xx_AOP_profile_best_velocity_resolution.cfg" />
     <arg name="radar_trigger" default="true" />
     <arg name="radar_trigger_delay" default="500" />
-    <arg name="radar_trigger_gpio" default="443" />
-    <arg name="radar_trigger_gpio_name" default="PR.00" />
+    <arg name="radar_trigger_gpio" default="389" />
+    <arg name="radar_trigger_gpio_name" default="PG.06" />
 
     <arg name="rio_on" default="true" />
     <arg name="rio_queue_size" default="1" />
