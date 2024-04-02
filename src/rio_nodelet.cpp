@@ -1,3 +1,4 @@
+/*
 BSD 3-Clause License
 
 Copyright (c) 2024 ETH Zurich, Autonomous Systems Lab, Rik Girod
@@ -26,3 +27,30 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+#include <memory>
+
+#include <log++.h>
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>
+
+#include "rio/rio.h"
+
+namespace rio {
+
+class RioNodelet : public nodelet::Nodelet {
+  virtual void onInit() {
+    try {
+      rio_ = std::make_unique<Rio>(getNodeHandle(), getPrivateNodeHandle());
+      if (!rio_->init()) rio_.release();
+    } catch (std::runtime_error e) {
+      LOG(E, "%s", e.what());
+    }
+  }
+
+  std::unique_ptr<Rio> rio_;
+};
+}  // namespace rio
+
+PLUGINLIB_EXPORT_CLASS(rio::RioNodelet, nodelet::Nodelet)

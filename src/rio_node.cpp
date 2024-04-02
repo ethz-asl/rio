@@ -1,3 +1,4 @@
+/*
 BSD 3-Clause License
 
 Copyright (c) 2024 ETH Zurich, Autonomous Systems Lab, Rik Girod
@@ -26,3 +27,20 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+#include <ros/ros.h>
+
+#include "rio/rio.h"
+
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "rio_node");
+  ros::NodeHandle nh;
+  ros::NodeHandle nh_private("~");
+
+  rio::Rio rio(nh, nh_private);
+  if (!rio.init()) return 1;
+
+  ros::spin();
+  return 0;
+}

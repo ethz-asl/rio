@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rio</name>
+  <version>1.0.0</version>
+  <description>
+    Radar-inertial odometry estimation for mobile devices and robots.
+  </description>
+  <author>Rik Girod</author>
+  <maintainer email="brik@ethz.ch">Rik Girod</maintainer>
+
+  <license>BSD 3-Clause</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+  <depend>rosbag</depend>
+  <depend>roscpp</depend>
+  <depend>lpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>roslib</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_ros</depend>
+  <depend>nodelet</depend>
+  <depend>gtsam_catkin</depend>
+  <depend>std_srvs</depend>
+
+  <test_depend>rostest</test_depend>
+
+  <export>
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+  </export>
+
+</package>

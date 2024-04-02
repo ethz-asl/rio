@@ -1,0 +1,12 @@
+bag_path: '/home/armasuisse-pq/2023-12-05-13-24-07.bag'
+imu_topic: '/imu/data_raw'
+radar_topic: '/radar/cfar_detections'
+odometry_topic: '/rio/odometry_optimizer'
+
+B_t_BR: [0.122, 0.000, -0.025]      # Initial guess position of radar in body frame [x, y, z]
+q_BR: [0.67437972, 0.67437972, -0.21263111, -0.21263111]  # Initial guess orientation of radar in body frame [x, y, z, w]
+
+noise:
+  loop_closure:
+    p: [0.01, 0.01, 0.005]
+    R: [0.01, 0.01, 0.02]
