@@ -1,0 +1,6 @@
+<launch>        
+        <node pkg="rio" type="rio_calibration_node" name="rio_calibration" output="screen">
+                <rosparam file="$(find rio)/cfg/rio.yaml" />
+                <rosparam file="$(find rio)/cfg/calibration.yaml" />
+        </node>
+</launch>
