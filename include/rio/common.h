@@ -87,19 +87,20 @@ bool loadNoiseZeroVelocityPrior(const ros::NodeHandle& nh,
 bool loadNoiseBaroHeight(const ros::NodeHandle& nh,
                          gtsam::SharedNoiseModel* noise);
 
-  struct CfarDetection {
-    float x{std::nanf("1")};
-    float y{std::nanf("1")};
-    float z{std::nanf("1")};
-    float velocity{std::nanf("1")};
-    int16_t snr{-1};
-    int16_t noise{-1};
-    friend std::ostream& operator<<(std::ostream& os, const CfarDetection& cd) {
-      os << "x: " << cd.x << " y: " << cd.y << " z: " << cd.z << " velocity: " << cd.velocity
-         << " snr: " << cd.snr << " noise: " << cd.noise;
-      return os;
-    }
-  };
+struct CfarDetection {
+  float x{std::nanf("1")};
+  float y{std::nanf("1")};
+  float z{std::nanf("1")};
+  float velocity{std::nanf("1")};
+  int16_t snr{-1};
+  int16_t noise{-1};
+  friend std::ostream& operator<<(std::ostream& os, const CfarDetection& cd) {
+    os << "x: " << cd.x << " y: " << cd.y << " z: " << cd.z
+       << " velocity: " << cd.velocity << " snr: " << cd.snr
+       << " noise: " << cd.noise;
+    return os;
+  }
+};
 
 std::vector<CfarDetection> parseRadarMsg(
     const sensor_msgs::PointCloud2Ptr& msg);

@@ -4,8 +4,7 @@
 
 using namespace rio;
 
-bool Track::addCfarDetection(
-    const CfarDetection& cfar_detection) {
+bool Track::addCfarDetection(const CfarDetection& cfar_detection) {
   bool equal = cfar_detection.x == cfar_detection_.x &&
                cfar_detection.y == cfar_detection_.y &&
                cfar_detection.z == cfar_detection_.z &&
@@ -23,8 +22,7 @@ bool Track::addCfarDetection(
 
 Tracker::Tracker(const uint64_t max_age) : max_age_(max_age) {}
 
-bool Tracker::detectLandmark(
-    const CfarDetection& cfar_detection) const {
+bool Tracker::detectLandmark(const CfarDetection& cfar_detection) const {
   return cfar_detection.velocity == 0.0f;
 }
 

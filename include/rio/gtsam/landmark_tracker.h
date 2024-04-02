@@ -13,13 +13,12 @@ class Track {
  public:
   typedef std::shared_ptr<Track> Ptr;
 
-  Track(const CfarDetection& cfar_detection,
-        const uint64_t id, const uint64_t max_age = 1)
+  Track(const CfarDetection& cfar_detection, const uint64_t id,
+        const uint64_t max_age = 1)
       : cfar_detection_(cfar_detection), id_(id), max_age_(max_age) {}
 
   // returns true if the detection was added.
-  bool addCfarDetection(
-      const CfarDetection& cfar_detection);
+  bool addCfarDetection(const CfarDetection& cfar_detection);
   // returns true if the track is still valid.
   inline bool isValid() const { return age_ < max_age_; };
   inline void update() { age_++; };
@@ -47,8 +46,7 @@ class Tracker {
       const std::vector<CfarDetection>& cfar_detection);
 
  private:
-  bool detectLandmark(
-      const CfarDetection& cfar_detection) const;
+  bool detectLandmark(const CfarDetection& cfar_detection) const;
   uint64_t id_{0};
   uint64_t max_age_{1};
 

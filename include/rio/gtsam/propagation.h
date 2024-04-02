@@ -36,8 +36,7 @@ class Propagation {
   }
 
   std::optional<gtsam::Pose3> B_T_BR_;
-  std::optional<std::vector<CfarDetection>>
-      cfar_detections_;
+  std::optional<std::vector<CfarDetection>> cfar_detections_;
   std::optional<std::vector<Track::Ptr>> cfar_tracks_;
   std::optional<double> baro_height_;
 
