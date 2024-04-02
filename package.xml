@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>rio</name>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <description>
-    Radar-inertial odometry estimation for autonomous vehicles.
+    Radar-inertial odometry estimation for mobile devices and robots.
   </description>
-  <author>Rik Bähnemann</author>
-  <maintainer email="brik@ethz.ch">Rik Bähnemann</maintainer>
+  <author>Rik Girod</author>
+  <maintainer email="brik@ethz.ch">Rik Girod</maintainer>
 
-  <license>TBD</license>
+  <license>BSD 3-Clause</license>
 
   <buildtool_depend>catkin</buildtool_depend>
 

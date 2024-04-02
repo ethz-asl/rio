@@ -1,22 +1,4 @@
 <library path="lib/librio_nodelet">
-  <class type="rio::BaroNodelet" base_class_type="nodelet::Nodelet">
-    <description>
-      A timer based nodelet that publishes barometer data.
-    </description>
-  </class>
-  
-  <class type="rio::ImuNodelet" base_class_type="nodelet::Nodelet">
-    <description>
-      A timer based nodelet that publishes IMU data.
-    </description>
-  </class>
-  
-  <class type="rio::RadarNodelet" base_class_type="nodelet::Nodelet">
-    <description>
-      A timer based nodelet that publishes Radar data.
-    </description>
-  </class>
-  
   <class type="rio::RioNodelet" base_class_type="nodelet::Nodelet">
     <description>
       A callback driven nodelet that receives IMU and radar data and creates an optimization graph.
