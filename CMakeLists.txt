@@ -40,36 +40,27 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_compile_definitions(MODE_ROSLOG)
 add_compile_definitions(GTSAM_USE_BOOST_FEATURES)
 add_library(${PROJECT_NAME}
-        src/common.cpp
-        src/least_squares.cpp
         src/gtsam/landmark_tracker.cpp
         src/gtsam/optimization.cpp
         src/gtsam/propagation.cpp
         src/gtsam/state.cpp
-        src/ros/base_sensor.cpp
-        src/ros/baro.cpp
-        src/ros/common.cpp
-        src/ros/imu.cpp
-        src/ros/radar.cpp
-        src/ros/rio.cpp
+        src/common.cpp
+        src/rio.cpp
         )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} gtsam gtsam_unstable Eigen3::Eigen)
 
 add_library(${PROJECT_NAME}_nodelet
-        src/ros/nodelets/baro_nodelet.cpp
-        src/ros/nodelets/imu_nodelet.cpp
-        src/ros/nodelets/radar_nodelet.cpp
-        src/ros/nodelets/rio_nodelet.cpp
+        src/rio_nodelet.cpp
         )
 target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME})
 
 add_executable(rio_node
-        src/ros/nodes/rio_node.cpp
+        src/rio_node.cpp
         )
 target_link_libraries(rio_node ${PROJECT_NAME})
 
 add_executable(rio_calibration_node
-        src/ros/nodes/rio_calibration_node.cpp
+        src/rio_calibration_node.cpp
 )
 target_link_libraries(rio_calibration_node ${PROJECT_NAME})
 
