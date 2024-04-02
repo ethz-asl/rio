@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 
-#include "rio/ros/rio.h"
+#include "rio/rio.h"
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "rio_node");

@@ -1,4 +1,4 @@
-#include "rio/ros/rio.h"
+#include "rio/rio.h"
 
 #include <cmath>
 
@@ -9,7 +9,7 @@
 
 #include "rio/DopplerResidual.h"
 #include "rio/Timing.h"
-#include "rio/ros/common.h"
+#include "rio/common.h"
 
 using namespace rio;
 using namespace gtsam;

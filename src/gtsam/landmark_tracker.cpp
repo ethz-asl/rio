@@ -5,7 +5,7 @@
 using namespace rio;
 
 bool Track::addCfarDetection(
-    const mav_sensors::Radar::CfarDetection& cfar_detection) {
+    const CfarDetection& cfar_detection) {
   bool equal = cfar_detection.x == cfar_detection_.x &&
                cfar_detection.y == cfar_detection_.y &&
                cfar_detection.z == cfar_detection_.z &&
@@ -24,12 +24,12 @@ bool Track::addCfarDetection(
 Tracker::Tracker(const uint64_t max_age) : max_age_(max_age) {}
 
 bool Tracker::detectLandmark(
-    const mav_sensors::Radar::CfarDetection& cfar_detection) const {
+    const CfarDetection& cfar_detection) const {
   return cfar_detection.velocity == 0.0f;
 }
 
 std::vector<Track::Ptr> Tracker::addCfarDetections(
-    const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection) {
+    const std::vector<CfarDetection>& cfar_detection) {
   // Filter deprecated tracks.
   std::vector<Track::Ptr> active_tracks;
   std::copy_if(tracks_.begin(), tracks_.end(),

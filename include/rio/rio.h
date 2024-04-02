@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <gtsam/linear/NoiseModel.h>
-#include <mav_sensors_drivers/sensor_types/Radar.h>
 #include <ros/ros.h>
 #include <sensor_msgs/FluidPressure.h>
 #include <sensor_msgs/Imu.h>

@@ -21,7 +21,7 @@
 
 #include "rio/gtsam/expressions.h"
 #include "rio/gtsam/optimization.h"
-#include "rio/ros/common.h"
+#include "rio/common.h"
 
 using namespace rio;
 using namespace gtsam;

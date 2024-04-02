@@ -4,7 +4,7 @@
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
 
-#include "rio/ros/rio.h"
+#include "rio/rio.h"
 
 namespace rio {
 
