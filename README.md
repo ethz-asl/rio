@@ -63,4 +63,4 @@ Please cite our associated paper
 
 # Dataset
 Please take a look at our shared data set for 15 sequences of urban night, forest path, field, and deep forest handheld and flown data.
-![](https://private-user-images.githubusercontent.com/11293852/319302887-eea63050-ab5e-4f9f-9c9c-bd76040abdc9.gif)
+![](./doc/overview.gif)
