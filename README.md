@@ -1,5 +1,7 @@
 # rio
-Graph-based, sparse radar-inertial odometry estimation
+Graph-based, sparse radar-inertial odometry m-estimation
+
+
 
 # Installation
 Install [ROS noetic](https://wiki.ros.org/noetic/Installation/Ubuntu).
@@ -54,6 +56,10 @@ Radar point cloud format, see also [mav_sensors_ros](https://github.com/ethz-asl
 | noise      | INT16   |
 ```
 
-# Acknowledgement
+# Paper
 Please cite our associated paper
 
+# Video
+
+# Dataset
+See our associated data set for 15 sequences of urban night, forest path, field, and deep forest handheld and flewn data.
