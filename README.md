@@ -39,7 +39,7 @@ rosbag play
 # Supported sensors
 | Sensor       | Default topic          | Message type              | Required | Note                              |
 | ------------ | ---------------------- | ------------------------- | -------- | --------------------------------- |
-| IMU          | /imu/data_raw          | sensor_msgs/Imu           | Yes      |                                   |
+| IMU          | /imu/data_raw          | sensor_msgs/Imu           | Yes      | Calibrate gyro turn-on-bias!      |
 | IMU filtered | /imu/data              | sensor_msgs/Imu           | Yes      | for initialization                |
 | Radar        | /radar/cfar_detections | sensor_msgs/PointCloud2   | Yes      |                                   |
 | Barometer    | /baro/pressure         | sensor_msgs/FluidPressure | No       | Activate in [cfg](./cfg/rio.yaml) |
