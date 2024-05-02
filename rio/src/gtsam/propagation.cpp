@@ -46,9 +46,7 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
                          return imu->header.stamp <= t;
                        });
   if (t >= imu_measurements_.back()->header.stamp) {
-    LOG(W, "Splitting at end.");
     split_iter = imu_measurements_.end();
-    std::cout << "Index: " << *split_idx << std::endl;
 
   } else if (t < imu_measurements_.front()->header.stamp) {
     LOG(E, "Timestamp too old for splitting");

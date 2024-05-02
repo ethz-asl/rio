@@ -159,17 +159,33 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
                 msg->linear_acceleration.z);
     accumulated_imu_count_++;
     if (accumulated_imu_count_ == imu_initialization_limit_) {
-      accumulated_imu_ /= imu_initialization_limit_;
-      double roll = atan2(accumulated_imu_.y(), accumulated_imu_.z());
-      double pitch = atan2(-accumulated_imu_.x(),
-                           sqrt(accumulated_imu_.y() * accumulated_imu_.y() +
-                                accumulated_imu_.z() * accumulated_imu_.z()));
-      Eigen::Quaterniond q_IB =
-          Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
-          Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+      Vector3 b_a =
+          accumulated_imu_ / static_cast<double>(imu_initialization_limit_) -
+          Vector3(0., 0., 9.81);
+      auto params = std::make_shared<PreintegrationCombinedParams>(
+          initial_state_->integrator.p());
+      auto b_g = initial_state_->integrator.biasHat().gyroscope();
+      auto preint_correct_biases =
+          PreintegratedCombinedMeasurements(params, {b_a, b_g});
+      LOG(I, "Corrected IMU Biases:\nAccel:\t"
+                 << b_a[0] << " , " << b_a[1] << " , " << b_a[2] << "\nGyro:\t"
+                 << b_a[0] << " , " << b_g[1] << " , " << b_g[2]);
+
+      // assume we are always level with the ground to set acceleration
+      // biases
+      Eigen::Quaterniond q_IB = Eigen::Quaterniond::Identity();
+      //      double roll = atan2(accumulated_imu_.y(), accumulated_imu_.z());
+      //      double pitch = atan2(-accumulated_imu_.x(),
+      //                           sqrt(accumulated_imu_.y() *
+      //                           accumulated_imu_.y() +
+      //                                accumulated_imu_.z() *
+      //                                accumulated_imu_.z()));
+      //      Eigen::Quaterniond q_IB =
+      //          Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+      //          Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
       initial_state_ = std::make_shared<State>(
           initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
-          initial_state_->I_v_IB, msg, initial_state_->integrator);
+          initial_state_->I_v_IB, msg, preint_correct_biases);
     }
     return;
   } else if (optimization_.smoother_failed_.load()) {
