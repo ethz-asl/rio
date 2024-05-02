@@ -2,14 +2,14 @@ prior_noise:
     R_IB: [0.03, 0.03, 0.03]
     I_p_IB: [0.01, 0.01, 0.01]
     I_v_IB: [0.01, 0.01, 0.01]
-    b_a: [2.0e-1, 2.0e-1, 2.0e-1]
-    b_g: [1.7e-4, 1.7e-4, 1.7e-4]
+    b_a: [2.0e-6, 2.0e-6, 2.0e-6]
+    b_g: [1.7e-6, 1.7e-6, 1.7e-6]
 
 noise:
     radar:
         doppler: 0.05 # sigma
-        track: [0.1, 0.1, 0.1] # BearingRange3D TODO(rikba): determine order, probably azimuth, elevation, range 
-        loss: 5 # 0: quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
+        track: [0.2, 0.2, 0.2] # BearingRange3D
+        loss: 5  # quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
     baro:
         height: 0.2 # RMS/sqrt(dt) (BMP390 0.11m sigma, dt=0.02)
         loss: 0 # 0: quadratic, 1: fair, 2: huber, 3: cauchy, 4: geman-mcclure, 5: welsch, 6: tukey
@@ -21,17 +21,17 @@ baro:
     active: False
 
 imu:
-    acc_sigma: 1.86e-2
-    bias_acc_sigma: 4.33e-4
+    acc_sigma: 0.034596
+    bias_acc_sigma: 5.33e-6
     initial_bias_acc: [0.0, 0.0, 0.0]
 
-    gyro_sigma: 1.87e-3
-    bias_omega_sigma: 2.66e-5
+    gyro_sigma: 3.87e-4
+    bias_omega_sigma: 1.66e-8
     initial_bias_gyro: [0.0, 0.0, 0.0]
 
-    integration_sigma: 1.0e-7
-    bias_acc_int_sigma: 1.0e-5
-    bias_omega_int_sigma: 1.0e-5
+    integration_sigma: 1.0e-5
+    bias_acc_int_sigma: 1.0e-3
+    bias_omega_int_sigma: 1.0e-3
     frequency: 200
 
 isam2:

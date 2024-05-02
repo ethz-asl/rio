@@ -109,15 +109,15 @@ void Optimization::addDopplerFactors(const Propagation& propagation,
     }
     doppler_sum += abs(static_cast<double>(detection.velocity));
   }
-
-  if (doppler_sum == 0 && state.I_v_IB.norm() < 0.15) {
+  
+  if (doppler_sum == 0 && state.I_v_IB.norm() < 0.07) {
     // TODO: put this into a yaml file
-    auto nm = noiseModel::Diagonal::Sigmas(Vector3(0.03, 0.03, 0.03));
-    new_graph_.add(PriorFactor<Vector3>(V(idx), Vector3(0, 0, 0), nm));
+    auto nm = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
+    new_graph_.add(PriorFactor<Vector3>(V(idx), Vector3(0., 0., 0.), nm));
   } else if (doppler_sum == 0) {
     LOG(W, "zero doppler sum, but velocity is not zero: " << state.I_v_IB.norm()
                                                           << " m/s");
-  }
+  } 
 }
 
 template <>

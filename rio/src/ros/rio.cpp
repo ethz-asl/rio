@@ -140,6 +140,13 @@ bool Rio::init() {
 }
 
 void Rio::baroCallback(const sensor_msgs::FluidPressureConstPtr& msg) {
+
+	if(msg->fluid_pressure < 80000 || msg->fluid_pressure > 120000)
+	{
+		LOG(E, "Shit baro.");
+		return;
+
+	}
   LOG_FIRST(I, 1, "Received first barometer message.");
   baro_buffer_.push_back(
       std::make_pair(msg->header.stamp.toSec(), msg->fluid_pressure));
@@ -153,6 +160,14 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
   if (initial_state_->imu == nullptr) {
+     Eigen::Vector3d shit_acc_data;
+     shit_acc_data << msg->linear_acceleration.x, msg->linear_acceleration.y,
+                msg->linear_acceleration.z;
+     if(shit_acc_data.norm() < 9.5){
+     	LOG(E, "Shit Accelerometer");
+	return;
+     }
+
     LOG_TIMED(W, 1.0, "Initial state not complete, acummulating measurements.");
     accumulated_imu_ +=
         Vector3(msg->linear_acceleration.x, msg->linear_acceleration.y,
@@ -341,7 +356,7 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
           });
       baro_height_offset_ = computeBaroHeight(
           baro_sum / static_cast<double>(baro_buffer_.size()));
-      LOG(I, "Baro height offset: " << baro_height_offset_);
+      LOG(E, "Baro height offset: " << baro_height_offset_);
     }
 
     // get latest baro measurement which is smaller than the radar measurement
