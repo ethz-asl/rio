@@ -256,8 +256,9 @@ bool Optimization::solve(const LinkedPropagations& linked_propagations) {
   }
 
   running_.store(true);
-  thread_ = std::thread(&Optimization::solveThreaded, this, new_graph_,
-                        new_values_, new_timestamps_);
+  solveThreaded(new_graph_, new_values_, new_timestamps_);
+  //  thread_ = std::thread(&Optimization::solveThreaded, this, new_graph_,
+  //                        new_values_, new_timestamps_);
 
   new_graph_.resize(0);
   new_values_.clear();

@@ -45,12 +45,22 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
                        [](const sensor_msgs::ImuConstPtr& imu, const auto& t) {
                          return imu->header.stamp <= t;
                        });
+  if (t >= imu_measurements_.back()->header.stamp) {
+    LOG(W, "Splitting at end.");
+    split_iter = imu_measurements_.end();
+    std::cout << "Index: " << *split_idx << std::endl;
+
+  } else if (t < imu_measurements_.front()->header.stamp) {
+    LOG(E, "Timestamp too old for splitting");
+    return false;
+  }
 
   propagation_to_t->imu_measurements_.insert(
       propagation_to_t->imu_measurements_.end(), imu_measurements_.begin(),
       split_iter);
 
   imu_measurements_.erase(imu_measurements_.begin(), split_iter);
+  imu_measurements_.shrink_to_fit();
 
   if (std::empty(propagation_to_t->imu_measurements_)) {
     LOG(E,
@@ -66,7 +76,7 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
   // repropagate because i updated prior with optimized states
   // TODO: not necessary if last state contains already optimized state
 
-  propagation_to_t->repropagate();
+//  propagation_to_t->repropagate();
 
   if (t > propagation_to_t->imu_measurements_.back()->header.stamp) {
     sensor_msgs::Imu imu;
@@ -104,7 +114,7 @@ bool Propagation::split(const ros::Time& t, uint64_t* split_idx,
         sensor_msgs::ImuConstPtr(new sensor_msgs::Imu(imu)));
   }
 
-  repropagate();
+//  repropagate();
 
   (*split_idx)++;
 

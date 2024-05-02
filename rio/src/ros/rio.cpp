@@ -154,9 +154,9 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   // Initialize.
   if (initial_state_->imu == nullptr) {
     LOG_TIMED(W, 1.0, "Initial state not complete, acummulating measurements.");
-    accumulated_imu_ += Vector3(msg->linear_acceleration.x,
-                              msg->linear_acceleration.y,
-                              msg->linear_acceleration.z);
+    accumulated_imu_ +=
+        Vector3(msg->linear_acceleration.x, msg->linear_acceleration.y,
+                msg->linear_acceleration.z);
     accumulated_imu_count_++;
     if (accumulated_imu_count_ == imu_initialization_limit_) {
       accumulated_imu_ /= imu_initialization_limit_;
@@ -164,8 +164,9 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
       double pitch = atan2(-accumulated_imu_.x(),
                            sqrt(accumulated_imu_.y() * accumulated_imu_.y() +
                                 accumulated_imu_.z() * accumulated_imu_.z()));
-      Eigen::Quaterniond q_IB = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
-                                Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+      Eigen::Quaterniond q_IB =
+          Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+          Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
       initial_state_ = std::make_shared<State>(
           initial_state_->odom_frame_id, initial_state_->I_p_IB, Rot3(q_IB),
           initial_state_->I_v_IB, msg, initial_state_->integrator);
@@ -309,9 +310,9 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
                                noise_model_radar_track_, &doppler_residuals);
 
   if (new_propagation->graph_idx_ < 30) {
-    optimization_.addPriorFactor(
-        *new_propagation, *initial_state_, prior_noise_model_I_T_IB_,
-        prior_noise_model_I_v_IB_);
+    optimization_.addPriorFactor(*new_propagation, *initial_state_,
+                                 prior_noise_model_I_T_IB_,
+                                 prior_noise_model_I_v_IB_);
   }
 
   Vector1 baro_residual;
