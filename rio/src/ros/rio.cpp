@@ -153,6 +153,13 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first raw IMU message.");
   // Initialize.
   if (initial_state_->imu == nullptr) {
+	  Eigen::Vector3d shit_acc_data;
+     shit_acc_data << msg->linear_acceleration.x, msg->linear_acceleration.y,
+                msg->linear_acceleration.z;
+     if(shit_acc_data.norm() < 9.5){
+        LOG(E, "Shit Accelerometer");
+        return;
+     }
     LOG_TIMED(W, 1.0, "Initial state not complete, acummulating measurements.");
     accumulated_imu_ += Vector3(msg->linear_acceleration.x,
                               msg->linear_acceleration.y,

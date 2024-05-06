@@ -26,7 +26,7 @@
     <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" cwd="node" output="screen" if="$(arg nodelet_manager_on)"/>
 
     <group if="$(arg radar_on)">
-        <node pkg="nodelet" type="nodelet" name="radar" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="screen">
+        <node pkg="nodelet" type="nodelet" name="radar" args="load rio::RadarNodelet $(arg nodelet_manager_name)" output="log">
             <param name="path_cfg" value="$(arg radar_path_cfg)"/>
             <param name="path_data" value="$(arg radar_path_data)"/>
             <param name="frame_id" value="$(arg radar_frame_id)"/>
