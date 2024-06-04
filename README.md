@@ -58,6 +58,10 @@ Radar point cloud format, see also [mav_sensors_ros](https://github.com/ethz-asl
 
 # Paper
 Please cite our associated paper
+```
+Girod, Rik, et al. "A robust baro-radar-inertial odometry m-estimator for multicopter navigation in cities and forests." IEEE Int. Conf. Multisensor Fusion
+Integration Intell. Syst., 2024, submitted
+```
 
 # Video
 
