@@ -80,3 +80,11 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.122 0.000 -0.025 0.67620958 0.67620958 -0.20673802 -0.20673802 'bmi088' 'awr1843aop'" />
 <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.0 0.7071068 0.7071068 0.0 'awr1843aop' 'cam'" />
 ```
+
+# Related packages
+
+| Package         | Description                     | Link                                                                       |
+| --------------- | ------------------------------- | -------------------------------------------------------------------------- |
+| mav_sensors     | Linux user space sensor drivers | [Linux user space sensor drivers](https://github.com/ethz-asl/mav_sensors) |
+| mav_sensors_ros | ROS sensor interface            | [ROS sensor interface](https://github.com/ethz-asl/mav_sensors_ros)        |
+
