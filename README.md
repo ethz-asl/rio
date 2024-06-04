@@ -61,7 +61,9 @@ Integration Intell. Syst., 2024, submitted
 ```
 
 # Video
-[Video of closed-loop quadrotor control in city and forest.](https://github.com/ethz-asl/rio/assets/11293852/ad75cda3-7730-4402-acb7-0298160789cc)
+[Video of closed-loop quadrotor control in city and forest.](https://github.com/ethz-asl/rio/assets/11293852/7bc95fa8-6fa1-4172-ad63-5ae1d3a38d58)
+
+
 
 # Dataset
 Please take a look at our shared data set for 15 sequences of urban night, forest path, field, and deep forest handheld and flown data.
