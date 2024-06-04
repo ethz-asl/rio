@@ -1,7 +1,5 @@
 # rio
-Graph-based, sparse radar-inertial odometry m-estimation
-
-
+Graph-based, sparse radar-inertial odometry m-estimation with barometer support and zero-velocity tracking.
 
 # Installation
 Install [ROS noetic](https://wiki.ros.org/noetic/Installation/Ubuntu).
@@ -57,13 +55,13 @@ Radar point cloud format, see also [mav_sensors_ros](https://github.com/ethz-asl
 ```
 
 # Paper
-Please cite our associated paper
 ```
 Girod, Rik, et al. "A robust baro-radar-inertial odometry m-estimator for multicopter navigation in cities and forests." IEEE Int. Conf. Multisensor Fusion
 Integration Intell. Syst., 2024, submitted
 ```
 
 # Video
+[Video of closed-loop quadrotor control in city and forest.](https://github.com/ethz-asl/rio/assets/11293852/ad75cda3-7730-4402-acb7-0298160789cc)
 
 # Dataset
 Please take a look at our shared data set for 15 sequences of urban night, forest path, field, and deep forest handheld and flown data.
