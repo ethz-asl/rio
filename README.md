@@ -83,8 +83,8 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 
 # Related packages
 
-| Package         | Description                     | Link                                            |
-| --------------- | ------------------------------- | ----------------------------------------------- |
-| mav_sensors     | Linux user space sensor drivers | [](https://github.com/ethz-asl/mav_sensors)     |
-| mav_sensors_ros | ROS sensor interface            | [](https://github.com/ethz-asl/mav_sensors_ros) |
+| Package         | Description                     | Link                                                           |
+| --------------- | ------------------------------- | -------------------------------------------------------------- |
+| mav_sensors     | Linux user space sensor drivers | [mav_sensors](https://github.com/ethz-asl/mav_sensors)         |
+| mav_sensors_ros | ROS sensor interface            | [mav_sensors_ros](https://github.com/ethz-asl/mav_sensors_ros) |
 
