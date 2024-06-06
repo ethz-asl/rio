@@ -81,7 +81,7 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 |             | 14  | [14_flat_field_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689068) |
 | Tree Slalom | 15  | [15_tree_slalom_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689069) | 
 | ----------- | --- |  --------------- | 
-| All         | 01-15 | [all_raw_no_img.zip](https://filesender.switch.ch/filesender2/?s=download&token=5a7fd8a6-a924-4065-a30e-052005ed5715)  |  
+| All         | 01-15 | [all_raw_no_img](https://filesender.switch.ch/filesender2/?s=download&token=5a7fd8a6-a924-4065-a30e-052005ed5715)  |  
 
 ## Calibration
 ```
