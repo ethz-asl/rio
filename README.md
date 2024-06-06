@@ -63,6 +63,26 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 
 [Video of closed-loop quadrotor control in city and forest.](https://github.com/ethz-asl/rio/assets/11293852/7bc95fa8-6fa1-4172-ad63-5ae1d3a38d58)
 
+| Scenario    | No. | Link w/o camera |
+| ----------- | --- | --------------- |
+| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689055) |
+|             | 02  | [02_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689056) |
+|             | 03  | [03_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689057) |
+|             | 04  | [04_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689058) |
+|             | 05  | [05_urban_night_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689059) |
+|             | 06  | [06_urban_night_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689060) |
+|             | 07  | [07_urban_night_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689061) |
+| Forest Path | 08  | [08_forest_path_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689062) |
+|             | 09  | [09_forest_path_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689063) |
+|             | 10  | [10_forest_path_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689064) |
+|             | 11  | [11_forest_path_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689065) |
+|             | 12  | [12_forest_path_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689066) |
+| Flat Field  | 13  | [13_flat_field_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689067) |
+|             | 14  | [14_flat_field_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689068) |
+| Tree Slalom | 15  | [15_tree_slalom_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689069) | 
+| ----------- | --- |  --------------- | 
+| All         | 01-15 | [all_raw_no_img.zip](https://filesender.switch.ch/filesender2/?s=download&token=5a7fd8a6-a924-4065-a30e-052005ed5715)  |  
+
 ## Calibration
 ```
 | Field name | IMU to radar | radar to cam |
