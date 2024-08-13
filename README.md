@@ -1,6 +1,16 @@
 # rio
 Graph-based, sparse radar-inertial odometry m-estimation with barometer support and zero-velocity tracking.
 
+**Paper**: https://arxiv.org/pdf/2408.05764
+```
+@inproceedings{girod2024brio,
+author = {Rik Girod and Marco Hauswirth and Patrick Pfreundschuh and Mariano Biasio and Roland Siegwart},
+title = {A robust baro-radar-inertial odometry m-estimator for multicopter navigation in cities and forests},
+booktitle={IEEE Int. Conf. Multisensor Fusion Integration Intell. Syst.},
+year={2024}
+}
+```
+
 # Installation
 Install [ROS noetic](https://wiki.ros.org/noetic/Installation/Ubuntu).
 ```
@@ -50,12 +60,6 @@ Radar point cloud format, see also [mav_sensors_ros](https://github.com/ethz-asl
 | doppler    | FLOAT32 |
 | snr        | INT16   |
 | noise      | INT16   |
-```
-
-# Paper
-```
-Girod, Rik, et al. "A robust baro-radar-inertial odometry m-estimator for multicopter navigation in cities and forests." IEEE Int. Conf. Multisensor Fusion
-Integration Intell. Syst., 2024, submitted
 ```
 
 # Dataset
