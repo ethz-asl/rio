@@ -69,23 +69,23 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 
 | Scenario    | No. | Link w/o camera |
 | ----------- | --- | --------------- |
-| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689055) |
-|             | 02  | [02_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689056) |
-|             | 03  | [03_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689057) |
-|             | 04  | [04_urban_night_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689058) |
-|             | 05  | [05_urban_night_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689059) |
-|             | 06  | [06_urban_night_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689060) |
-|             | 07  | [07_urban_night_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689061) |
-| Forest Path | 08  | [08_forest_path_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689062) |
-|             | 09  | [09_forest_path_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689063) |
-|             | 10  | [10_forest_path_H_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689064) |
-|             | 11  | [11_forest_path_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689065) |
-|             | 12  | [12_forest_path_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689066) |
-| Flat Field  | 13  | [13_flat_field_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689067) |
-|             | 14  | [14_flat_field_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689068) |
-| Tree Slalom | 15  | [15_tree_slalom_F_raw_no_img.bag](https://filesender.switch.ch/filesender2/download.php?token=5a7fd8a6-a924-4065-a30e-052005ed5715&files_ids=689069) | 
+| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/vLKcyU3IiMLTkhC) |
+|             | 02  | [02_urban_night_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/IMwHADT5l5hDWOI) |
+|             | 03  | [03_urban_night_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/DyENoILj16apjN0) |
+|             | 04  | [04_urban_night_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/eITgmfBLDoKgQ2L) |
+|             | 05  | [05_urban_night_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/2be0eBwmtLnXMl0) |
+|             | 06  | [06_urban_night_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/8CTUFTWRx3K6mFc) |
+|             | 07  | [07_urban_night_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/D3b33EkixuIXwZF) |
+| Forest Path | 08  | [08_forest_path_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/7bsvQwNZkEZFJwX) |
+|             | 09  | [09_forest_path_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/xOic22uNx0o21j0) |
+|             | 10  | [10_forest_path_H_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/7ScOlW3CKj53bb3) |
+|             | 11  | [11_forest_path_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/1AX53xzFE65FY0m) |
+|             | 12  | [12_forest_path_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/yR9MNzeQ7L4yhI1) |
+| Flat Field  | 13  | [13_flat_field_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/A9Ewa02WOjrWJt7) |
+|             | 14  | [14_flat_field_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/WKgCy6s7MBzmFvp) |
+| Tree Slalom | 15  | [15_tree_slalom_F_raw_no_img.bag](https://polybox.ethz.ch/index.php/s/qtMQNY2dN0h1Fft) | 
 |  |  |   | 
-| All         | 01-15 | [all_raw_no_img](https://filesender.switch.ch/filesender2/?s=download&token=5a7fd8a6-a924-4065-a30e-052005ed5715)  |  
+| All         | 01-15 | [all_raw_no_img](https://polybox.ethz.ch/index.php/s/S4ZIpTKZQEHpK52)  |  
 
 ## Calibration
 ```
