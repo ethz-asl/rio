@@ -1,7 +1,7 @@
 # rio
 Graph-based, sparse radar-inertial odometry m-estimation with barometer support and zero-velocity tracking.
 
-**Paper**: 
+**Paper**: https://arxiv.org/pdf/2408.05764
 ```
 @inproceedings{girod2024brio,
 author = {Rik Girod and Marco Hauswirth and Patrick Pfreundschuh and Mariano Biasio and Roland Siegwart},
