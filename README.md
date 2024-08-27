@@ -32,7 +32,7 @@ catkin build
 Start RIO in one terminal
 ```
 source ~/catkin_ws/devel/setup.bash
-roslaunch rio rio.launch visualization:=true
+roslaunch rio rio.launch visualize:=true
 ```
 
 Download an example dataset sequence.
