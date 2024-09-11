@@ -105,6 +105,16 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 <node name="radar_to_cam_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="-0.020 -0.015 0.0 0.0 0.7071068 0.7071068 0.0 'awr1843aop' 'cam'" />
 ```
 
+# Calibration Optimization (Experimental)
+[rio_calibration_node.cpp](https://github.com/ethz-asl/rio/blob/main/src/rio_calibration_node.cpp) allows you to calibrate the rigid transformation between IMU and radar.
+
+The calibration procedure:
+1. Move the device in a loop, recording RIO odometry output (`/rio/odometry_optimize`), IMU (`/imu/data_raw`) and radar (`/radar/cfar_detections`). The device has to be located in the same position and orientation at start and goal to make the [loop closure](https://github.com/ethz-asl/rio/blob/main/cfg/calibration.yaml#L10-L12).
+2. Set the initial guess in [calibration.yaml](https://github.com/ethz-asl/rio/blob/main/cfg/calibration.yaml#L6-L7).
+3. `roslaunch rio calibration.launch`
+
+This should refine your initial guess. Note you need to excite roll and pitch in your dataset. I noticed that you could also relax the [gyro bias process noise](https://github.com/ethz-asl/rio/blob/main/cfg/rio.yaml#L8), as it is well observable through loop closure.
+
 # Related packages
 
 | Package         | Description                     | Link                                                           |
