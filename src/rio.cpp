@@ -184,6 +184,12 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
     return;
   }
 
+  imu_queue.push_back(msg);
+
+  if (!radar_queue.empty()) processRadarFrames();
+}
+
+void Rio::processIMUMeasurements(const sensor_msgs::ImuConstPtr& msg) {
   // Get update from optimization.
   std::map<std::string, Timing> timing;
   auto new_result = optimization_.getResult(&propagation_, &timing);
@@ -219,6 +225,7 @@ void Rio::imuRawCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
 }
 
+// TODO: Not sure this will work
 void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   LOG_FIRST(I, 1, "Received first filtered IMU message.");
   Eigen::Quaterniond q_IB;
@@ -236,17 +243,32 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
   }
 }
 
-void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
+void Rio::processRadarFrames() {
+  sensor_msgs::PointCloud2Ptr radar_msg = radar_queue.front();
+
+  if (imu_queue.empty() || radar_queue.empty()) return;
+
   LOG_FIRST(I, 1, "Received first CFAR detections.");
   if (propagation_.empty()) {
     LOG(W, "No propagation, skipping CFAR detections.");
     return;
   }
 
+  if (imu_queue.back()->header.stamp < radar_msg->header.stamp) {
+    return;
+  }
+
+  radar_queue.pop_front();
+
+  while (!imu_queue.empty()) {
+    processIMUMeasurements(imu_queue.front());
+    imu_queue.pop_front();
+  }
+
   Pose3 B_T_BR;
   try {
     auto R_T_RB_tf = tf_buffer_.lookupTransform(
-        msg->header.frame_id,
+        radar_msg->header.frame_id,
         propagation_.back().getLatestState()->imu->header.frame_id,
         ros::Time(0), ros::Duration(0.0));
     Eigen::Affine3d R_T_RB_eigen = tf2::transformToEigen(R_T_RB_tf.transform);
@@ -260,17 +282,22 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     return;
   }
 
-  auto split_it = splitPropagation(msg->header.stamp);
+  auto split_it = splitPropagation(radar_msg->header.stamp);
   if (split_it == propagation_.end()) {
     LOG(W, "Failed to split propagation, skipping CFAR detections.");
-    LOG(W, "Split time: " << msg->header.stamp);
+    LOG(W, "Split time: " << radar_msg->header.stamp);
     LOG(W, "Last IMU time: "
                << propagation_.back().getLatestState()->imu->header.stamp);
+    imu_queue.clear();
+
     return;
   }
 
   split_it->B_T_BR_ = B_T_BR;
-  split_it->cfar_detections_ = parseRadarMsg(msg);
+  split_it->cfar_detections_ = parseRadarMsgRioDataset(radar_msg);
+
+  // split_it->cfar_detections_ = parseRadarMsg(msg);
+
   // Track zero velocity detections.
   split_it->cfar_tracks_ =
       tracker_.addCfarDetections(split_it->cfar_detections_.value());
@@ -284,14 +311,14 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
     // Find baro measurement closest to radar measurement.
     auto baro_it = std::lower_bound(
         baro_height_bias_history_.begin(), baro_height_bias_history_.end(),
-        std::make_pair(msg->header.stamp.toSec(), 0.0),
+        std::make_pair(radar_msg->header.stamp.toSec(), 0.0),
         [](const std::pair<double, double>& a,
            const std::pair<double, double>& b) { return a.first < b.first; });
     if (baro_it != baro_height_bias_history_.begin() &&
         baro_it != baro_height_bias_history_.end()) {
       auto baro_it_prev = std::prev(baro_it);
-      if (std::abs(baro_it_prev->first - msg->header.stamp.toSec()) <
-          std::abs(baro_it->first - msg->header.stamp.toSec())) {
+      if (std::abs(baro_it_prev->first - radar_msg->header.stamp.toSec()) <
+          std::abs(baro_it->first - radar_msg->header.stamp.toSec())) {
         baro_it = baro_it_prev;
       }
     }
@@ -305,12 +332,12 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
       optimization_.addBaroFactor(*split_it, noise_model_baro_height_,
                                   &baro_residual);
       DopplerResidual baro_residual_msg;
-      baro_residual_msg.header = msg->header;
+      baro_residual_msg.header = radar_msg->header;
       baro_residual_msg.residual = baro_residual[0];
       baro_residual_pub_.publish(baro_residual_msg);
     } else {
       LOG(W, "Failed to find baro measurement with stamp before or at "
-                 << msg->header.stamp << ". Skipping baro factor.");
+                 << radar_msg->header.stamp << ". Skipping baro factor.");
     }
   }
 
@@ -318,9 +345,20 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
 
   for (const auto& residual : doppler_residuals) {
     DopplerResidual residual_msg;
-    residual_msg.header = msg->header;
+    residual_msg.header = radar_msg->header;
     residual_msg.residual = residual[0];
     doppler_residual_pub_.publish(residual_msg);
+  }
+  imu_queue.clear();
+}
+
+void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
+  radar_queue.push_back(msg);
+
+  LOG_FIRST(I, 1, "Received first CFAR detections.");
+  if (propagation_.empty()) {
+    LOG(W, "No propagation, skipping CFAR detections.");
+    return;
   }
 }
 
