@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     } else if (msg.getTopic() == radar_topic) {
       sensor_msgs::PointCloud2Ptr radar_msg =
           msg.instantiate<sensor_msgs::PointCloud2>();
-      auto detections = parseRadarMsg(radar_msg);
+      auto detections = parseRadarMsgRioDataset(radar_msg);
       RadarMeasurement radar_measurement;
       radar_measurement.t = radar_msg->header.stamp.toSec();
       for (const auto& detection : detections) {

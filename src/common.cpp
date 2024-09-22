@@ -213,7 +213,7 @@ bool rio::loadNoiseRadarTrack(const ros::NodeHandle& nh,
   return true;
 }
 
-std::vector<CfarDetection> rio::parseRadarMsg(
+std::vector<CfarDetection> rio::parseRadarMsgRioDataset(
     const sensor_msgs::PointCloud2Ptr& msg) {
   std::vector<CfarDetection> detections(msg->height * msg->width);
   sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
