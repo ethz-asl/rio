@@ -69,8 +69,7 @@ The dataset contains 15 sequences of urban night, forest path, field, and deep f
 
 | Scenario    | No. | Link w/o camera |
 | ----------- | --- | --------------- |
-| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](
-https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=01_urban_night_H_raw_no_img.bag) |
+| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=01_urban_night_H_raw_no_img.bag) |
 |             | 02  | [02_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=02_urban_night_H_raw_no_img.bag) |
 |             | 03  | [03_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=03_urban_night_H_raw_no_img.bag) |
 |             | 04  | [04_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=04_urban_night_H_raw_no_img.bag) |
