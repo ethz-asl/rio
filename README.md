@@ -63,29 +63,29 @@ Radar point cloud format, see also [mav_sensors_ros](https://github.com/ethz-asl
 ```
 
 # Dataset
-The dataset contains 15 sequences of urban night, forest path, field, and deep forest handheld and flown data. It can be downloaded with and without camera images.
+The [dataset](https://doi.org/10.3929/ethz-b-000713420) contains 15 sequences of urban night, forest path, field, and deep forest handheld and flown data. It can be downloaded with and without camera images.
 
 [Video of closed-loop quadrotor control in city and forest.](https://github.com/ethz-asl/rio/assets/11293852/7bc95fa8-6fa1-4172-ad63-5ae1d3a38d58)
 
-| Scenario    | No. | Link w/o camera |
-| ----------- | --- | --------------- |
-| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=01_urban_night_H_raw_no_img.bag) |
-|             | 02  | [02_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=02_urban_night_H_raw_no_img.bag) |
-|             | 03  | [03_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=03_urban_night_H_raw_no_img.bag) |
-|             | 04  | [04_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=04_urban_night_H_raw_no_img.bag) |
-|             | 05  | [05_urban_night_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=05_urban_night_F_raw_no_img.bag) |
-|             | 06  | [06_urban_night_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=06_urban_night_F_raw_no_img.bag) |
-|             | 07  | [07_urban_night_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=07_urban_night_F_raw_no_img.bag) |
-| Forest Path | 08  | [08_forest_path_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=08_forest_path_H_raw_no_img.bag) |
-|             | 09  | [09_forest_path_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=09_forest_path_H_raw_no_img.bag) |
-|             | 10  | [10_forest_path_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=10_forest_path_H_raw_no_img.bag) |
-|             | 11  | [11_forest_path_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=11_forest_path_F_raw_no_img.bag) |
-|             | 12  | [12_forest_path_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=12_forest_path_F_raw_no_img.bag) |
-| Flat Field  | 13  | [13_flat_field_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=13_flat_field_F_raw_no_img.bag) |
-|             | 14  | [14_flat_field_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=14_flat_field_F_raw_no_img.bag) |
-| Tree Slalom | 15  | [15_tree_slalom_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=15_tree_slalom_F_raw_no_img.bag) | 
+| Scenario    | No. | Link w/o camera | Link with camera |
+| ----------- | --- | --------------- | ---------------- |
+| Urban Night | 01  | [01_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=01_urban_night_H_raw_no_img.bag) | [01_urban_night_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=01_urban_night_H_raw.bag) |
+|             | 02  | [02_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=02_urban_night_H_raw_no_img.bag) | [02_urban_night_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=02_urban_night_H_raw.bag) |
+|             | 03  | [03_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=03_urban_night_H_raw_no_img.bag) | [03_urban_night_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=03_urban_night_H_raw.bag) |
+|             | 04  | [04_urban_night_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=04_urban_night_H_raw_no_img.bag) | [04_urban_night_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=04_urban_night_H_raw.bag) |
+|             | 05  | [05_urban_night_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=05_urban_night_F_raw_no_img.bag) | [05_urban_night_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=05_urban_night_F_raw.bag) |
+|             | 06  | [06_urban_night_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=06_urban_night_F_raw_no_img.bag) | [06_urban_night_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=06_urban_night_F_raw.bag) |
+|             | 07  | [07_urban_night_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=07_urban_night_F_raw_no_img.bag) | [07_urban_night_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=07_urban_night_F_raw.bag) |
+| Forest Path | 08  | [08_forest_path_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=08_forest_path_H_raw_no_img.bag) | [08_forest_path_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=08_forest_path_H_raw.bag) |
+|             | 09  | [09_forest_path_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=09_forest_path_H_raw_no_img.bag) | [09_forest_path_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=09_forest_path_H_raw.bag) |
+|             | 10  | [10_forest_path_H_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=10_forest_path_H_raw_no_img.bag) | [10_forest_path_H_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=10_forest_path_H_raw.bag) |
+|             | 11  | [11_forest_path_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=11_forest_path_F_raw_no_img.bag) | [11_forest_path_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=11_forest_path_F_raw.bag) |
+|             | 12  | [12_forest_path_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=12_forest_path_F_raw_no_img.bag) | [12_forest_path_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=12_forest_path_F_raw.bag) |
+| Flat Field  | 13  | [13_flat_field_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=13_flat_field_F_raw_no_img.bag) | [13_flat_field_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=13_flat_field_F_raw.bag) |
+|             | 14  | [14_flat_field_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=14_flat_field_F_raw_no_img.bag) | [14_flat_field_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=14_flat_field_F_raw.bag) |
+| Tree Slalom | 15  | [15_tree_slalom_F_raw_no_img.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=15_tree_slalom_F_raw_no_img.bag) | [15_tree_slalom_F_raw.bag](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=15_tree_slalom_F_raw.bag) |
 |  |  |   | 
-| All         | 01-15 | [all_raw_no_img](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=raw_no_img_01-15.zip)  |  
+| All         | 01-15 | [raw_no_img_01-15.zip (200MB)](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download?path=%2F&files=raw_no_img_01-15.zip)  | [all](https://libdrive.ethz.ch/index.php/s/wfmZSbsx4x7yFPA/download) |
 
 ## Calibration
 ```
