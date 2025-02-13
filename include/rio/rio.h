@@ -72,6 +72,8 @@ class Rio {
   void imuFilterCallback(const sensor_msgs::ImuConstPtr& msg);
   void cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg);
   void pressureCallback(const sensor_msgs::FluidPressurePtr& msg);
+  void processIMUMeasurements(const sensor_msgs::ImuConstPtr& msg);
+  void processRadarFrames();
 
   ros::Publisher odom_navigation_pub_;
   ros::Publisher odom_optimizer_pub_;
@@ -107,5 +109,10 @@ class Rio {
   bool baro_active_{false};
   std::optional<double> baro_height_bias_;
   std::deque<std::pair<double, double>> baro_height_bias_history_;
+
+  std::deque<sensor_msgs::ImuConstPtr> imu_queue;
+  std::deque<sensor_msgs::PointCloud2Ptr> radar_queue;
+
+  std::string dataset_ = "rio";
 };
 }  // namespace rio

@@ -133,9 +133,8 @@ struct CfarDetection {
   }
 };
 
-std::vector<CfarDetection> parseRadarMsg(
+std::vector<CfarDetection> parseRadarMsgRioDataset(
     const sensor_msgs::PointCloud2Ptr& msg);
-
 double computeBaroHeight(double pressure);
 
 }  // namespace rio
