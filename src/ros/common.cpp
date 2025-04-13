@@ -183,30 +183,52 @@ bool rio::loadNoiseRadarTrack(const ros::NodeHandle& nh,
 }
 
 std::vector<mav_sensors::Radar::CfarDetection> rio::parseRadarMsg(
-    const sensor_msgs::PointCloud2Ptr& msg) {
-  std::vector<mav_sensors::Radar::CfarDetection> detections(msg->height *
-                                                            msg->width);
-  sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
-  sensor_msgs::PointCloud2Iterator<float> iter_doppler(*msg, "doppler");
-  sensor_msgs::PointCloud2Iterator<int16_t> iter_snr(*msg, "snr");
-  sensor_msgs::PointCloud2Iterator<int16_t> iter_noise(*msg, "noise");
-  for (auto& detection : detections) {
-    detection.x = *(iter_x);
-    detection.y = *(iter_y);
-    detection.z = *(iter_z);
-    detection.velocity = *(iter_doppler);
-    detection.snr = *(iter_snr);
-    detection.noise = *(iter_noise);
-    ++iter_x;
-    ++iter_y;
-    ++iter_z;
-    ++iter_doppler;
-    ++iter_snr;
-    ++iter_noise;
+  const sensor_msgs::PointCloud2Ptr& msg) {
+const size_t max_detections = 800;   // Limit number of detections. Assuming that 1'000 is enough to use all
+const float snr_threshold = 0.0f; // Chosen more-or-less arbitrarily. Adjust to experiment.
+const size_t total_points = msg->height * msg->width;
+LOG_EVERY(I, 5, "|-- [parseRadarMsg] Size PointCloud: " << total_points);
+
+std::vector<mav_sensors::Radar::CfarDetection> detections(static_cast<size_t>(msg->height * msg->width));
+
+sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
+sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
+sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
+sensor_msgs::PointCloud2Iterator<float> iter_doppler(*msg, "doppler");
+sensor_msgs::PointCloud2Iterator<float> iter_snr(*msg, "snr");      // For Zadar
+sensor_msgs::PointCloud2Iterator<float> iter_noise(*msg, "noise");  // For Zadar
+// sensor_msgs::PointCloud2Iterator<int16_t> iter_snr(*msg, "snr");     // For TI
+// sensor_msgs::PointCloud2Iterator<int16_t> iter_noise(*msg, "noise"); // For TI
+
+int positive_detections = 0;
+for (size_t i = 0; i < total_points; ++i) {
+  if (*iter_snr >= snr_threshold){
+    detections[positive_detections].x = *(iter_x);
+    detections[positive_detections].y = *(iter_y);
+    detections[positive_detections].z = *(iter_z);
+    detections[positive_detections].velocity = *(iter_doppler);
+    detections[positive_detections].snr = *(iter_snr);
+    detections[positive_detections].noise = *(iter_noise);
+    positive_detections++;
   }
-  return detections;
+  ++iter_x;
+  ++iter_y;
+  ++iter_z;
+  ++iter_doppler;
+  ++iter_snr;
+  ++iter_noise;
+}
+
+// Shuffle detections
+std::random_device rd;
+std::mt19937 g(rd());
+std::shuffle(detections.begin(), detections.begin(), g);
+
+// Apply hard limit
+detections.resize(max_detections);
+
+LOG_EVERY(I, 5, "|-- [parseRadarMsg] Returned detections: " << detections.size());
+return detections;
 }
 
 double rio::computeBaroHeight(double pressure) {

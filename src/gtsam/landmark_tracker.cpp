@@ -29,37 +29,44 @@ bool Tracker::detectLandmark(
 }
 
 std::vector<Track::Ptr> Tracker::addCfarDetections(
-    const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection) {
-  // Filter deprecated tracks.
-  std::vector<Track::Ptr> active_tracks;
-  std::copy_if(tracks_.begin(), tracks_.end(),
-               std::back_inserter(active_tracks),
-               [&](const auto& track) { return track->isValid(); });
-  std::for_each(active_tracks.begin(), active_tracks.end(),
-                [](const auto& track) { track->update(); });
+  const std::vector<mav_sensors::Radar::CfarDetection>& cfar_detection) {
+const size_t MAX_TRACKS = 400;
+// Filter deprecated tracks.
+std::vector<Track::Ptr> active_tracks;
+std::copy_if(tracks_.begin(), tracks_.end(),
+             std::back_inserter(active_tracks),
+             [&](const auto& track) { return track->isValid(); });
+std::for_each(active_tracks.begin(), active_tracks.end(),
+              [](const auto& track) { track->update(); });
 
-  std::vector<Track::Ptr> updated_tracks;
-  for (const auto& cfar_detection : cfar_detection) {
-    // Skip detections that are not landmarks.
-    if (!detectLandmark(cfar_detection)) {
-      continue;
-    }
-    // Update tracks.
-    auto updated_track = std::find_if(
-        active_tracks.begin(), active_tracks.end(),
-        [&](auto& track) { return track->addCfarDetection(cfar_detection); });
-    if (updated_track != active_tracks.end()) {
-      updated_tracks.emplace_back(*updated_track);
-      continue;
-    }
-    // Create new tracks.
-    updated_tracks.emplace_back(new Track(cfar_detection, id_++, max_age_));
-    active_tracks.push_back(updated_tracks.back());
-    LOG(D, "New track created with id: " << id_ - 1);
+std::vector<Track::Ptr> updated_tracks;
+for (const auto& cfar_detection : cfar_detection) {
+  // Skip detections that are not landmarks.
+  if (!detectLandmark(cfar_detection)) {
+    continue;
+  }
+  // Update tracks.
+  auto updated_track = std::find_if(
+      active_tracks.begin(), active_tracks.end(),
+      [&](auto& track) { return track->addCfarDetection(cfar_detection); });
+  if (updated_track != active_tracks.end()) {
+    updated_tracks.emplace_back(*updated_track);
+    continue;
   }
 
-  LOG(D, "Returning " << updated_tracks.size() << " updated tracks.");
-  LOG(D, "Total " << active_tracks.size() << " active tracks.");
-  tracks_ = active_tracks;
-  return updated_tracks;
+  if (active_tracks.size() >= MAX_TRACKS) {
+    LOG(I, "|-- [Landmark] Max Number of tracks reached: " << MAX_TRACKS);
+    break;
+  }
+  
+  // Create new tracks.
+  updated_tracks.emplace_back(new Track(cfar_detection, id_++, max_age_));
+  active_tracks.push_back(updated_tracks.back());
+  LOG(D, "New track created with id: " << id_ - 1);
+}
+
+LOG(D, "Returning " << updated_tracks.size() << " updated tracks.");
+LOG_EVERY(I, 5, "|-- [Tracks] Total " << active_tracks.size() << " active tracks.");
+tracks_ = active_tracks;
+return updated_tracks;
 }

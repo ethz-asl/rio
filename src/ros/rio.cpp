@@ -257,6 +257,7 @@ void Rio::imuFilterCallback(const sensor_msgs::ImuConstPtr& msg) {
 }
 
 void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
+  ros::WallTime start_time = ros::WallTime::now();
   gttic_(cfarDetectionsCallback);
   if (msg->header.stamp.toSec() == 0) {
     LOG(W, "Received CFAR detections with t=0, skipping...");
@@ -283,6 +284,7 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
   }
   auto propagation_split =
       linked_propagations_.getSplitPropagation(msg->header.stamp);
+  ros::WallTime after_split = ros::WallTime::now();
   if (!propagation_split) {
     LOG(W, "Failed to split propagation, skipping CFAR detections. t_msg: "
                << msg->header.stamp.toSec());
@@ -307,14 +309,16 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
 
   new_propagation->B_T_BR_ = B_T_BR;
   new_propagation->cfar_detections_ = parseRadarMsg(msg);
+  ros::WallTime after_detection_parsing = ros::WallTime::now();
   // Track zero velocity detections.
   new_propagation->cfar_tracks_ =
       tracker_.addCfarDetections(new_propagation->cfar_detections_.value());
+  ros::WallTime after_adding_tracks = ros::WallTime::now();
   std::vector<Vector1> doppler_residuals;
   optimization_.addRadarFactor(*new_propagation, *propagation_split,
                                noise_model_radar_doppler_,
                                noise_model_radar_track_, &doppler_residuals);
-
+  ros::WallTime after_adding_factors = ros::WallTime::now();
   if (new_propagation->graph_idx_ < 30) {
     optimization_.addPriorFactor(
         *new_propagation, *initial_state_, prior_noise_model_I_T_IB_,
@@ -380,11 +384,21 @@ void Rio::cfarDetectionsCallback(const sensor_msgs::PointCloud2Ptr& msg) {
                                optimization_.timing_["optimize"].header.stamp);
 
   optimization_.solve(linked_propagations_);
-
+  ros::WallTime after_solve = ros::WallTime::now();
   for (const auto& residual : doppler_residuals) {
     DopplerResidual residual_msg;
     residual_msg.header = msg->header;
     residual_msg.residual = residual[0];
     doppler_residual_pub_.publish(residual_msg);
   }
+  LOG_EVERY(I, 5, "\nCFAR detections timing: "
+                  << "\n    - split: " << (after_split - start_time).toSec()
+                  << "s, \n    - parse: "
+                  << (after_detection_parsing - after_split).toSec() << "s, "
+                  << "\n    - add tracks: "
+                  << (after_adding_tracks - after_detection_parsing).toSec()
+                  << "s, \n    - add factors: "
+                  << (after_adding_factors - after_adding_tracks).toSec()
+                  << "s, \n    - solve: "
+                  << (after_solve - after_adding_factors).toSec() << "s");
 }
