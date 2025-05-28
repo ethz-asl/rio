@@ -84,10 +84,9 @@ class Rio {
   State::ConstPtr initial_state_{std::make_shared<State>(
       "odom", gtsam::Z_3x1, gtsam::Rot3(), gtsam::Z_3x1, nullptr,
       gtsam::PreintegratedCombinedMeasurements())};
-  std::deque<Propagation> propagation_;
   ros::Duration max_dead_reckoning_duration_{60.0};
 
-  std::deque<Propagation>::iterator splitPropagation(const ros::Time& t);
+  LinkedPropagations linked_propagations_;
 
   Optimization optimization_;
   gtsam::SharedNoiseModel prior_noise_model_I_T_IB_;

@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
                 tf2_eigen
                 tf2_ros
                 nodelet
-                gtsam_catkin
+		#                gtsam_catkin
                 std_srvs
             )
 find_package(Eigen3 REQUIRED)
@@ -28,7 +28,7 @@ generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package( INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
                 LIBRARIES ${PROJECT_NAME} ${PROJECT_NAME}_nodelet
-                CATKIN_DEPENDS message_runtime roscpp lpp sensor_msgs std_msgs roslib tf2_eigen tf2_ros nodelet gtsam_catkin std_srvs
+                CATKIN_DEPENDS message_runtime roscpp lpp sensor_msgs std_msgs roslib tf2_eigen tf2_ros nodelet std_srvs
               )
 include_directories(include ${catkin_INCLUDE_DIRS})
 
