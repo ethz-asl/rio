@@ -45,9 +45,12 @@
 			<rosparam file="$(arg config)" />
             <param name="queue_size" value="$(arg rio_queue_size)"/>
             <param name="odom_frame_id" value="$(arg rio_odom_frame_id)"/>
+	<remap from="imu/data" to="/imu" />
+	<remap from="imu/data_raw" to="imu" />
         </node>
 
-    <node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.146 0.012 -0.04  0.679928  0.694139 -0.168416 -0.165847 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
+    <!--node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.146 0.012 -0.04  0.679928  0.694139 -0.168416 -0.165847 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" /-->
+<node name="imu_to_radar_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0.107718 0.088011 -0.064877 0 0 -0.258819, 0.9659258 '$(arg imu_frame_id)' '$(arg radar_frame_id)'" />
     </group>
 
     <group if="$(arg visualize)">

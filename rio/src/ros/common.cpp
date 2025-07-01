@@ -195,7 +195,7 @@ std::vector<mav_sensors::Radar::CfarDetection> rio::parseRadarMsg(
   for (auto& detection : detections) {
     detection.x = *(iter_x);
     detection.y = *(iter_y);
-    detection.z = *(iter_z);
+    detection.z = -*(iter_z);
     detection.velocity = *(iter_doppler);
     detection.snr = *(iter_snr);
     detection.noise = *(iter_noise);
